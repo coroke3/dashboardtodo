@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   CheckCircle2, Circle, AlertCircle, Play, Tag, LogOut,
   RefreshCw, LayoutDashboard, ListTodo, Calendar,
@@ -32,6 +32,39 @@ const SCOPES = 'https://www.googleapis.com/auth/tasks';
 const FETCH_MAX_RESULTS = 999;
 
 const ENV_CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '').trim();
+
+const GOOGLE_TASKS_OAUTH_STORAGE_KEY = 'google_tasks_oauth_v1';
+const OAUTH_EXPIRY_SKEW_MS = 60_000;
+
+const readStoredOAuth = (clientId) => {
+  if (!clientId) return null;
+  try {
+    const raw = localStorage.getItem(GOOGLE_TASKS_OAUTH_STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (data.clientId !== clientId) return null;
+    if (typeof data.accessToken !== 'string' || typeof data.expiresAt !== 'number') return null;
+    return data;
+  } catch {
+    return null;
+  }
+};
+
+const writeStoredOAuth = (clientId, accessToken, expiresInSec) => {
+  const sec = typeof expiresInSec === 'number' && expiresInSec > 0 ? expiresInSec : 3600;
+  const expiresAt = Date.now() + sec * 1000 - OAUTH_EXPIRY_SKEW_MS;
+  localStorage.setItem(
+    GOOGLE_TASKS_OAUTH_STORAGE_KEY,
+    JSON.stringify({ clientId, accessToken, expiresAt })
+  );
+};
+
+const clearStoredOAuth = () => {
+  localStorage.removeItem(GOOGLE_TASKS_OAUTH_STORAGE_KEY);
+};
+
+const effectiveClientId = () =>
+  (localStorage.getItem('google_tasks_client_id') || ENV_CLIENT_ID || '').trim();
 
 // === 日付ユーティリティ ===
 // 月曜始まりの週の範囲 [start, end) を返す
@@ -143,7 +176,14 @@ export default function App() {
     () => localStorage.getItem('google_tasks_client_id') || ENV_CLIENT_ID || ''
   );
   const [clientIdOverrideOpen, setClientIdOverrideOpen] = useState(!ENV_CLIENT_ID);
-  const [accessToken, setAccessToken] = useState(null);
+  const [accessToken, setAccessToken] = useState(() => {
+    const cid = effectiveClientId();
+    if (!cid) return null;
+    const stored = readStoredOAuth(cid);
+    if (stored && stored.expiresAt > Date.now() + 30_000) return stored.accessToken;
+    return null;
+  });
+  const silentAuthTried = useRef(false);
   const [isDemo, setIsDemo] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -163,9 +203,38 @@ export default function App() {
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
     script.defer = true;
+    script.onload = () => {
+      if (!window.google || silentAuthTried.current) return;
+      const cid = effectiveClientId();
+      if (!cid) return;
+      const stored = readStoredOAuth(cid);
+      if (stored && stored.expiresAt > Date.now() + 30_000) return;
+      silentAuthTried.current = true;
+      try {
+        const client = window.google.accounts.oauth2.initTokenClient({
+          client_id: cid,
+          scope: SCOPES,
+          callback: (response) => {
+            if (response.error) return;
+            writeStoredOAuth(cid, response.access_token, response.expires_in);
+            setAccessToken(response.access_token);
+          },
+        });
+        client.requestAccessToken({ prompt: 'none' });
+      } catch {
+        silentAuthTried.current = false;
+      }
+    };
     document.body.appendChild(script);
     return () => { document.body.removeChild(script); };
   }, []);
+
+  useEffect(() => {
+    if (!accessToken || isDemo) return;
+    fetchRealTasks(accessToken);
+    // accessToken / isDemo の変化時のみ再取得（fetchRealTasks は毎レンダーで新規のため依存に含めない）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken, isDemo]);
 
   const parseTask = (task) => {
     const tagRegex = /\[(.*?)\]/g;
@@ -214,8 +283,8 @@ export default function App() {
             setError("認証に失敗しました。以前の権限でログイン中の場合は一度切断してください。");
             return;
           }
+          writeStoredOAuth(cid, response.access_token, response.expires_in);
           setAccessToken(response.access_token);
-          fetchRealTasks(response.access_token);
         },
       });
       client.requestAccessToken();
@@ -283,10 +352,12 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    clearStoredOAuth();
     setAccessToken(null);
     setTasks([]);
     setIsDemo(false);
     setSelectedTag(null);
+    silentAuthTried.current = false;
   };
 
   const handleRefresh = () => {
