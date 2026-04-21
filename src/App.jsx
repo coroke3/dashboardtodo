@@ -134,6 +134,36 @@ const sameLocalDay = (a, b) => {
   return da.getFullYear() === db.getFullYear() && da.getMonth() === db.getMonth() && da.getDate() === db.getDate();
 };
 
+/**
+ * カレンダー用: Tasks API の日付のみ期限は YYYY-MM-DD または UTC 午前0時で返ることが多い。
+ * new Date(due) をローカル日で切るとタイムゾーンで前日になりセルから漏れるため、暦日で比較する。
+ */
+const dueCalendarDayParts = (dueString) => {
+  if (!dueString) return null;
+  const s = String(dueString).trim();
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (dateOnly) {
+    return { y: +dateOnly[1], mo: +dateOnly[2] - 1, d: +dateOnly[3] };
+  }
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return null;
+  const utcMidnight =
+    d.getUTCHours() === 0 &&
+    d.getUTCMinutes() === 0 &&
+    d.getUTCSeconds() === 0 &&
+    d.getUTCMilliseconds() === 0;
+  if (utcMidnight) {
+    return { y: d.getUTCFullYear(), mo: d.getUTCMonth(), d: d.getUTCDate() };
+  }
+  return { y: d.getFullYear(), mo: d.getMonth(), d: d.getDate() };
+};
+
+const dueMatchesCalendarDay = (dueString, dayDate) => {
+  const parts = dueCalendarDayParts(dueString);
+  if (!parts) return false;
+  return parts.y === dayDate.getFullYear() && parts.mo === dayDate.getMonth() && parts.d === dayDate.getDate();
+};
+
 const CAL_WEEK_LABELS = ['月', '火', '水', '木', '金', '土', '日'];
 
 /** アクティブ並び: 0期限切れ 1今日 2今週(今日以外) 3来週 4その他 5期限なし */
@@ -1260,7 +1290,7 @@ function CalendarView({ tasks, mode, setMode, cursor, setCursor, toggleTaskStatu
   gridStart.setDate(firstOfMonth.getDate() - mondayOffset);
 
   const tasksForDay = (dayDate) =>
-    tasks.filter(t => t.due && sameLocalDay(new Date(t.due), dayDate));
+    tasks.filter(t => t.due && dueMatchesCalendarDay(t.due, dayDate));
 
   const renderTaskRow = (task) => {
     const done = task.status === 'completed';
