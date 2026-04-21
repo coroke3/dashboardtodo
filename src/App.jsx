@@ -475,9 +475,9 @@ export default function App() {
   };
 
   // === 集計 ===
-  const { stats, tagStats, weeklyStats, nextWeekStats, monthStats, weeklyHistory, monthlyHistory, yearlyHistory, overallCompletionRate } = useMemo(() => {
+  const { stats, tagStats, weeklyStats, nextWeekStats, monthStats, weeklyHistory, monthlyHistory, yearlyHistory, overallCompletionRate, analyticsTotalTasks, analyticsCompletedTasks } = useMemo(() => {
     const tagData = {};
-    let total = tasks.length;
+    const total = tasks.length;
     let completed = 0;
 
     const now = new Date();
@@ -487,18 +487,20 @@ export default function App() {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
+    const tasksForTopDashboard = !selectedTag
+      ? tasks
+      : selectedTag === '未分類'
+        ? tasks.filter(t => t.tags.length === 0)
+        : tasks.filter(t => t.tags.includes(selectedTag));
+
     let weekTotal = 0, weekCompleted = 0;
     let nextWeekTotal = 0, nextWeekCompleted = 0;
     let monthTotal = 0, monthCompleted = 0;
 
-    const initTagData = (tag) => {
-      if (!tagData[tag]) tagData[tag] = { total: 0, completed: 0 };
-    };
-
-    tasks.forEach(t => {
+    let analyticsCompleted = 0;
+    tasksForTopDashboard.forEach(t => {
       const isCompleted = t.status === 'completed';
-      if (isCompleted) completed++;
-
+      if (isCompleted) analyticsCompleted++;
       const dueDate = t.due ? new Date(t.due) : null;
       if (dueDate) {
         if (dueDate >= weekStart && dueDate < weekEnd) {
@@ -514,6 +516,17 @@ export default function App() {
           if (isCompleted) monthCompleted++;
         }
       }
+    });
+    const analyticsTotal = tasksForTopDashboard.length;
+    const overall = analyticsTotal === 0 ? 0 : Math.round((analyticsCompleted / analyticsTotal) * 100);
+
+    const initTagData = (tag) => {
+      if (!tagData[tag]) tagData[tag] = { total: 0, completed: 0 };
+    };
+
+    tasks.forEach(t => {
+      const isCompleted = t.status === 'completed';
+      if (isCompleted) completed++;
 
       const tags = t.tags.length === 0 ? ['未分類'] : t.tags;
       tags.forEach(tag => {
@@ -535,7 +548,7 @@ export default function App() {
       const weekEndN = addWeeks(weekStartN, 1);
       let wTotal = 0;
       let wDone = 0;
-      tasks.forEach(t => {
+      tasksForTopDashboard.forEach(t => {
         if (!t.due) return;
         const d = new Date(t.due);
         if (d >= weekStartN && d < weekEndN) {
@@ -555,15 +568,13 @@ export default function App() {
       });
     }
 
-    const overall = total === 0 ? 0 : Math.round((completed / total) * 100);
-
     const monthlyHistory = [];
     for (let i = 11; i >= 0; i--) {
       const ref = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const mStart = new Date(ref.getFullYear(), ref.getMonth(), 1);
       const mEnd = new Date(ref.getFullYear(), ref.getMonth() + 1, 1);
       let mt = 0, mc = 0;
-      tasks.forEach(t => {
+      tasksForTopDashboard.forEach(t => {
         if (!t.due) return;
         const d = new Date(t.due);
         if (d >= mStart && d < mEnd) {
@@ -588,7 +599,7 @@ export default function App() {
       const yStart = new Date(y, 0, 1);
       const yEnd = new Date(y + 1, 0, 1);
       let yt = 0, yc = 0;
-      tasks.forEach(t => {
+      tasksForTopDashboard.forEach(t => {
         if (!t.due) return;
         const d = new Date(t.due);
         if (d >= yStart && d < yEnd) {
@@ -628,8 +639,10 @@ export default function App() {
       monthlyHistory,
       yearlyHistory,
       overallCompletionRate: overall,
+      analyticsTotalTasks: analyticsTotal,
+      analyticsCompletedTasks: analyticsCompleted,
     };
-  }, [tasks]);
+  }, [tasks, selectedTag]);
 
   // === フィルター & ソート ===
   const { activeGroups, activeTotalCount, historyList } = useMemo(() => {
@@ -1059,9 +1072,10 @@ export default function App() {
                 monthlyHistory={monthlyHistory}
                 yearlyHistory={yearlyHistory}
                 overallCompletionRate={overallCompletionRate}
-                totalTasks={stats.total}
-                completedTasks={stats.completed}
+                totalTasks={analyticsTotalTasks}
+                completedTasks={analyticsCompletedTasks}
                 tagStats={tagStats}
+                selectedTag={selectedTag}
               />
             ) : activeTab === 'calendar' ? (
               <CalendarView
@@ -1436,15 +1450,18 @@ function PeriodCard({ label, icon, stats, accent }) {
   );
 }
 
-function AnalyticsView({ weeklyHistory, monthlyHistory, yearlyHistory, overallCompletionRate, totalTasks, completedTasks, tagStats }) {
+function AnalyticsView({ weeklyHistory, monthlyHistory, yearlyHistory, overallCompletionRate, totalTasks, completedTasks, tagStats, selectedTag }) {
   const [granularity, setGranularity] = useState('week');
   const series = granularity === 'week' ? weeklyHistory : granularity === 'month' ? monthlyHistory : yearlyHistory;
   const maxRate = Math.max(100, ...series.map(w => w.rate));
 
+  const scopeHint = selectedTag
+    ? `（タグ「${selectedTag}」のタスクのみ）`
+    : '';
   const chartTitle =
-    granularity === 'week' ? '週次（過去7週＋今週＋来週）'
-      : granularity === 'month' ? '月次（過去12ヶ月）'
-        : '年次（過去5年）';
+    granularity === 'week' ? `週次（過去7週＋今週＋来週）${scopeHint}`
+      : granularity === 'month' ? `月次（過去12ヶ月）${scopeHint}`
+        : `年次（過去5年）${scopeHint}`;
   const chartHint =
     granularity === 'week' ? '期限日が含まれる週のタスクを集計'
       : granularity === 'month' ? '期限日が含まれる月のタスクを集計'
@@ -1461,6 +1478,10 @@ function AnalyticsView({ weeklyHistory, monthlyHistory, yearlyHistory, overallCo
     }
     return w.isCurrent ? '今年' : w.label;
   };
+
+  const tagRowsForDisplay = selectedTag
+    ? tagStats.filter(t => t.tag === selectedTag).slice(0, 5)
+    : tagStats.slice(0, 5);
 
   return (
     <div className="space-y-6">
@@ -1533,23 +1554,26 @@ function AnalyticsView({ weeklyHistory, monthlyHistory, yearlyHistory, overallCo
         <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-sm p-5 text-white relative overflow-hidden">
           <div className="relative z-10">
             <p className="text-emerald-100 text-sm font-medium mb-1 flex items-center gap-1.5">
-              <Target size={16} /> 全体の達成率
+              <Target size={16} /> {selectedTag ? '選択タグの達成率' : '全体の達成率'}
             </p>
             <div className="flex items-baseline gap-1">
               <span className="text-4xl font-bold">{overallCompletionRate}</span>
               <span className="text-lg text-emerald-100">%</span>
             </div>
-            <p className="text-xs text-emerald-100 mt-2">完了 {completedTasks} / 全体 {totalTasks}</p>
+            <p className="text-xs text-emerald-100 mt-2">
+              完了 {completedTasks} / {selectedTag ? '対象' : '全体'} {totalTasks}
+            </p>
           </div>
           <Target className="absolute -right-4 -bottom-4 text-white opacity-10" size={100} />
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
           <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
-            <Tag size={16} className="text-blue-600" /> タグ別 完了率 TOP5
+            <Tag size={16} className="text-blue-600" />{' '}
+            {selectedTag ? `「${selectedTag}」の内訳` : 'タグ別 完了率 TOP5'}
           </p>
           <div className="space-y-2.5">
-            {tagStats.slice(0, 5).map(t => (
+            {tagRowsForDisplay.map(t => (
               <div key={`a-${t.tag}`}>
                 <div className="flex justify-between text-xs text-slate-600 mb-1">
                   <span className="truncate max-w-[140px]">{t.tag}</span>
@@ -1563,7 +1587,7 @@ function AnalyticsView({ weeklyHistory, monthlyHistory, yearlyHistory, overallCo
                 </div>
               </div>
             ))}
-            {tagStats.length === 0 && (
+            {tagRowsForDisplay.length === 0 && (
               <p className="text-xs text-slate-400">集計対象がまだありません</p>
             )}
           </div>
@@ -1572,7 +1596,7 @@ function AnalyticsView({ weeklyHistory, monthlyHistory, yearlyHistory, overallCo
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
         <p className="text-sm font-semibold text-slate-700 mb-3">
-          {granularity === 'week' ? '週次' : granularity === 'month' ? '月次' : '年次'}の詳細
+          {granularity === 'week' ? '週次' : granularity === 'month' ? '月次' : '年次'}の詳細{scopeHint}
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
