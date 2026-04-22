@@ -1153,7 +1153,7 @@ export default function App() {
       </header>
 
       <main className="max-w-5xl xl:max-w-7xl 2xl:max-w-[88rem] mx-auto px-4 sm:px-6 xl:px-8 mt-6 space-y-6">
-        <div className="flex sm:grid sm:grid-cols-4 gap-4 overflow-x-auto snap-x pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0 sm:overflow-visible items-stretch">
+        <div className="flex sm:grid sm:grid-cols-4 gap-4 overflow-x-auto snap-x pb-4 sm:pb-0 sm:overflow-visible items-stretch after:content-[''] after:w-4 after:shrink-0 sm:after:hidden">
           <div className="min-w-[260px] sm:min-w-0 sm:col-span-1 bg-gradient-to-br from-blue-600 to-indigo-700 p-5 rounded-xl shadow-sm text-white flex flex-col justify-between relative overflow-hidden snap-start shrink-0">
             <div className="relative z-10">
               <p className="text-blue-100 text-sm font-medium mb-1 flex items-center gap-1.5"><TrendingUp size={16} /> 今週の達成率</p>
