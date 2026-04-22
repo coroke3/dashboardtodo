@@ -3,7 +3,7 @@ import {
   CheckCircle2, Circle, AlertCircle, Play, Tag, LogOut,
   RefreshCw, LayoutDashboard, ListTodo, Calendar,
   Plus, X, History, Target, TrendingUp, BarChart3, CalendarOff,
-  ChevronLeft, ChevronRight, ChevronUp, ChevronDown
+  ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Trash2, Menu, Copy
 } from 'lucide-react';
 
 const today = new Date();
@@ -97,13 +97,17 @@ const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
 const formatDue = (dueString) => {
   if (!dueString) return null;
   const d = new Date(dueString);
+
+  // UTCでの時刻が00:00:00の場合は「日付のみ指定（時間は未指定）」とみなす
+  const isDateOnly = d.getUTCHours() === 0 && d.getUTCMinutes() === 0 && d.getUTCSeconds() === 0;
+
   const mm = d.getMonth() + 1;
   const dd = d.getDate();
   const w = WEEKDAYS[d.getDay()];
-  const hh = d.getHours();
-  const mi = d.getMinutes();
-  const hasTime = hh !== 0 || mi !== 0;
-  if (hasTime) {
+
+  if (!isDateOnly) {
+    const hh = d.getHours();
+    const mi = d.getMinutes();
     const hstr = String(hh).padStart(2, '0');
     const mstr = String(mi).padStart(2, '0');
     return `${mm}/${dd}(${w}) ${hstr}:${mstr}`;
@@ -166,26 +170,30 @@ const dueMatchesCalendarDay = (dueString, dayDate) => {
 
 const CAL_WEEK_LABELS = ['月', '火', '水', '木', '金', '土', '日'];
 
-/** アクティブ並び: 0期限切れ 1今日 2今週(今日以外) 3来週 4その他 5期限なし */
-const getActiveSortKey = (task, now, weekStart, weekEnd, nextWeekStart, nextWeekEnd) => {
+const ACTIVE_SECTION_TITLES = [
+  '期限切れ',
+  '今日',
+  '明日',
+  'それ以外の今週',
+  'それ以降',
+  '期限なし',
+];
+
+/** アクティブ並び: 0期限切れ 1今日 2明日 3それ以外の今週 4それ以降 5期限なし */
+const getActiveSortKey = (task, now, weekStart, weekEnd) => {
   if (!task.due) return { bucket: 5, dueMs: Number.POSITIVE_INFINITY };
   const due = new Date(task.due);
   const dueMs = due.getTime();
   if (isOverdue(task.due)) return { bucket: 0, dueMs };
+
+  const tmr = new Date(now);
+  tmr.setDate(tmr.getDate() + 1);
+
   if (sameLocalDay(due, now)) return { bucket: 1, dueMs };
-  if (due >= weekStart && due < weekEnd) return { bucket: 2, dueMs };
-  if (due >= nextWeekStart && due < nextWeekEnd) return { bucket: 3, dueMs };
+  if (sameLocalDay(due, tmr)) return { bucket: 2, dueMs };
+  if (due >= weekStart && due < weekEnd) return { bucket: 3, dueMs };
   return { bucket: 4, dueMs };
 };
-
-const ACTIVE_SECTION_TITLES = [
-  '期限切れ',
-  '今日',
-  '今週（今日以外）',
-  '来週',
-  'その他（期限あり・時系列）',
-  '期限なし',
-];
 
 /** タイトル内の LMS 名（単語境界・大文字小文字無視）を検出用 */
 const LMS_IN_TITLE = [
@@ -224,9 +232,34 @@ export default function App() {
   const [newTaskTags, setNewTaskTags] = useState([]);
   const [newTaskDue, setNewTaskDue] = useState('');
   const [showOnlyNoDue, setShowOnlyNoDue] = useState(false);
+  const [selectedTasks, setSelectedTasks] = useState(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [shiftHeld, setShiftHeld] = useState(false);
   const [taskFormExpanded, setTaskFormExpanded] = useState(false);
   const [calendarMode, setCalendarMode] = useState('month'); // 'month' | 'week'
   const [calendarCursor, setCalendarCursor] = useState(() => new Date());
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [periodModalContent, setPeriodModalContent] = useState(null);
+
+  const showCheckboxes = selectionMode || shiftHeld;
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === 'Shift') setShiftHeld(true);
+    };
+    const onKeyUp = (e) => {
+      if (e.key === 'Shift') setShiftHeld(false);
+    };
+    const onBlur = () => setShiftHeld(false);
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, []);
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -238,21 +271,29 @@ export default function App() {
       const cid = effectiveClientId();
       if (!cid) return;
       const stored = readStoredOAuth(cid);
-      if (stored && stored.expiresAt > Date.now() + 30_000) return;
-      silentAuthTried.current = true;
-      try {
-        const client = window.google.accounts.oauth2.initTokenClient({
-          client_id: cid,
-          scope: SCOPES,
-          callback: (response) => {
-            if (response.error) return;
-            writeStoredOAuth(cid, response.access_token, response.expires_in);
-            setAccessToken(response.access_token);
-          },
-        });
-        client.requestAccessToken({ prompt: 'none' });
-      } catch {
-        silentAuthTried.current = false;
+      const autoLogin = localStorage.getItem('google_tasks_auto_login');
+
+      if (stored && stored.expiresAt > Date.now() + 30_000) {
+        setAccessToken(stored.accessToken);
+        return;
+      }
+
+      if (autoLogin === 'true') {
+        silentAuthTried.current = true;
+        try {
+          const client = window.google.accounts.oauth2.initTokenClient({
+            client_id: cid,
+            scope: SCOPES,
+            callback: (response) => {
+              if (response.error) return;
+              writeStoredOAuth(cid, response.access_token, response.expires_in);
+              setAccessToken(response.access_token);
+            },
+          });
+          client.requestAccessToken({ prompt: 'none' });
+        } catch {
+          silentAuthTried.current = false;
+        }
       }
     };
     document.body.appendChild(script);
@@ -287,7 +328,17 @@ export default function App() {
       cleanTitle = cleanTitle.replace(re, ' ');
     }
     cleanTitle = cleanTitle.replace(/\s+/g, ' ').trim();
-    return { ...task, tags, platforms, cleanTitle: cleanTitle || '（タイトルなし）' };
+
+    let combinedDue = task.due;
+    const notes = task.notes || '';
+    const timeMatch = notes.match(/\[time:(\d{2}):(\d{2})\]/);
+    if (combinedDue && timeMatch) {
+      const d = new Date(combinedDue);
+      d.setHours(parseInt(timeMatch[1], 10), parseInt(timeMatch[2], 10), 0, 0);
+      combinedDue = d.toISOString();
+    }
+
+    return { ...task, tags, platforms, cleanTitle: cleanTitle || '（タイトルなし）', due: combinedDue };
   };
 
   const handleAuth = () => {
@@ -313,6 +364,7 @@ export default function App() {
             setError("認証に失敗しました。以前の権限でログイン中の場合は一度切断してください。");
             return;
           }
+          localStorage.setItem('google_tasks_auto_login', 'true');
           writeStoredOAuth(cid, response.access_token, response.expires_in);
           setAccessToken(response.access_token);
         },
@@ -383,11 +435,51 @@ export default function App() {
 
   const handleLogout = () => {
     clearStoredOAuth();
+    localStorage.removeItem('google_tasks_auto_login');
     setAccessToken(null);
     setTasks([]);
     setIsDemo(false);
     setSelectedTag(null);
+    setSelectedTasks(new Set());
+    setSelectionMode(false);
+    setIsMobileMenuOpen(false);
+    setPeriodModalContent(null);
     silentAuthTried.current = false;
+  };
+
+  const toggleSelection = (taskId) => {
+    setSelectedTasks((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(taskId)) newSet.delete(taskId);
+      else newSet.add(taskId);
+      return newSet;
+    });
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!window.confirm(`${selectedTasks.size}件のタスクを削除しますか？`)) return;
+    setLoading(true);
+    const tasksToDelete = tasks.filter((t) => selectedTasks.has(t.id));
+
+    setTasks((prev) => prev.filter((t) => !selectedTasks.has(t.id)));
+    setSelectedTasks(new Set());
+
+    if (!isDemo) {
+      try {
+        await Promise.all(
+          tasksToDelete.map((task) =>
+            fetch(`https://tasks.googleapis.com/tasks/v1/lists/${task.listId}/tasks/${task.id}`, {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${accessToken}` },
+            })
+          )
+        );
+      } catch {
+        alert('一部のタスクの削除に失敗しました');
+        fetchRealTasks(accessToken);
+      }
+    }
+    setLoading(false);
   };
 
   const handleRefresh = () => {
@@ -399,53 +491,73 @@ export default function App() {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
 
-    const prefix = newTaskTags.map(t => `[${t}]`).join('');
-    const fullTitle = prefix ? `${prefix} ${newTaskTitle}` : newTaskTitle;
-    const dueIso = newTaskDue ? new Date(newTaskDue).toISOString() : undefined;
-
     setLoading(true);
-    if (isDemo) {
-      const newTask = parseTask({
-        id: `demo-${Date.now()}`,
-        listId: "demo",
-        title: fullTitle,
-        status: "needsAction",
-        due: dueIso,
-        updated: new Date().toISOString()
-      });
-      setTasks([newTask, ...tasks]);
-      setNewTaskTitle('');
-      setNewTaskTags([]);
-      setNewTaskDue('');
-      setTaskFormExpanded(false);
-      setLoading(false);
-      return;
+    const lines = newTaskTitle.split('\n').filter((l) => l.trim() !== '');
+    const newTasks = [];
+
+    for (const line of lines) {
+      let titlePart = line.trim();
+      let dueIso = newTaskDue ? new Date(newTaskDue).toISOString() : undefined;
+
+      const commaIdx = titlePart.lastIndexOf(',');
+      if (commaIdx !== -1) {
+        const potentialDate = titlePart.slice(commaIdx + 1).trim();
+        const d = new Date(potentialDate);
+        if (!Number.isNaN(d.getTime())) {
+          titlePart = titlePart.slice(0, commaIdx).trim();
+          dueIso = d.toISOString();
+        }
+      }
+
+      const prefix = newTaskTags.map((t) => `[${t}]`).join('');
+      const fullTitle = prefix ? `${prefix} ${titlePart}` : titlePart;
+
+      let notes = '';
+      if (dueIso) {
+        const d = new Date(dueIso);
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        notes = `[time:${hh}:${mm}]`;
+      }
+
+      if (isDemo) {
+        newTasks.push({
+          id: `demo-${Date.now()}-${Math.random()}`,
+          listId: 'demo',
+          title: fullTitle,
+          status: 'needsAction',
+          due: dueIso,
+          notes,
+          updated: new Date().toISOString(),
+        });
+      } else {
+        const body = { title: fullTitle, notes };
+        if (dueIso) body.due = dueIso;
+        try {
+          const res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/@default/tasks', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            newTasks.push({ ...data, listId: '@default' });
+          }
+        } catch {
+          /* 行ごとの失敗はスキップ */
+        }
+      }
     }
 
-    try {
-      const body = { title: fullTitle };
-      if (dueIso) body.due = dueIso;
-      const res = await fetch(`https://tasks.googleapis.com/tasks/v1/lists/@default/tasks`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-      });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      const addedTask = parseTask({ ...data, listId: '@default' });
-      setTasks([addedTask, ...tasks]);
-      setNewTaskTitle('');
-      setNewTaskTags([]);
-      setNewTaskDue('');
-      setTaskFormExpanded(false);
-    } catch {
-      alert("タスクの追加に失敗しました");
-    } finally {
-      setLoading(false);
+    setTasks((prev) => [...newTasks.map(parseTask), ...prev]);
+    setNewTaskTitle('');
+    setNewTaskTags([]);
+    setNewTaskDue('');
+    setTaskFormExpanded(false);
+    if (!isDemo && newTasks.length === 0 && lines.length > 0) {
+      alert('タスクの追加に失敗しました');
     }
+    setLoading(false);
   };
 
   const toggleTaskStatus = async (task) => {
@@ -494,8 +606,11 @@ export default function App() {
         : tasks.filter(t => t.tags.includes(selectedTag));
 
     let weekTotal = 0, weekCompleted = 0;
+    const weekTasks = [];
     let nextWeekTotal = 0, nextWeekCompleted = 0;
+    const nextWeekTasks = [];
     let monthTotal = 0, monthCompleted = 0;
+    const monthTasks = [];
 
     let analyticsCompleted = 0;
     tasksForTopDashboard.forEach(t => {
@@ -506,14 +621,17 @@ export default function App() {
         if (dueDate >= weekStart && dueDate < weekEnd) {
           weekTotal++;
           if (isCompleted) weekCompleted++;
+          weekTasks.push(t);
         }
         if (dueDate >= nextWeekStart && dueDate < nextWeekEnd) {
           nextWeekTotal++;
           if (isCompleted) nextWeekCompleted++;
+          nextWeekTasks.push(t);
         }
         if (dueDate >= monthStart && dueDate < monthEnd) {
           monthTotal++;
           if (isCompleted) monthCompleted++;
+          monthTasks.push(t);
         }
       }
     });
@@ -548,12 +666,14 @@ export default function App() {
       const weekEndN = addWeeks(weekStartN, 1);
       let wTotal = 0;
       let wDone = 0;
+      const wTasks = [];
       tasksForTopDashboard.forEach(t => {
         if (!t.due) return;
         const d = new Date(t.due);
         if (d >= weekStartN && d < weekEndN) {
           wTotal++;
           if (t.status === 'completed') wDone++;
+          wTasks.push(t);
         }
       });
       const wRate = wTotal === 0 ? 0 : Math.round((wDone / wTotal) * 100);
@@ -565,6 +685,7 @@ export default function App() {
         rate: wRate,
         isCurrent: i === 0,
         isFuture: i < 0,
+        tasks: wTasks,
       });
     }
 
@@ -574,12 +695,14 @@ export default function App() {
       const mStart = new Date(ref.getFullYear(), ref.getMonth(), 1);
       const mEnd = new Date(ref.getFullYear(), ref.getMonth() + 1, 1);
       let mt = 0, mc = 0;
+      const mTasks = [];
       tasksForTopDashboard.forEach(t => {
         if (!t.due) return;
         const d = new Date(t.due);
         if (d >= mStart && d < mEnd) {
           mt++;
           if (t.status === 'completed') mc++;
+          mTasks.push(t);
         }
       });
       monthlyHistory.push({
@@ -590,6 +713,7 @@ export default function App() {
         completed: mc,
         rate: mt === 0 ? 0 : Math.round((mc / mt) * 100),
         isCurrent: i === 0,
+        tasks: mTasks,
       });
     }
 
@@ -599,12 +723,14 @@ export default function App() {
       const yStart = new Date(y, 0, 1);
       const yEnd = new Date(y + 1, 0, 1);
       let yt = 0, yc = 0;
+      const yTasks = [];
       tasksForTopDashboard.forEach(t => {
         if (!t.due) return;
         const d = new Date(t.due);
         if (d >= yStart && d < yEnd) {
           yt++;
           if (t.status === 'completed') yc++;
+          yTasks.push(t);
         }
       });
       yearlyHistory.push({
@@ -614,6 +740,7 @@ export default function App() {
         completed: yc,
         rate: yt === 0 ? 0 : Math.round((yc / yt) * 100),
         isCurrent: y === cy,
+        tasks: yTasks,
       });
     }
 
@@ -624,16 +751,19 @@ export default function App() {
         rate: weekTotal === 0 ? 0 : Math.round((weekCompleted / weekTotal) * 100),
         completed: weekCompleted,
         totalTarget: weekTotal,
+        tasks: weekTasks,
       },
       nextWeekStats: {
         rate: nextWeekTotal === 0 ? 0 : Math.round((nextWeekCompleted / nextWeekTotal) * 100),
         completed: nextWeekCompleted,
         totalTarget: nextWeekTotal,
+        tasks: nextWeekTasks,
       },
       monthStats: {
         rate: monthTotal === 0 ? 0 : Math.round((monthCompleted / monthTotal) * 100),
         completed: monthCompleted,
         totalTarget: monthTotal,
+        tasks: monthTasks,
       },
       weeklyHistory: history,
       monthlyHistory,
@@ -655,8 +785,6 @@ export default function App() {
 
     const now = new Date();
     const { start: weekStart, end: weekEnd } = getWeekRange(now);
-    const nextWeekStart = addWeeks(weekStart, 1);
-    const nextWeekEnd = addWeeks(weekStart, 2);
 
     let active = filtered.filter(t => t.status === 'needsAction');
     if (showOnlyNoDue) {
@@ -675,15 +803,26 @@ export default function App() {
       };
     }
 
-    const buckets = ACTIVE_SECTION_TITLES.map((title, bucket) => ({ bucket, title, tasks: [] }));
+    const buckets = ACTIVE_SECTION_TITLES.map((title, bucket) => {
+      let groupTitle = title;
+      if (bucket === 1) {
+        groupTitle = `今日 (${now.getMonth() + 1}/${now.getDate()}(${WEEKDAYS[now.getDay()]}))`;
+      } else if (bucket === 2) {
+        const tmr = new Date(now);
+        tmr.setDate(tmr.getDate() + 1);
+        groupTitle = `明日 (${tmr.getMonth() + 1}/${tmr.getDate()}(${WEEKDAYS[tmr.getDay()]}))`;
+      }
+      return { bucket, title: groupTitle, tasks: [] };
+    });
+
     active.forEach(task => {
-      const { bucket } = getActiveSortKey(task, now, weekStart, weekEnd, nextWeekStart, nextWeekEnd);
+      const { bucket } = getActiveSortKey(task, now, weekStart, weekEnd);
       buckets[bucket].tasks.push(task);
     });
     buckets.forEach(b => {
       b.tasks.sort((a, c) => {
-        const ka = getActiveSortKey(a, now, weekStart, weekEnd, nextWeekStart, nextWeekEnd);
-        const kc = getActiveSortKey(c, now, weekStart, weekEnd, nextWeekStart, nextWeekEnd);
+        const ka = getActiveSortKey(a, now, weekStart, weekEnd);
+        const kc = getActiveSortKey(c, now, weekStart, weekEnd);
         return ka.dueMs - kc.dueMs;
       });
     });
@@ -803,36 +942,67 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans pb-12">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <LayoutDashboard className="text-blue-600" size={24} />
             <h1 className="font-bold text-lg hidden sm:block">Task Dashboard</h1>
             {isDemo && <span className="text-xs font-medium bg-amber-100 text-amber-800 px-2 py-0.5 rounded border border-amber-200">DEMO</span>}
           </div>
-          <div className="flex items-center gap-2 sm:gap-4">
+
+          <div className="hidden sm:flex items-center gap-2 sm:gap-4">
             <button
+              type="button"
               onClick={handleRefresh}
               disabled={loading}
               className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition disabled:opacity-50"
               title="更新"
             >
-              <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
+              <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
             </button>
             <button
+              type="button"
               onClick={handleLogout}
               className="flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg transition"
             >
-              <LogOut size={16} />
-              <span className="hidden sm:inline">切断</span>
+              <LogOut size={16} /> 切断
             </button>
           </div>
+
+          <button
+            type="button"
+            className="sm:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-expanded={isMobileMenuOpen}
+            aria-label="メニュー"
+          >
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
+
+        {isMobileMenuOpen && (
+          <div className="sm:hidden border-t border-slate-100 bg-slate-50 px-4 py-4 flex flex-col gap-4 animate-in slide-in-from-top-2 shadow-inner">
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => { setActiveTab('active'); setIsMobileMenuOpen(false); }} className={`py-2 text-sm font-semibold rounded-lg border ${activeTab === 'active' ? 'bg-white text-blue-600 border-blue-200 shadow-sm' : 'bg-transparent text-slate-600 border-transparent hover:bg-slate-100'}`}><Circle size={14} className="inline mr-1" /> アクティブ</button>
+              <button type="button" onClick={() => { setActiveTab('history'); setIsMobileMenuOpen(false); }} className={`py-2 text-sm font-semibold rounded-lg border ${activeTab === 'history' ? 'bg-white text-slate-800 border-slate-200 shadow-sm' : 'bg-transparent text-slate-600 border-transparent hover:bg-slate-100'}`}><History size={14} className="inline mr-1" /> 履歴</button>
+              <button type="button" onClick={() => { setActiveTab('calendar'); setIsMobileMenuOpen(false); }} className={`py-2 text-sm font-semibold rounded-lg border ${activeTab === 'calendar' ? 'bg-white text-violet-600 border-violet-200 shadow-sm' : 'bg-transparent text-slate-600 border-transparent hover:bg-slate-100'}`}><Calendar size={14} className="inline mr-1" /> カレンダー</button>
+              <button type="button" onClick={() => { setActiveTab('analytics'); setIsMobileMenuOpen(false); }} className={`py-2 text-sm font-semibold rounded-lg border ${activeTab === 'analytics' ? 'bg-white text-indigo-600 border-indigo-200 shadow-sm' : 'bg-transparent text-slate-600 border-transparent hover:bg-slate-100'}`}><BarChart3 size={14} className="inline mr-1" /> 分析</button>
+            </div>
+            <div className="flex gap-2 border-t border-slate-200 pt-4">
+              <button type="button" onClick={() => { handleRefresh(); setIsMobileMenuOpen(false); }} className="flex-1 flex justify-center items-center gap-2 py-2 bg-white border border-slate-200 shadow-sm rounded-lg text-sm font-medium text-slate-700">
+                <RefreshCw size={16} className={loading ? 'animate-spin' : ''} /> 更新
+              </button>
+              <button type="button" onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }} className="flex-1 flex justify-center items-center gap-2 py-2 bg-white border border-slate-200 shadow-sm rounded-lg text-sm font-medium text-red-600">
+                <LogOut size={16} /> 切断
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 mt-6 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="md:col-span-1 bg-gradient-to-br from-blue-600 to-indigo-700 p-5 rounded-xl shadow-sm text-white flex flex-col justify-between relative overflow-hidden">
+        <div className="flex sm:grid sm:grid-cols-4 gap-4 overflow-x-auto snap-x pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0 sm:overflow-visible">
+          <div className="min-w-[260px] sm:min-w-0 sm:col-span-1 bg-gradient-to-br from-blue-600 to-indigo-700 p-5 rounded-xl shadow-sm text-white flex flex-col justify-between relative overflow-hidden snap-start shrink-0">
             <div className="relative z-10">
               <p className="text-blue-100 text-sm font-medium mb-1 flex items-center gap-1.5"><TrendingUp size={16} /> 今週の達成率</p>
               <div className="flex items-baseline gap-1">
@@ -848,66 +1018,69 @@ export default function App() {
             <Target className="absolute -right-4 -bottom-4 text-white opacity-10" size={100} />
           </div>
 
-          <PeriodCard
-            label="今週のタスク"
-            icon={<Calendar size={16} />}
-            stats={weeklyStats}
-            accent="text-blue-600"
-          />
-          <PeriodCard
-            label="来週のタスク"
-            icon={<Calendar size={16} />}
-            stats={nextWeekStats}
-            accent="text-indigo-600"
-          />
-          <PeriodCard
-            label="今月のタスク"
-            icon={<Calendar size={16} />}
-            stats={monthStats}
-            accent="text-emerald-600"
-          />
+          <div className="min-w-[200px] sm:min-w-0 shrink-0 snap-start">
+            <PeriodCard
+              label="今週のタスク"
+              icon={<Calendar size={16} />}
+              stats={weeklyStats}
+              accent="text-blue-600"
+              onClick={() => setPeriodModalContent({ title: '今週のタスク', tasks: weeklyStats.tasks })}
+            />
+          </div>
+          <div className="min-w-[200px] sm:min-w-0 shrink-0 snap-start">
+            <PeriodCard
+              label="来週のタスク"
+              icon={<Calendar size={16} />}
+              stats={nextWeekStats}
+              accent="text-indigo-600"
+              onClick={() => setPeriodModalContent({ title: '来週のタスク', tasks: nextWeekStats.tasks })}
+            />
+          </div>
+          <div className="min-w-[200px] sm:min-w-0 shrink-0 snap-start">
+            <PeriodCard
+              label="今月のタスク"
+              icon={<Calendar size={16} />}
+              stats={monthStats}
+              accent="text-emerald-600"
+              onClick={() => setPeriodModalContent({ title: '今月のタスク', tasks: monthStats.tasks })}
+            />
+          </div>
         </div>
 
         <div className="flex flex-col md:flex-row gap-6">
           <div className="w-full md:w-64 flex-shrink-0">
-            <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 sticky top-24">
-              <h2 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2 uppercase tracking-wide">
+            <div className="bg-white md:rounded-xl shadow-sm md:border border-slate-100 p-3 md:p-4 sticky top-24 -mx-4 px-4 md:mx-0">
+              <h2 className="text-xs md:text-sm font-bold text-slate-800 mb-2 md:mb-3 flex items-center gap-2 uppercase tracking-wide">
                 <Tag size={16} /> Tags & Progress
               </h2>
-              <div className="flex flex-row md:flex-col flex-wrap gap-2">
+              <div className="flex overflow-x-auto md:flex-col gap-2 pb-2 md:pb-0 snap-x hide-scrollbar">
                 <button
+                  type="button"
                   onClick={() => setSelectedTag(null)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium text-left transition ${
-                    selectedTag === null ? 'bg-slate-800 text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'
-                  }`}
+                  className={`shrink-0 snap-start px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium text-left transition ${selectedTag === null ? 'bg-slate-800 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200 md:border-transparent'}`}
                 >
-                  すべてのタスク ({stats.total})
+                  すべて ({stats.total})
                 </button>
                 {tagStats.map((tagData) => (
                   <button
+                    type="button"
                     key={tagData.tag}
                     onClick={() => setSelectedTag(tagData.tag)}
-                    className={`p-3 rounded-lg text-sm font-medium text-left transition flex flex-col gap-1.5 ${
-                      selectedTag === tagData.tag
-                        ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm'
-                        : 'text-slate-600 hover:bg-slate-100 border border-transparent'
+                    className={`shrink-0 snap-start p-2 md:p-3 w-[140px] md:w-auto rounded-lg text-left transition flex flex-col gap-1.5 border ${
+                      selectedTag === tagData.tag ? 'bg-blue-50 text-blue-700 border-blue-200 shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200 md:border-transparent'
                     }`}
                   >
                     <div className="flex justify-between items-center w-full">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-2.5 h-2.5 rounded-full ${tagData.tag === '未分類' ? 'bg-slate-300' : getTagColor(tagData.tag).split(' ')[0]}`}></span>
-                        <span className="truncate max-w-[120px]">{tagData.tag}</span>
+                      <div className="flex items-center gap-1.5 overflow-hidden">
+                        <span className={`shrink-0 w-2 h-2 rounded-full ${tagData.tag === '未分類' ? 'bg-slate-300' : getTagColor(tagData.tag).split(' ')[0]}`}></span>
+                        <span className="text-xs md:text-sm font-medium truncate">{tagData.tag}</span>
                       </div>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${selectedTag === tagData.tag ? 'bg-blue-100' : 'bg-slate-100'}`}>
+                      <span className={`text-[10px] md:text-xs px-1.5 py-0.5 rounded-full shrink-0 ${selectedTag === tagData.tag ? 'bg-blue-100' : 'bg-slate-100'}`}>
                         {tagData.active > 0 ? tagData.active : '✓'}
                       </span>
                     </div>
-                    <div className="w-full bg-slate-200/70 rounded-full h-1.5 mt-1 overflow-hidden">
-                      <div className={`h-1.5 rounded-full transition-all duration-500 ${tagData.rate === 100 ? 'bg-emerald-400' : 'bg-blue-500'}`} style={{ width: `${tagData.rate}%` }}></div>
-                    </div>
-                    <div className="flex justify-between text-[10px] text-slate-400">
-                      <span>完了: {tagData.completed}/{tagData.total}</span>
-                      <span className="font-semibold">{tagData.rate}%</span>
+                    <div className="w-full bg-slate-200/70 rounded-full h-1 mt-0.5 overflow-hidden">
+                      <div className={`h-1 rounded-full transition-all duration-500 ${tagData.rate === 100 ? 'bg-emerald-400' : 'bg-blue-500'}`} style={{ width: `${tagData.rate}%` }}></div>
                     </div>
                   </button>
                 ))}
@@ -916,28 +1089,32 @@ export default function App() {
           </div>
 
           <div className="flex-grow min-w-0 space-y-4">
-            <div className="flex flex-wrap gap-2 p-1 bg-slate-200/60 rounded-lg w-full">
+            <div className="hidden sm:flex flex-wrap gap-2 p-1 bg-slate-200/60 rounded-lg w-full">
               <button
+                type="button"
                 onClick={() => setActiveTab('active')}
-                className={`flex-1 min-w-[100px] flex items-center justify-center gap-1.5 py-2 text-xs sm:text-sm font-semibold rounded-md transition ${activeTab === 'active' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`flex-1 min-w-[100px] flex items-center justify-center gap-1.5 py-2 text-sm font-semibold rounded-md transition ${activeTab === 'active' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 <Circle size={16} /> アクティブ
               </button>
               <button
+                type="button"
                 onClick={() => setActiveTab('history')}
-                className={`flex-1 min-w-[100px] flex items-center justify-center gap-1.5 py-2 text-xs sm:text-sm font-semibold rounded-md transition ${activeTab === 'history' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`flex-1 min-w-[100px] flex items-center justify-center gap-1.5 py-2 text-sm font-semibold rounded-md transition ${activeTab === 'history' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 <History size={16} /> 履歴
               </button>
               <button
+                type="button"
                 onClick={() => setActiveTab('calendar')}
-                className={`flex-1 min-w-[100px] flex items-center justify-center gap-1.5 py-2 text-xs sm:text-sm font-semibold rounded-md transition ${activeTab === 'calendar' ? 'bg-white text-violet-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`flex-1 min-w-[100px] flex items-center justify-center gap-1.5 py-2 text-sm font-semibold rounded-md transition ${activeTab === 'calendar' ? 'bg-white text-violet-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 <Calendar size={16} /> カレンダー
               </button>
               <button
+                type="button"
                 onClick={() => setActiveTab('analytics')}
-                className={`flex-1 min-w-[100px] flex items-center justify-center gap-1.5 py-2 text-xs sm:text-sm font-semibold rounded-md transition ${activeTab === 'analytics' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`flex-1 min-w-[100px] flex items-center justify-center gap-1.5 py-2 text-sm font-semibold rounded-md transition ${activeTab === 'analytics' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 <BarChart3 size={16} /> 分析
               </button>
@@ -970,17 +1147,37 @@ export default function App() {
                         <ChevronUp size={18} />
                       </button>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                      <input
-                        type="text"
-                        placeholder="内容を入力... (Enterで追加)"
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2">
+                        <span className="text-[10px] text-slate-500 leading-snug">改行で複数追加。カンマ区切りで日時指定可 (例: 買い物, 2024-05-01 15:00)</span>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const text = '以下のタスクリストを読み込み、それぞれのタスクを「タスク内容, YYYY-MM-DD HH:mm」の1行1タスク形式で出力してください。\n\n';
+                            try {
+                              await navigator.clipboard.writeText(text);
+                              alert('AI用プロンプトの雛形をコピーしました！');
+                            } catch {
+                              alert('クリップボードへのコピーに失敗しました');
+                            }
+                          }}
+                          className="text-xs text-blue-600 hover:underline flex items-center gap-1 shrink-0 self-end sm:self-auto"
+                        >
+                          <Copy size={12} /> AI用プロンプト雛形をコピー
+                        </button>
+                      </div>
+                      <textarea
+                        placeholder="内容を入力..."
                         value={newTaskTitle}
                         onChange={(e) => setNewTaskTitle(e.target.value)}
-                        className="flex-grow w-full py-2 px-1 outline-none text-slate-800 placeholder-slate-400 bg-transparent border-b border-slate-200 focus:border-blue-500"
+                        rows={3}
+                        className="w-full py-2 px-3 outline-none text-slate-800 placeholder-slate-400 bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-500 focus:bg-white resize-y text-sm"
                       />
-                      <button type="submit" disabled={!newTaskTitle.trim() || loading} className="shrink-0 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg disabled:opacity-50 hover:bg-blue-700 transition">
-                        追加
-                      </button>
+                      <div className="flex justify-end">
+                        <button type="submit" disabled={!newTaskTitle.trim() || loading} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg disabled:opacity-50 hover:bg-blue-700 transition shadow-sm">
+                          追加
+                        </button>
+                      </div>
                     </div>
                     <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
                       <span className="text-xs font-medium text-slate-400 flex items-center gap-1"><Tag size={12} /> タグ:</span>
@@ -1039,7 +1236,7 @@ export default function App() {
                         明日中
                       </button>
                       <span className="text-[10px] text-slate-400 w-full sm:w-auto sm:ml-auto">
-                        ※ Google Tasks APIは時刻部分を保持しない場合があります
+                        ※ APIは期限の時刻を落とすことがあるため、時刻はメモ欄の [time:HH:mm] にも保存します
                       </span>
                     </div>
                   </form>
@@ -1076,6 +1273,7 @@ export default function App() {
                 completedTasks={analyticsCompletedTasks}
                 tagStats={tagStats}
                 selectedTag={selectedTag}
+                toggleTaskStatus={toggleTaskStatus}
               />
             ) : activeTab === 'calendar' ? (
               <CalendarView
@@ -1089,6 +1287,27 @@ export default function App() {
               />
             ) : (
               <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                <div className="px-4 pt-3 pb-2.5 border-b border-slate-100 bg-white flex flex-wrap items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectionMode((prev) => {
+                        if (prev) setSelectedTasks(new Set());
+                        return !prev;
+                      });
+                    }}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition border ${
+                      selectionMode
+                        ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    {selectionMode ? '選択モードを終了' : '選択モード'}
+                  </button>
+                  <span className="text-[11px] text-slate-400">
+                    Shift を押している間も選択できます
+                  </span>
+                </div>
                 <div className="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
                   <h2 className="font-semibold text-slate-800 flex items-center gap-2">
                     {selectedTag ? (
@@ -1101,6 +1320,18 @@ export default function App() {
                     {activeTab === 'active' ? activeTotalCount : historyList.length} 件
                   </span>
                 </div>
+
+                {selectedTasks.size > 0 && (
+                  <div className="bg-slate-800 text-white px-4 py-3 shadow-lg flex items-center justify-between sticky top-[108px] z-[25] animate-in fade-in slide-in-from-top-2 border-b border-slate-700">
+                    <span className="text-sm font-medium">{selectedTasks.size} 件を選択中</span>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => setSelectedTasks(new Set())} className="px-3 py-1.5 text-xs font-medium bg-slate-700 hover:bg-slate-600 rounded-lg transition">キャンセル</button>
+                      <button type="button" onClick={handleDeleteSelected} className="px-3 py-1.5 text-xs font-medium bg-red-500 hover:bg-red-600 text-white rounded-lg transition flex items-center gap-1.5 shadow-sm">
+                        <Trash2 size={14} /> 削除
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {loading ? (
                   <div className="p-12 text-center text-slate-400 flex flex-col items-center">
@@ -1134,12 +1365,39 @@ export default function App() {
                                     : 'hover:bg-slate-50'
                                 }`}
                               >
-                                <button
-                                  onClick={() => toggleTaskStatus(task)}
-                                  className="mt-0.5 flex-shrink-0 focus:outline-none transition-transform active:scale-90"
-                                >
-                                  <Circle className={`${overdue ? 'text-red-400 group-hover:text-red-500' : 'text-slate-300 group-hover:text-blue-500'} transition`} size={22} />
-                                </button>
+                                {showCheckboxes ? (
+                                  <div className="flex items-center gap-2 mt-0.5 shrink-0">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedTasks.has(task.id)}
+                                      onChange={() => toggleSelection(task.id)}
+                                      className="w-4 h-4 text-blue-600 rounded border-slate-300 cursor-pointer focus:ring-blue-500"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleTaskStatus(task)}
+                                      className="focus:outline-none transition-transform active:scale-90"
+                                    >
+                                      {task.status === 'completed' ? (
+                                        <CheckCircle2 className="text-emerald-500 hover:text-emerald-600 transition" size={22} />
+                                      ) : (
+                                        <Circle className={`${overdue ? 'text-red-400 group-hover:text-red-500' : 'text-slate-300 group-hover:text-blue-500'} transition`} size={22} />
+                                      )}
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleTaskStatus(task)}
+                                    className="mt-0.5 flex-shrink-0 focus:outline-none transition-transform active:scale-90"
+                                  >
+                                    {task.status === 'completed' ? (
+                                      <CheckCircle2 className="text-emerald-500 hover:text-emerald-600 transition" size={22} />
+                                    ) : (
+                                      <Circle className={`${overdue ? 'text-red-400 group-hover:text-red-500' : 'text-slate-300 group-hover:text-blue-500'} transition`} size={22} />
+                                    )}
+                                  </button>
+                                )}
                                 <div className="flex-grow min-w-0">
                                   <h3 className={`font-medium text-base mb-1.5 whitespace-normal break-words ${overdue ? 'text-red-700' : 'text-slate-800'}`}>
                                     {task.cleanTitle}
@@ -1201,16 +1459,39 @@ export default function App() {
                               : 'hover:bg-slate-50'
                         }`}
                       >
-                        <button
-                          onClick={() => toggleTaskStatus(task)}
-                          className="mt-0.5 flex-shrink-0 focus:outline-none transition-transform active:scale-90"
-                        >
-                          {task.status === 'completed' ? (
-                            <CheckCircle2 className="text-emerald-500 hover:text-emerald-600 transition" size={22} />
-                          ) : (
-                            <Circle className={`${overdue ? 'text-red-400 group-hover:text-red-500' : 'text-slate-300 group-hover:text-blue-500'} transition`} size={22} />
-                          )}
-                        </button>
+                        {showCheckboxes ? (
+                          <div className="flex items-center gap-2 mt-0.5 shrink-0">
+                            <input
+                              type="checkbox"
+                              checked={selectedTasks.has(task.id)}
+                              onChange={() => toggleSelection(task.id)}
+                              className="w-4 h-4 text-blue-600 rounded border-slate-300 cursor-pointer focus:ring-blue-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => toggleTaskStatus(task)}
+                              className="focus:outline-none transition-transform active:scale-90"
+                            >
+                              {task.status === 'completed' ? (
+                                <CheckCircle2 className="text-emerald-500 hover:text-emerald-600 transition" size={22} />
+                              ) : (
+                                <Circle className={`${overdue ? 'text-red-400 group-hover:text-red-500' : 'text-slate-300 group-hover:text-blue-500'} transition`} size={22} />
+                              )}
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => toggleTaskStatus(task)}
+                            className="mt-0.5 flex-shrink-0 focus:outline-none transition-transform active:scale-90"
+                          >
+                            {task.status === 'completed' ? (
+                              <CheckCircle2 className="text-emerald-500 hover:text-emerald-600 transition" size={22} />
+                            ) : (
+                              <Circle className={`${overdue ? 'text-red-400 group-hover:text-red-500' : 'text-slate-300 group-hover:text-blue-500'} transition`} size={22} />
+                            )}
+                          </button>
+                        )}
 
                         <div className="flex-grow min-w-0">
                           <h3 className={`font-medium text-base mb-1.5 whitespace-normal break-words ${
@@ -1274,6 +1555,137 @@ export default function App() {
           </div>
         </div>
       </main>
+
+      {periodModalContent && (() => {
+        const modalTasks = periodModalContent.tasks
+          .map((snapshot) => tasks.find((x) => x.id === snapshot.id) ?? snapshot)
+          .sort((a, b) => (a.due ? new Date(a.due).getTime() : Infinity) - (b.due ? new Date(b.due).getTime() : Infinity));
+
+        const mTot = modalTasks.length;
+        const mComp = modalTasks.filter((t) => t.status === 'completed').length;
+        const mRate = mTot === 0 ? 0 : Math.round((mComp / mTot) * 100);
+
+        const mTagData = {};
+        modalTasks.forEach((t) => {
+          const tagList = t.tags.length === 0 ? ['未分類'] : t.tags;
+          tagList.forEach((tag) => {
+            if (!mTagData[tag]) mTagData[tag] = { t: 0, c: 0 };
+            mTagData[tag].t++;
+            if (t.status === 'completed') mTagData[tag].c++;
+          });
+        });
+
+        const grouped = {};
+        modalTasks.forEach((t) => {
+          const dateLabel = t.due ? formatDue(t.due).split(' ')[0] : '期限なし';
+          if (!grouped[dateLabel]) grouped[dateLabel] = [];
+          grouped[dateLabel].push(t);
+        });
+        const groupedEntries = Object.entries(grouped).sort(([ka, aTasks], [kb, bTasks]) => {
+          if (ka === '期限なし') return 1;
+          if (kb === '期限なし') return -1;
+          const minA = Math.min(...aTasks.map((x) => (x.due ? new Date(x.due).getTime() : Infinity)));
+          const minB = Math.min(...bTasks.map((x) => (x.due ? new Date(x.due).getTime() : Infinity)));
+          return minA - minB;
+        });
+
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in"
+            onClick={() => setPeriodModalContent(null)}
+            role="presentation"
+          >
+            <div
+              className="bg-white rounded-xl shadow-xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95"
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="period-modal-title"
+            >
+              <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50 shrink-0">
+                <h3 id="period-modal-title" className="font-bold text-slate-800">{periodModalContent.title}</h3>
+                <button type="button" onClick={() => setPeriodModalContent(null)} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200 transition" aria-label="閉じる">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-4 border-b border-slate-100 bg-white shrink-0 space-y-3">
+                <div>
+                  <div className="flex justify-between text-xs font-semibold text-slate-600 mb-1">
+                    <span>全体の進捗</span>
+                    <span>{mRate}% ({mComp}/{mTot})</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-2">
+                    <div className={`h-2 rounded-full ${mRate === 100 ? 'bg-emerald-400' : 'bg-blue-500'}`} style={{ width: `${mRate}%` }} />
+                  </div>
+                </div>
+                {Object.keys(mTagData).length > 0 && (
+                  <div className="flex flex-wrap gap-x-4 gap-y-2">
+                    {Object.entries(mTagData).map(([tag, { t, c }]) => {
+                      const r = t === 0 ? 0 : Math.round((c / t) * 100);
+                      return (
+                        <div key={tag} className="flex-1 min-w-[120px]">
+                          <div className="flex justify-between text-[10px] text-slate-500 mb-0.5">
+                            <span className="truncate pr-1">{tag}</span>
+                            <span>{r}%</span>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-1">
+                            <div className={`h-1 rounded-full ${r === 100 ? 'bg-emerald-400' : 'bg-blue-400'}`} style={{ width: `${r}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="overflow-y-auto p-4 space-y-5 bg-slate-50/50">
+                {modalTasks.length === 0 ? (
+                  <p className="text-center text-sm text-slate-400 py-8">タスクがありません</p>
+                ) : (
+                  groupedEntries.map(([dateLabel, gTasks]) => {
+                    const sorted = [...gTasks].sort((a, b) => (a.due ? new Date(a.due).getTime() : 0) - (b.due ? new Date(b.due).getTime() : 0));
+                    return (
+                      <div key={dateLabel}>
+                        <h4 className="text-xs font-bold text-slate-500 mb-2 border-b border-slate-200 pb-1">{dateLabel}</h4>
+                        <div className="space-y-2">
+                          {sorted.map((task) => {
+                            const overdue = task.status !== 'completed' && isOverdue(task.due);
+                            return (
+                              <div key={task.id} className="flex items-start gap-3 p-3 bg-white border border-slate-100 rounded-lg shadow-sm">
+                                <button type="button" onClick={() => toggleTaskStatus(task)} className="mt-0.5 shrink-0 focus:outline-none transition-transform active:scale-90">
+                                  {task.status === 'completed'
+                                    ? <CheckCircle2 size={18} className="text-emerald-500" />
+                                    : <Circle size={18} className={overdue ? 'text-red-400' : 'text-slate-300'} />}
+                                </button>
+                                <div className="min-w-0 flex-1">
+                                  <p className={`text-sm font-medium whitespace-normal break-words leading-tight ${task.status === 'completed' ? 'line-through text-slate-400' : overdue ? 'text-red-700' : 'text-slate-800'}`}>
+                                    {task.cleanTitle}
+                                  </p>
+                                  {((task.platforms?.length > 0) || (task.tags?.length > 0)) && (
+                                    <div className="flex flex-wrap gap-1 mt-1.5">
+                                      {(task.platforms || []).map((p) => (
+                                        <span key={p} className={`text-[9px] px-1.5 py-px rounded border ${getLmsBadgeClass(p)}`}>{p}</span>
+                                      ))}
+                                      {(task.tags || []).map((tag) => (
+                                        <span key={tag} className={`text-[9px] px-1.5 py-px rounded border ${getTagColor(tag)}`}>{tag}</span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -1337,6 +1749,27 @@ function CalendarView({ tasks, mode, setMode, cursor, setCursor, toggleTaskStatu
     );
   };
 
+  const displayedTasks = tasks.filter((t) => {
+    if (!t.due) return false;
+    const d = new Date(t.due);
+    if (mode === 'month') return d.getFullYear() === y && d.getMonth() === m;
+    return d >= weekStart && d < addWeeks(weekStart, 1);
+  });
+
+  const dTot = displayedTasks.length;
+  const dComp = displayedTasks.filter((t) => t.status === 'completed').length;
+  const dRate = dTot === 0 ? 0 : Math.round((dComp / dTot) * 100);
+
+  const dTagData = {};
+  displayedTasks.forEach((t) => {
+    const tagList = t.tags.length === 0 ? ['未分類'] : t.tags;
+    tagList.forEach((tag) => {
+      if (!dTagData[tag]) dTagData[tag] = { t: 0, c: 0 };
+      dTagData[tag].t++;
+      if (t.status === 'completed') dTagData[tag].c++;
+    });
+  });
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -1358,6 +1791,38 @@ function CalendarView({ tasks, mode, setMode, cursor, setCursor, toggleTaskStatu
             <ChevronRight size={18} />
           </button>
         </div>
+      </div>
+
+      <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 space-y-2">
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <div className="flex justify-between text-xs font-bold text-slate-600 mb-1">
+              <span>{mode === 'month' ? '今月の全体達成率' : '今週の全体達成率'}</span>
+              <span>{dRate}% ({dComp}/{dTot})</span>
+            </div>
+            <div className="w-full bg-slate-200 rounded-full h-1.5">
+              <div className={`h-1.5 rounded-full ${dRate === 100 ? 'bg-emerald-400' : 'bg-blue-500'}`} style={{ width: `${dRate}%` }} />
+            </div>
+          </div>
+        </div>
+        {Object.keys(dTagData).length > 0 && (
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5 pt-1.5 border-t border-slate-200">
+            {Object.entries(dTagData).map(([tag, { t, c }]) => {
+              const r = t === 0 ? 0 : Math.round((c / t) * 100);
+              return (
+                <div key={tag} className="flex flex-col w-[100px] sm:w-[120px]">
+                  <div className="flex justify-between text-[9px] text-slate-500 mb-0.5">
+                    <span className="truncate pr-1">{tag}</span>
+                    <span>{r}%</span>
+                  </div>
+                  <div className="w-full bg-slate-200 rounded-full h-1">
+                    <div className={`h-1 rounded-full ${r === 100 ? 'bg-emerald-400' : 'bg-blue-400'}`} style={{ width: `${r}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {mode === 'month' ? (
@@ -1420,11 +1885,22 @@ function CalendarView({ tasks, mode, setMode, cursor, setCursor, toggleTaskStatu
   );
 }
 
-function PeriodCard({ label, icon, stats, accent }) {
+function PeriodCard({ label, icon, stats, accent, onClick }) {
   const { completed, totalTarget, rate } = stats;
   const isEmpty = totalTarget === 0;
   return (
-    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-center items-start">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+      className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-center items-start cursor-pointer hover:border-blue-200 hover:shadow-md transition h-full"
+    >
       <p className="text-sm font-medium text-slate-500 flex items-center gap-1.5">
         {icon}{label}
       </p>
@@ -1450,10 +1926,13 @@ function PeriodCard({ label, icon, stats, accent }) {
   );
 }
 
-function AnalyticsView({ weeklyHistory, monthlyHistory, yearlyHistory, overallCompletionRate, totalTasks, completedTasks, tagStats, selectedTag }) {
+function AnalyticsView({ weeklyHistory, monthlyHistory, yearlyHistory, overallCompletionRate, totalTasks, completedTasks, tagStats, selectedTag, toggleTaskStatus }) {
   const [granularity, setGranularity] = useState('week');
+  const [expandedRow, setExpandedRow] = useState(null);
   const series = granularity === 'week' ? weeklyHistory : granularity === 'month' ? monthlyHistory : yearlyHistory;
   const maxRate = Math.max(100, ...series.map(w => w.rate));
+
+  useEffect(() => setExpandedRow(null), [granularity]);
 
   const scopeHint = selectedTag
     ? `（タグ「${selectedTag}」のタスクのみ）`
@@ -1597,6 +2076,7 @@ function AnalyticsView({ weeklyHistory, monthlyHistory, yearlyHistory, overallCo
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
         <p className="text-sm font-semibold text-slate-700 mb-3">
           {granularity === 'week' ? '週次' : granularity === 'month' ? '月次' : '年次'}の詳細{scopeHint}
+          <span className="text-xs font-normal text-slate-400 ml-2">行をクリックしてタスクを展開</span>
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -1609,24 +2089,69 @@ function AnalyticsView({ weeklyHistory, monthlyHistory, yearlyHistory, overallCo
               </tr>
             </thead>
             <tbody>
-              {series.slice().reverse().map(w => (
-                <tr key={`t-${w.key}`} className="border-b border-slate-50 last:border-0">
-                  <td className="py-2 pr-4 text-slate-700">
-                    {granularity === 'week' && w.isCurrent
-                      ? <span className="font-semibold text-indigo-600">今週 <span className="text-slate-400 font-normal">({w.label})</span></span>
-                      : granularity === 'week' && w.isFuture
-                        ? <span className="text-slate-500">来週 <span className="text-slate-400">({w.label})</span></span>
-                        : w.label}
-                  </td>
-                  <td className="py-2 pr-4 text-slate-600">{w.total}</td>
-                  <td className="py-2 pr-4 text-slate-600">{w.completed}</td>
-                  <td className="py-2 pr-4 font-semibold">
-                    <span className={w.total === 0 ? 'text-slate-300' : w.rate >= 80 ? 'text-emerald-600' : w.rate >= 50 ? 'text-blue-600' : 'text-amber-600'}>
-                      {w.total === 0 ? '-' : `${w.rate}%`}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {series.slice().reverse().map((w) => {
+                const isExpanded = expandedRow === w.key;
+                const rowTasks = w.tasks || [];
+                const tasksDone = rowTasks.filter((t) => t.status === 'completed');
+                const tasksUndone = rowTasks.filter((t) => t.status !== 'completed');
+
+                return (
+                  <React.Fragment key={`t-${w.key}`}>
+                    <tr
+                      onClick={() => setExpandedRow(isExpanded ? null : w.key)}
+                      className={`border-b border-slate-50 last:border-0 cursor-pointer transition hover:bg-slate-50 ${isExpanded ? 'bg-slate-50' : ''}`}
+                    >
+                      <td className="py-2.5 pr-4 text-slate-700">
+                        <div className="flex items-center gap-1.5">
+                          {isExpanded ? <ChevronDown size={14} className="text-slate-400 shrink-0" /> : <ChevronRight size={14} className="text-slate-300 shrink-0" />}
+                          {granularity === 'week' && w.isCurrent
+                            ? <span className="font-semibold text-indigo-600">今週 <span className="text-slate-400 font-normal">({w.label})</span></span>
+                            : granularity === 'week' && w.isFuture
+                              ? <span className="text-slate-500">来週 <span className="text-slate-400">({w.label})</span></span>
+                              : w.label}
+                        </div>
+                      </td>
+                      <td className="py-2.5 pr-4 text-slate-600">{w.total}</td>
+                      <td className="py-2.5 pr-4 text-slate-600">{w.completed}</td>
+                      <td className="py-2.5 pr-4 font-semibold">
+                        <span className={w.total === 0 ? 'text-slate-300' : w.rate >= 80 ? 'text-emerald-600' : w.rate >= 50 ? 'text-blue-600' : 'text-amber-600'}>
+                          {w.total === 0 ? '-' : `${w.rate}%`}
+                        </span>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr>
+                        <td colSpan={4} className="bg-slate-50 border-b border-slate-100 p-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <h5 className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200 inline-block">未達成 ({tasksUndone.length})</h5>
+                              {tasksUndone.length === 0 ? <p className="text-xs text-slate-400 px-1">なし</p> : tasksUndone.map((t) => (
+                                <div key={t.id} className="flex items-start gap-2 text-xs bg-white p-2 rounded border border-slate-200 shadow-sm">
+                                  <button type="button" onClick={(e) => { e.stopPropagation(); toggleTaskStatus(t); }} className="mt-0.5 shrink-0">
+                                    <Circle size={12} className="text-slate-300 hover:text-blue-500" />
+                                  </button>
+                                  <span className="text-slate-700 leading-tight">{t.cleanTitle}</span>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="space-y-2">
+                              <h5 className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200 inline-block">達成済 ({tasksDone.length})</h5>
+                              {tasksDone.length === 0 ? <p className="text-xs text-slate-400 px-1">なし</p> : tasksDone.map((t) => (
+                                <div key={t.id} className="flex items-start gap-2 text-xs bg-white p-2 rounded border border-slate-200 shadow-sm opacity-70">
+                                  <button type="button" onClick={(e) => { e.stopPropagation(); toggleTaskStatus(t); }} className="mt-0.5 shrink-0">
+                                    <CheckCircle2 size={12} className="text-emerald-500" />
+                                  </button>
+                                  <span className="text-slate-500 line-through leading-tight">{t.cleanTitle}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
