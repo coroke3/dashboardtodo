@@ -239,23 +239,24 @@ export default function App() {
   const [calendarMode, setCalendarMode] = useState('month'); // 'month' | 'week'
   const [calendarCursor, setCalendarCursor] = useState(() => new Date());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [periodModalContent, setPeriodModalContent] = useState(null);
+  /** 今週 / 来週 / 今月 ポップアップ（左右キーで切替） */
+  const [periodModalPeriod, setPeriodModalPeriod] = useState(null);
+  /** 期間モーダル切替時の 3D アニメ用（deg、0 で無効） */
+  const [periodModalTiltDeg, setPeriodModalTiltDeg] = useState(0);
+  const [keyboardFocusedTaskId, setKeyboardFocusedTaskId] = useState(null);
 
   const showCheckboxes = selectionMode || shiftHeld;
 
+  const PERIOD_MODAL_ORDER = useMemo(() => ['week', 'nextWeek', 'month'], []);
+
   useEffect(() => {
-    const onKeyDown = (e) => {
-      if (e.key === 'Shift') setShiftHeld(true);
-    };
     const onKeyUp = (e) => {
       if (e.key === 'Shift') setShiftHeld(false);
     };
     const onBlur = () => setShiftHeld(false);
-    window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
     window.addEventListener('blur', onBlur);
     return () => {
-      window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('blur', onBlur);
     };
@@ -443,7 +444,7 @@ export default function App() {
     setSelectedTasks(new Set());
     setSelectionMode(false);
     setIsMobileMenuOpen(false);
-    setPeriodModalContent(null);
+    setPeriodModalPeriod(null);
     silentAuthTried.current = false;
   };
 
@@ -846,6 +847,157 @@ export default function App() {
     return filtered;
   }, [tasks, selectedTag]);
 
+  const flatNavTasks = useMemo(() => {
+    if (activeTab === 'active') return activeGroups.flatMap((g) => g.tasks);
+    if (activeTab === 'history') return historyList;
+    return [];
+  }, [activeTab, activeGroups, historyList]);
+
+  const isTypingInField = () => {
+    const el = document.activeElement;
+    if (!el) return false;
+    const tag = el.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+    return el.isContentEditable;
+  };
+
+  useEffect(() => {
+    if (periodModalTiltDeg === 0) return undefined;
+    const t = setTimeout(() => setPeriodModalTiltDeg(0), 380);
+    return () => clearTimeout(t);
+  }, [periodModalPeriod, periodModalTiltDeg]);
+
+  useEffect(() => {
+    if (!keyboardFocusedTaskId) return;
+    const esc = (s) => String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    const el = document.querySelector(`[data-task-row-id="${esc(keyboardFocusedTaskId)}"]`);
+    el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [keyboardFocusedTaskId, flatNavTasks]);
+
+  useEffect(() => {
+    setKeyboardFocusedTaskId((prev) => {
+      if (!prev) return null;
+      if (flatNavTasks.some((t) => t.id === prev)) return prev;
+      return null;
+    });
+  }, [flatNavTasks]);
+
+  useEffect(() => {
+    if (activeTab !== 'active' && activeTab !== 'history') {
+      setKeyboardFocusedTaskId(null);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === 'Shift') {
+        setShiftHeld(true);
+        return;
+      }
+
+      if (!accessToken && !isDemo) return;
+
+      if (isTypingInField()) return;
+
+      if (periodModalPeriod) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setPeriodModalPeriod(null);
+          return;
+        }
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          const i = PERIOD_MODAL_ORDER.indexOf(periodModalPeriod);
+          setPeriodModalTiltDeg(-14);
+          setPeriodModalPeriod(PERIOD_MODAL_ORDER[(i - 1 + 3) % 3]);
+          return;
+        }
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          const i = PERIOD_MODAL_ORDER.indexOf(periodModalPeriod);
+          setPeriodModalTiltDeg(14);
+          setPeriodModalPeriod(PERIOD_MODAL_ORDER[(i + 1) % 3]);
+          return;
+        }
+      }
+
+      if (e.key === 'Escape') {
+        if (selectedTag != null) {
+          e.preventDefault();
+          setSelectedTag(null);
+          return;
+        }
+        if (keyboardFocusedTaskId) {
+          e.preventDefault();
+          setKeyboardFocusedTaskId(null);
+        }
+        return;
+      }
+
+      if (/^[1-9]$/.test(e.key)) {
+        const n = parseInt(e.key, 10);
+        const tagRow = tagStats[n - 1];
+        if (tagRow) {
+          e.preventDefault();
+          setSelectedTag(tagRow.tag);
+        }
+        return;
+      }
+
+      if (activeTab !== 'active' && activeTab !== 'history') return;
+      if (loading) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (flatNavTasks.length === 0) return;
+        setKeyboardFocusedTaskId((prev) => {
+          if (!prev) return flatNavTasks[0].id;
+          const i = flatNavTasks.findIndex((t) => t.id === prev);
+          const next = i < 0 ? 0 : Math.min(i + 1, flatNavTasks.length - 1);
+          return flatNavTasks[next].id;
+        });
+        return;
+      }
+
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (flatNavTasks.length === 0) return;
+        setKeyboardFocusedTaskId((prev) => {
+          if (!prev) return flatNavTasks[0].id;
+          const i = flatNavTasks.findIndex((t) => t.id === prev);
+          const next = i < 0 ? 0 : Math.max(i - 1, 0);
+          return flatNavTasks[next].id;
+        });
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        const id = keyboardFocusedTaskId;
+        if (!id) return;
+        const task = flatNavTasks.find((t) => t.id === id);
+        if (task) {
+          e.preventDefault();
+          toggleTaskStatus(task);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [
+    PERIOD_MODAL_ORDER,
+    periodModalPeriod,
+    selectedTag,
+    activeTab,
+    loading,
+    flatNavTasks,
+    keyboardFocusedTaskId,
+    tagStats,
+    toggleTaskStatus,
+    accessToken,
+    isDemo,
+  ]);
+
   const getTagColor = (tag) => {
     const colors = [
       'bg-blue-100 text-blue-800 border-blue-200', 'bg-emerald-100 text-emerald-800 border-emerald-200',
@@ -943,7 +1095,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans pb-12">
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <div className="max-w-5xl xl:max-w-7xl 2xl:max-w-[88rem] mx-auto px-4 sm:px-6 xl:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <LayoutDashboard className="text-blue-600" size={24} />
             <h1 className="font-bold text-lg hidden sm:block">Task Dashboard</h1>
@@ -1000,8 +1152,8 @@ export default function App() {
         )}
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 mt-6 space-y-6">
-        <div className="flex sm:grid sm:grid-cols-4 gap-4 overflow-x-auto snap-x pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0 sm:overflow-visible">
+      <main className="max-w-5xl xl:max-w-7xl 2xl:max-w-[88rem] mx-auto px-4 sm:px-6 xl:px-8 mt-6 space-y-6">
+        <div className="flex sm:grid sm:grid-cols-4 gap-4 overflow-x-auto snap-x pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0 sm:overflow-visible items-stretch">
           <div className="min-w-[260px] sm:min-w-0 sm:col-span-1 bg-gradient-to-br from-blue-600 to-indigo-700 p-5 rounded-xl shadow-sm text-white flex flex-col justify-between relative overflow-hidden snap-start shrink-0">
             <div className="relative z-10">
               <p className="text-blue-100 text-sm font-medium mb-1 flex items-center gap-1.5"><TrendingUp size={16} /> 今週の達成率</p>
@@ -1024,7 +1176,7 @@ export default function App() {
               icon={<Calendar size={16} />}
               stats={weeklyStats}
               accent="text-blue-600"
-              onClick={() => setPeriodModalContent({ title: '今週のタスク', tasks: weeklyStats.tasks })}
+              onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod('week'); }}
             />
           </div>
           <div className="min-w-[200px] sm:min-w-0 shrink-0 snap-start">
@@ -1033,7 +1185,7 @@ export default function App() {
               icon={<Calendar size={16} />}
               stats={nextWeekStats}
               accent="text-indigo-600"
-              onClick={() => setPeriodModalContent({ title: '来週のタスク', tasks: nextWeekStats.tasks })}
+              onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod('nextWeek'); }}
             />
           </div>
           <div className="min-w-[200px] sm:min-w-0 shrink-0 snap-start">
@@ -1042,18 +1194,57 @@ export default function App() {
               icon={<Calendar size={16} />}
               stats={monthStats}
               accent="text-emerald-600"
-              onClick={() => setPeriodModalContent({ title: '今月のタスク', tasks: monthStats.tasks })}
+              onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod('month'); }}
             />
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-6">
-          <div className="w-full md:w-64 flex-shrink-0">
+        <div className="flex flex-col xl:flex-row gap-4 xl:gap-3 xl:items-start">
+          <nav
+            className="hidden xl:flex flex-col gap-1 p-1.5 bg-slate-200/70 rounded-xl sticky top-24 shrink-0 w-[52px] border border-slate-200 shadow-sm"
+            aria-label="メインタブ"
+          >
+            <button
+              type="button"
+              title="アクティブ"
+              onClick={() => setActiveTab('active')}
+              className={`w-10 h-10 rounded-lg flex items-center justify-center transition ${activeTab === 'active' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-white/70 hover:text-slate-800'}`}
+            >
+              <Circle size={20} strokeWidth={2.25} />
+            </button>
+            <button
+              type="button"
+              title="履歴"
+              onClick={() => setActiveTab('history')}
+              className={`w-10 h-10 rounded-lg flex items-center justify-center transition ${activeTab === 'history' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:bg-white/70 hover:text-slate-800'}`}
+            >
+              <History size={20} strokeWidth={2.25} />
+            </button>
+            <button
+              type="button"
+              title="カレンダー"
+              onClick={() => setActiveTab('calendar')}
+              className={`w-10 h-10 rounded-lg flex items-center justify-center transition ${activeTab === 'calendar' ? 'bg-white text-violet-600 shadow-sm' : 'text-slate-500 hover:bg-white/70 hover:text-slate-800'}`}
+            >
+              <Calendar size={20} strokeWidth={2.25} />
+            </button>
+            <button
+              type="button"
+              title="分析"
+              onClick={() => setActiveTab('analytics')}
+              className={`w-10 h-10 rounded-lg flex items-center justify-center transition ${activeTab === 'analytics' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:bg-white/70 hover:text-slate-800'}`}
+            >
+              <BarChart3 size={20} strokeWidth={2.25} />
+            </button>
+          </nav>
+
+          <div className="flex flex-col md:flex-row gap-6 flex-1 min-w-0">
+          <div className="w-full md:w-64 xl:w-72 2xl:w-80 flex-shrink-0">
             <div className="bg-white md:rounded-xl shadow-sm md:border border-slate-100 p-3 md:p-4 sticky top-24 -mx-4 px-4 md:mx-0">
               <h2 className="text-xs md:text-sm font-bold text-slate-800 mb-2 md:mb-3 flex items-center gap-2 uppercase tracking-wide">
                 <Tag size={16} /> Tags & Progress
               </h2>
-              <div className="flex overflow-x-auto md:flex-col gap-2 pb-2 md:pb-0 snap-x hide-scrollbar">
+              <div className="flex overflow-x-auto md:flex-col gap-2 pb-2 md:pb-0 snap-x hide-scrollbar after:content-[''] after:w-1 after:shrink-0 md:after:hidden">
                 <button
                   type="button"
                   onClick={() => setSelectedTag(null)}
@@ -1089,7 +1280,7 @@ export default function App() {
           </div>
 
           <div className="flex-grow min-w-0 space-y-4">
-            <div className="hidden sm:flex flex-wrap gap-2 p-1 bg-slate-200/60 rounded-lg w-full">
+            <div className="hidden sm:flex xl:hidden flex-wrap gap-2 p-1 bg-slate-200/60 rounded-lg w-full">
               <button
                 type="button"
                 onClick={() => setActiveTab('active')}
@@ -1122,17 +1313,7 @@ export default function App() {
 
             {activeTab === 'active' && (
               <>
-                {!taskFormExpanded ? (
-                  <button
-                    type="button"
-                    onClick={() => setTaskFormExpanded(true)}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-white border border-slate-200 rounded-xl shadow-sm text-sm font-medium text-slate-600 hover:bg-slate-50 hover:border-blue-200 hover:text-blue-600 transition"
-                  >
-                    <Plus size={18} className="text-blue-500" />
-                    タスクを追加
-                    <ChevronDown size={16} className="text-slate-400" />
-                  </button>
-                ) : (
+                {taskFormExpanded ? (
                   <form onSubmit={handleAddTask} className="bg-white rounded-xl shadow-sm border border-blue-100 p-4 transition-all focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-sm font-semibold text-slate-700 flex items-center gap-2">
@@ -1240,7 +1421,7 @@ export default function App() {
                       </span>
                     </div>
                   </form>
-                )}
+                ) : null}
 
                 <div className="flex items-center gap-2">
                   <button
@@ -1287,7 +1468,7 @@ export default function App() {
               />
             ) : (
               <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                <div className="px-4 pt-3 pb-2.5 border-b border-slate-100 bg-white flex flex-wrap items-center justify-between gap-2">
+                <div className="px-3 py-1 border-b border-slate-100 bg-white flex flex-wrap items-center justify-between gap-1.5">
                   <button
                     type="button"
                     onClick={() => {
@@ -1296,27 +1477,27 @@ export default function App() {
                         return !prev;
                       });
                     }}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition border ${
+                    className={`px-2 py-0.5 text-[11px] font-medium rounded-md transition border shrink-0 ${
                       selectionMode
                         ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
                         : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    {selectionMode ? '選択モードを終了' : '選択モード'}
+                    {selectionMode ? '選択終了' : '選択モード'}
                   </button>
-                  <span className="text-[11px] text-slate-400">
-                    Shift を押している間も選択できます
+                  <span className="text-[9px] text-slate-400 text-right leading-tight flex-1 min-w-0 sm:max-w-[65%]">
+                    1–9タグ · Escすべて · ↑↓ · Enter完了 · Shift/行クリック複数 · ポップアップ←→
                   </span>
                 </div>
-                <div className="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                  <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+                <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50 flex justify-between items-center gap-2">
+                  <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-1.5 min-w-0">
                     {selectedTag ? (
-                      <><span className="text-slate-400">#</span> {selectedTag}</>
+                      <><span className="text-slate-400 shrink-0">#</span> <span className="truncate">{selectedTag}</span></>
                     ) : (activeTab === 'active'
                       ? (showOnlyNoDue ? '期限なしのアクティブタスク' : 'アクティブタスク（時系列・見出し別）')
                       : 'すべての完了履歴')}
                   </h2>
-                  <span className="text-xs font-medium text-slate-500 bg-white px-2 py-1 rounded border border-slate-200 shadow-sm">
+                  <span className="text-[10px] font-medium text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-200 shadow-sm shrink-0 tabular-nums">
                     {activeTab === 'active' ? activeTotalCount : historyList.length} 件
                   </span>
                 </div>
@@ -1349,55 +1530,43 @@ export default function App() {
                   <div>
                     {activeGroups.map(group => (
                       <section key={group.bucket} className="border-b border-slate-100 last:border-b-0">
-                        <div className="sticky top-16 z-[5] px-4 py-2.5 bg-slate-100/95 backdrop-blur-sm border-b border-slate-200/80 flex items-baseline justify-between gap-2">
+                        <div className="sticky top-16 z-[5] px-4 py-2.5 bg-white/95 backdrop-blur-md border-b border-slate-100 flex items-baseline justify-between gap-2">
                           <h3 className="text-sm font-bold text-slate-800">{group.title}</h3>
                           <span className="text-[11px] font-medium text-slate-500 tabular-nums">{group.tasks.length} 件</span>
                         </div>
                         <div className="divide-y divide-slate-100">
                           {group.tasks.map(task => {
                             const overdue = task.status !== 'completed' && isOverdue(task.due);
+                            const isKbFocus = keyboardFocusedTaskId === task.id;
+                            const isMultiSel = showCheckboxes && selectedTasks.has(task.id);
                             return (
                               <div
                                 key={task.id}
+                                data-task-row-id={task.id}
+                                onClick={() => { if (showCheckboxes) toggleSelection(task.id); }}
                                 className={`p-4 flex items-start gap-3 transition group ${
-                                  overdue
-                                    ? 'bg-red-50/40 hover:bg-red-50 border-l-4 border-red-400'
-                                    : 'hover:bg-slate-50'
-                                }`}
+                                  isKbFocus ? 'ring-2 ring-inset ring-blue-500 z-[1]' : ''
+                                } ${
+                                  isMultiSel
+                                    ? overdue
+                                      ? 'bg-red-200/70 hover:bg-red-200/85 border-l-4 border-red-500'
+                                      : 'bg-slate-300/80 hover:bg-slate-300'
+                                    : overdue
+                                      ? 'bg-red-50/40 hover:bg-red-50 border-l-4 border-red-400'
+                                      : 'hover:bg-slate-50'
+                                } ${showCheckboxes ? 'cursor-pointer' : ''}`}
                               >
-                                {showCheckboxes ? (
-                                  <div className="flex items-center gap-2 mt-0.5 shrink-0">
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedTasks.has(task.id)}
-                                      onChange={() => toggleSelection(task.id)}
-                                      className="w-4 h-4 text-blue-600 rounded border-slate-300 cursor-pointer focus:ring-blue-500"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() => toggleTaskStatus(task)}
-                                      className="focus:outline-none transition-transform active:scale-90"
-                                    >
-                                      {task.status === 'completed' ? (
-                                        <CheckCircle2 className="text-emerald-500 hover:text-emerald-600 transition" size={22} />
-                                      ) : (
-                                        <Circle className={`${overdue ? 'text-red-400 group-hover:text-red-500' : 'text-slate-300 group-hover:text-blue-500'} transition`} size={22} />
-                                      )}
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleTaskStatus(task)}
-                                    className="mt-0.5 flex-shrink-0 focus:outline-none transition-transform active:scale-90"
-                                  >
-                                    {task.status === 'completed' ? (
-                                      <CheckCircle2 className="text-emerald-500 hover:text-emerald-600 transition" size={22} />
-                                    ) : (
-                                      <Circle className={`${overdue ? 'text-red-400 group-hover:text-red-500' : 'text-slate-300 group-hover:text-blue-500'} transition`} size={22} />
-                                    )}
-                                  </button>
-                                )}
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }}
+                                  className="mt-1 p-0.5 -ml-0.5 flex-shrink-0 focus:outline-none transition-transform active:scale-90"
+                                >
+                                  {task.status === 'completed' ? (
+                                    <CheckCircle2 className="text-emerald-500 hover:text-emerald-600 transition" size={22} />
+                                  ) : (
+                                    <Circle className={`${overdue ? 'text-red-400 group-hover:text-red-500' : 'text-slate-300 group-hover:text-blue-500'} transition`} size={22} />
+                                  )}
+                                </button>
                                 <div className="flex-grow min-w-0">
                                   <h3 className={`font-medium text-base mb-1.5 whitespace-normal break-words ${overdue ? 'text-red-700' : 'text-slate-800'}`}>
                                     {task.cleanTitle}
@@ -1448,50 +1617,40 @@ export default function App() {
                   <div className="divide-y divide-slate-100">
                     {historyList.map(task => {
                       const overdue = task.status !== 'completed' && isOverdue(task.due);
+                      const isKbFocus = keyboardFocusedTaskId === task.id;
+                      const isMultiSel = showCheckboxes && selectedTasks.has(task.id);
                       return (
                       <div
                         key={task.id}
+                        data-task-row-id={task.id}
+                        onClick={() => { if (showCheckboxes) toggleSelection(task.id); }}
                         className={`p-4 flex items-start gap-3 transition group ${
-                          task.status === 'completed'
-                            ? 'opacity-70 bg-slate-50/50 hover:bg-slate-50'
-                            : overdue
-                              ? 'bg-red-50/40 hover:bg-red-50 border-l-4 border-red-400'
-                              : 'hover:bg-slate-50'
-                        }`}
+                          isKbFocus ? 'ring-2 ring-inset ring-blue-500 z-[1]' : ''
+                        } ${
+                          isMultiSel
+                            ? task.status === 'completed'
+                              ? 'bg-slate-300/70 opacity-90'
+                              : overdue
+                                ? 'bg-red-200/70 border-l-4 border-red-500'
+                                : 'bg-slate-300/80'
+                            : task.status === 'completed'
+                              ? 'opacity-70 bg-slate-50/50 hover:bg-slate-50'
+                              : overdue
+                                ? 'bg-red-50/40 hover:bg-red-50 border-l-4 border-red-400'
+                                : 'hover:bg-slate-50'
+                        } ${showCheckboxes ? 'cursor-pointer' : ''}`}
                       >
-                        {showCheckboxes ? (
-                          <div className="flex items-center gap-2 mt-0.5 shrink-0">
-                            <input
-                              type="checkbox"
-                              checked={selectedTasks.has(task.id)}
-                              onChange={() => toggleSelection(task.id)}
-                              className="w-4 h-4 text-blue-600 rounded border-slate-300 cursor-pointer focus:ring-blue-500"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => toggleTaskStatus(task)}
-                              className="focus:outline-none transition-transform active:scale-90"
-                            >
-                              {task.status === 'completed' ? (
-                                <CheckCircle2 className="text-emerald-500 hover:text-emerald-600 transition" size={22} />
-                              ) : (
-                                <Circle className={`${overdue ? 'text-red-400 group-hover:text-red-500' : 'text-slate-300 group-hover:text-blue-500'} transition`} size={22} />
-                              )}
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => toggleTaskStatus(task)}
-                            className="mt-0.5 flex-shrink-0 focus:outline-none transition-transform active:scale-90"
-                          >
-                            {task.status === 'completed' ? (
-                              <CheckCircle2 className="text-emerald-500 hover:text-emerald-600 transition" size={22} />
-                            ) : (
-                              <Circle className={`${overdue ? 'text-red-400 group-hover:text-red-500' : 'text-slate-300 group-hover:text-blue-500'} transition`} size={22} />
-                            )}
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }}
+                          className="mt-1 p-0.5 -ml-0.5 flex-shrink-0 focus:outline-none transition-transform active:scale-90"
+                        >
+                          {task.status === 'completed' ? (
+                            <CheckCircle2 className="text-emerald-500 hover:text-emerald-600 transition" size={22} />
+                          ) : (
+                            <Circle className={`${overdue ? 'text-red-400 group-hover:text-red-500' : 'text-slate-300 group-hover:text-blue-500'} transition`} size={22} />
+                          )}
+                        </button>
 
                         <div className="flex-grow min-w-0">
                           <h3 className={`font-medium text-base mb-1.5 whitespace-normal break-words ${
@@ -1554,10 +1713,30 @@ export default function App() {
             )}
           </div>
         </div>
+        </div>
       </main>
 
-      {periodModalContent && (() => {
-        const modalTasks = periodModalContent.tasks
+      {(accessToken || isDemo) && activeTab === 'active' && (
+        <button
+          type="button"
+          title={taskFormExpanded ? '追加パネルを閉じる' : 'タスクを追加'}
+          onClick={() => setTaskFormExpanded((v) => !v)}
+          className="fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/35 transition hover:bg-blue-700 hover:scale-[1.03] active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 sm:bottom-6 sm:right-6 xl:bottom-8 xl:right-10"
+          aria-expanded={taskFormExpanded}
+        >
+          {taskFormExpanded ? <X size={26} strokeWidth={2.25} /> : <Plus size={26} strokeWidth={2.25} />}
+        </button>
+      )}
+
+      {periodModalPeriod && (() => {
+        const periodTitleMap = { week: '今週のタスク', nextWeek: '来週のタスク', month: '今月のタスク' };
+        const sourceTasks =
+          periodModalPeriod === 'week'
+            ? weeklyStats.tasks
+            : periodModalPeriod === 'nextWeek'
+              ? nextWeekStats.tasks
+              : monthStats.tasks;
+        const modalTasks = sourceTasks
           .map((snapshot) => tasks.find((x) => x.id === snapshot.id) ?? snapshot)
           .sort((a, b) => (a.due ? new Date(a.due).getTime() : Infinity) - (b.due ? new Date(b.due).getTime() : Infinity));
 
@@ -1591,20 +1770,24 @@ export default function App() {
 
         return (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in"
-            onClick={() => setPeriodModalContent(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in [perspective:1200px]"
+            onClick={() => setPeriodModalPeriod(null)}
             role="presentation"
           >
             <div
-              className="bg-white rounded-xl shadow-xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95"
+              className={`bg-white rounded-xl shadow-xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200/80 ${periodModalTiltDeg !== 0 ? 'period-modal-3d-panel' : ''}`}
+              style={{ '--period-from-tilt': `${periodModalTiltDeg}deg` }}
               onClick={(e) => e.stopPropagation()}
               role="dialog"
               aria-modal="true"
               aria-labelledby="period-modal-title"
             >
-              <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50 shrink-0">
-                <h3 id="period-modal-title" className="font-bold text-slate-800">{periodModalContent.title}</h3>
-                <button type="button" onClick={() => setPeriodModalContent(null)} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200 transition" aria-label="閉じる">
+              <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50 shrink-0 gap-2">
+                <div className="min-w-0">
+                  <h3 id="period-modal-title" className="font-bold text-slate-800">{periodTitleMap[periodModalPeriod]}</h3>
+                  <p className="text-[10px] text-slate-400 mt-0.5">← → 期間切替 · Esc で閉じる</p>
+                </div>
+                <button type="button" onClick={() => setPeriodModalPeriod(null)} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200 transition shrink-0" aria-label="閉じる">
                   <X size={20} />
                 </button>
               </div>
