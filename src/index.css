@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+:root {
+  --ui-radius: 8px;
+  --ui-font: "Noto Sans JP", sans-serif;
+  --ui-accent: #2563eb;
+}
+
+body {
+  font-family: var(--ui-font);
+  background-color: #f8fafc;
+  color: #1e293b;
+}
 @layer utilities {
   .hide-scrollbar {
     -ms-overflow-style: none;
