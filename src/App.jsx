@@ -3,7 +3,8 @@ import {
   CheckCircle2, Circle, AlertCircle, Play, Tag, LogOut,
   RefreshCw, LayoutDashboard, ListTodo, Calendar,
   Plus, X, History, Target, TrendingUp, BarChart3, CalendarOff,
-  ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Trash2, Menu, Copy
+  ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Trash2, Copy,
+  Search, Layers, PieChart, Flame, Clock, Inbox, CheckSquare,
 } from 'lucide-react';
 
 const today = new Date();
@@ -227,7 +228,8 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedTag, setSelectedTag] = useState(null);
-  const [activeTab, setActiveTab] = useState('active'); // 'active' | 'history' | 'analytics' | 'calendar'
+  const [activeTab, setActiveTab] = useState('active'); // 'active' | 'history' | 'calendar' | 'analytics' | 'routines' | 'advanced'
+  const [searchQuery, setSearchQuery] = useState('');
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskTags, setNewTaskTags] = useState([]);
   const [newTaskDue, setNewTaskDue] = useState('');
@@ -784,6 +786,15 @@ export default function App() {
         : tasks.filter(t => t.tags.includes(selectedTag));
     }
 
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (t) =>
+          (t.cleanTitle && t.cleanTitle.toLowerCase().includes(q)) ||
+          t.tags.some((tag) => tag.toLowerCase().includes(q)),
+      );
+    }
+
     const now = new Date();
     const { start: weekStart, end: weekEnd } = getWeekRange(now);
 
@@ -835,7 +846,66 @@ export default function App() {
       .sort((a, b) => new Date(b.completed || 0) - new Date(a.completed || 0));
 
     return { activeGroups, activeTotalCount, historyList: history };
-  }, [tasks, selectedTag, showOnlyNoDue]);
+  }, [tasks, selectedTag, showOnlyNoDue, searchQuery]);
+
+  const routineGroups = useMemo(() => {
+    // 1. 全タスクの全単語の出現回数をカウントする
+    const wordCounts = {};
+    tasks.forEach((t) => {
+      const words = t.cleanTitle.split(/[\s,，、・\-()（）[\]［］{}｛｝]+/);
+      words.forEach((w) => {
+        if (w.length < 2 || /^[0-9０-９]+$/.test(w)) return;
+        wordCounts[w] = (wordCounts[w] || 0) + 1;
+      });
+    });
+
+    // 2. 「高頻出単語」を自動選別する（3回以上登場＝ルーチン候補）
+    const threshold = 3;
+    const routineKeywords = Object.keys(wordCounts).filter(w => wordCounts[w] >= threshold);
+
+    // 3. 各タスクについて、最も出現頻度の高いキーワードを「主軸」としてグループ化する
+    const groups = {};
+    tasks.forEach((t) => {
+      const words = t.cleanTitle.split(/[\s,，、・\-()（）[\]［］{}｛｝]+/);
+      const taskKeywords = words.filter(w => routineKeywords.includes(w));
+      
+      if (taskKeywords.length === 0) return;
+
+      // 出現頻度が最も高いキーワードを主軸（グループ名）にする
+      // 同じ頻度の場合は、より具体的な単語（長い単語）を優先
+      const bestKeyword = taskKeywords.reduce((best, current) => {
+        if (!best) return current;
+        if (wordCounts[current] > wordCounts[best]) return current;
+        if (wordCounts[current] === wordCounts[best] && current.length > best.length) return current;
+        return best;
+      }, null);
+
+      if (!groups[bestKeyword]) {
+        groups[bestKeyword] = { title: bestKeyword, count: 0, tasks: [] };
+      }
+      groups[bestKeyword].count += 1;
+      groups[bestKeyword].tasks.push(t);
+    });
+
+    return Object.values(groups)
+      .filter((g) => g.count >= threshold)
+      .sort((a, b) => b.count - a.count);
+  }, [tasks]);
+
+  const tagAndSearchTaskCount = useMemo(() => {
+    let f = tasks;
+    if (selectedTag) {
+      f = selectedTag === '未分類' ? tasks.filter((t) => t.tags.length === 0) : tasks.filter((t) => t.tags.includes(selectedTag));
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      f = f.filter(
+        (t) =>
+          (t.cleanTitle && t.cleanTitle.toLowerCase().includes(q)) || t.tags.some((tag) => tag.toLowerCase().includes(q)),
+      );
+    }
+    return f.length;
+  }, [tasks, selectedTag, searchQuery]);
 
   const calendarTasks = useMemo(() => {
     let filtered = tasks;
@@ -1095,14 +1165,27 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans pb-12">
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-        <div className="max-w-5xl xl:max-w-7xl 2xl:max-w-[88rem] mx-auto px-4 sm:px-6 xl:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-[100rem] mx-auto px-4 sm:px-6 xl:px-8 h-16 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 shrink-0">
             <LayoutDashboard className="text-blue-600" size={24} />
             <h1 className="font-bold text-lg hidden sm:block">Task Dashboard</h1>
             {isDemo && <span className="text-xs font-medium bg-amber-100 text-amber-800 px-2 py-0.5 rounded border border-amber-200">DEMO</span>}
           </div>
 
-          <div className="hidden sm:flex items-center gap-2 sm:gap-4">
+          {((accessToken && !error) || isDemo) && (
+            <div className="flex-1 max-w-md relative hidden sm:block">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <input
+                type="text"
+                placeholder="タスク、タグを検索..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-slate-100/80 border border-transparent rounded-lg text-sm focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 outline-none transition"
+              />
+            </div>
+          )}
+
+          <div className="hidden sm:flex items-center gap-2 sm:gap-4 shrink-0">
             <button
               type="button"
               onClick={handleRefresh}
@@ -1123,22 +1206,35 @@ export default function App() {
 
           <button
             type="button"
-            className="sm:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition"
+            className="sm:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition relative w-10 h-10 flex flex-col justify-center items-center gap-1.5"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-expanded={isMobileMenuOpen}
             aria-label="メニュー"
           >
-            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            <span className={`block w-5 h-0.5 bg-current transition-all duration-300 ${isMobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`} />
+            <span className={`block w-5 h-0.5 bg-current transition-all duration-300 ${isMobileMenuOpen ? 'opacity-0' : ''}`} />
+            <span className={`block w-5 h-0.5 bg-current transition-all duration-300 ${isMobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
           </button>
         </div>
 
         {isMobileMenuOpen && (
           <div className="sm:hidden border-t border-slate-100 bg-slate-50 px-4 py-4 flex flex-col gap-4 animate-in slide-in-from-top-2 shadow-inner">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <input
+                type="text"
+                placeholder="検索..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm outline-none"
+              />
+            </div>
             <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => { setActiveTab('active'); setIsMobileMenuOpen(false); }} className={`py-2 text-sm font-semibold rounded-lg border ${activeTab === 'active' ? 'bg-white text-blue-600 border-blue-200 shadow-sm' : 'bg-transparent text-slate-600 border-transparent hover:bg-slate-100'}`}><Circle size={14} className="inline mr-1" /> アクティブ</button>
-              <button type="button" onClick={() => { setActiveTab('history'); setIsMobileMenuOpen(false); }} className={`py-2 text-sm font-semibold rounded-lg border ${activeTab === 'history' ? 'bg-white text-slate-800 border-slate-200 shadow-sm' : 'bg-transparent text-slate-600 border-transparent hover:bg-slate-100'}`}><History size={14} className="inline mr-1" /> 履歴</button>
-              <button type="button" onClick={() => { setActiveTab('calendar'); setIsMobileMenuOpen(false); }} className={`py-2 text-sm font-semibold rounded-lg border ${activeTab === 'calendar' ? 'bg-white text-violet-600 border-violet-200 shadow-sm' : 'bg-transparent text-slate-600 border-transparent hover:bg-slate-100'}`}><Calendar size={14} className="inline mr-1" /> カレンダー</button>
-              <button type="button" onClick={() => { setActiveTab('analytics'); setIsMobileMenuOpen(false); }} className={`py-2 text-sm font-semibold rounded-lg border ${activeTab === 'analytics' ? 'bg-white text-indigo-600 border-indigo-200 shadow-sm' : 'bg-transparent text-slate-600 border-transparent hover:bg-slate-100'}`}><BarChart3 size={14} className="inline mr-1" /> 分析</button>
+              <button type="button" onClick={() => { setActiveTab('active'); setIsMobileMenuOpen(false); }} className={`py-2 text-sm font-semibold rounded-lg border ${activeTab === 'active' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}><Circle size={14} className="inline mr-1" /> アクティブ</button>
+              <button type="button" onClick={() => { setActiveTab('history'); setIsMobileMenuOpen(false); }} className={`py-2 text-sm font-semibold rounded-lg border ${activeTab === 'history' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}><History size={14} className="inline mr-1" /> 履歴</button>
+              <button type="button" onClick={() => { setActiveTab('calendar'); setIsMobileMenuOpen(false); }} className={`py-2 text-sm font-semibold rounded-lg border ${activeTab === 'calendar' ? 'bg-white text-violet-600 shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}><Calendar size={14} className="inline mr-1" /> カレンダー</button>
+              <button type="button" onClick={() => { setActiveTab('analytics'); setIsMobileMenuOpen(false); }} className={`py-2 text-sm font-semibold rounded-lg border ${activeTab === 'analytics' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}><BarChart3 size={14} className="inline mr-1" /> 分析</button>
+              <button type="button" onClick={() => { setActiveTab('routines'); setIsMobileMenuOpen(false); }} className={`py-2 text-sm font-semibold rounded-lg border ${activeTab === 'routines' ? 'bg-white text-amber-600 shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}><Layers size={14} className="inline mr-1" /> ルーチン</button>
             </div>
             <div className="flex gap-2 border-t border-slate-200 pt-4">
               <button type="button" onClick={() => { handleRefresh(); setIsMobileMenuOpen(false); }} className="flex-1 flex justify-center items-center gap-2 py-2 bg-white border border-slate-200 shadow-sm rounded-lg text-sm font-medium text-slate-700">
@@ -1152,482 +1248,535 @@ export default function App() {
         )}
       </header>
 
-      <main className="max-w-5xl xl:max-w-7xl 2xl:max-w-[88rem] mx-auto px-4 sm:px-6 xl:px-8 mt-6 space-y-6">
-        <div className="flex sm:grid sm:grid-cols-4 gap-4 overflow-x-auto snap-x pb-4 sm:pb-0 sm:overflow-visible items-stretch after:content-[''] after:w-4 after:shrink-0 sm:after:hidden">
-          <div className="min-w-[260px] sm:min-w-0 sm:col-span-1 bg-gradient-to-br from-blue-600 to-indigo-700 p-5 rounded-xl shadow-sm text-white flex flex-col justify-between relative overflow-hidden snap-start shrink-0">
-            <div className="relative z-10">
-              <p className="text-blue-100 text-sm font-medium mb-1 flex items-center gap-1.5"><TrendingUp size={16} /> 今週の達成率</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-bold">{weeklyStats.rate}</span>
-                <span className="text-lg text-blue-200">%</span>
-              </div>
-              <p className="text-xs text-blue-200 mt-2">
-                {weeklyStats.totalTarget === 0
-                  ? '今週期限のタスクはありません'
-                  : `完了 ${weeklyStats.completed} / 今週期限 ${weeklyStats.totalTarget}`}
-              </p>
-            </div>
-            <Target className="absolute -right-4 -bottom-4 text-white opacity-10" size={100} />
-          </div>
-
-          <div className="min-w-[200px] sm:min-w-0 shrink-0 snap-start">
-            <PeriodCard
-              label="今週のタスク"
-              icon={<Calendar size={16} />}
-              stats={weeklyStats}
-              accent="text-blue-600"
-              onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod('week'); }}
-            />
-          </div>
-          <div className="min-w-[200px] sm:min-w-0 shrink-0 snap-start">
-            <PeriodCard
-              label="来週のタスク"
-              icon={<Calendar size={16} />}
-              stats={nextWeekStats}
-              accent="text-indigo-600"
-              onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod('nextWeek'); }}
-            />
-          </div>
-          <div className="min-w-[200px] sm:min-w-0 shrink-0 snap-start">
-            <PeriodCard
-              label="今月のタスク"
-              icon={<Calendar size={16} />}
-              stats={monthStats}
-              accent="text-emerald-600"
-              onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod('month'); }}
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-col xl:flex-row gap-4 xl:gap-3 xl:items-start">
-          <nav
-            className="hidden xl:flex flex-col gap-1 p-1.5 bg-slate-200/70 rounded-xl sticky top-24 shrink-0 w-[52px] border border-slate-200 shadow-sm"
-            aria-label="メインタブ"
-          >
-            <button
-              type="button"
-              title="アクティブ"
-              onClick={() => setActiveTab('active')}
-              className={`w-10 h-10 rounded-lg flex items-center justify-center transition ${activeTab === 'active' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-white/70 hover:text-slate-800'}`}
-            >
-              <Circle size={20} strokeWidth={2.25} />
-            </button>
-            <button
-              type="button"
-              title="履歴"
-              onClick={() => setActiveTab('history')}
-              className={`w-10 h-10 rounded-lg flex items-center justify-center transition ${activeTab === 'history' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:bg-white/70 hover:text-slate-800'}`}
-            >
-              <History size={20} strokeWidth={2.25} />
-            </button>
-            <button
-              type="button"
-              title="カレンダー"
-              onClick={() => setActiveTab('calendar')}
-              className={`w-10 h-10 rounded-lg flex items-center justify-center transition ${activeTab === 'calendar' ? 'bg-white text-violet-600 shadow-sm' : 'text-slate-500 hover:bg-white/70 hover:text-slate-800'}`}
-            >
-              <Calendar size={20} strokeWidth={2.25} />
-            </button>
-            <button
-              type="button"
-              title="分析"
-              onClick={() => setActiveTab('analytics')}
-              className={`w-10 h-10 rounded-lg flex items-center justify-center transition ${activeTab === 'analytics' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:bg-white/70 hover:text-slate-800'}`}
-            >
-              <BarChart3 size={20} strokeWidth={2.25} />
-            </button>
+      <div className="max-w-[100rem] mx-auto px-4 sm:px-6 xl:px-8 mt-6 flex flex-col xl:flex-row gap-6">
+        <aside
+          className="hidden xl:flex flex-col w-[280px] 2xl:w-[320px] shrink-0 gap-5 sticky top-20 h-[calc(100vh-6rem)] overflow-y-auto hide-scrollbar pb-10"
+        >
+          <nav className="flex flex-col p-2 bg-white rounded-xl border border-slate-200 shadow-sm gap-1" aria-label="メインタブ">
+            {[
+              { id: 'active', icon: Circle, label: 'アクティブ', color: 'text-blue-600', bg: 'bg-blue-50' },
+              { id: 'history', icon: History, label: '履歴', color: 'text-slate-800', bg: 'bg-slate-100' },
+              { id: 'calendar', icon: Calendar, label: 'カレンダー', color: 'text-violet-600', bg: 'bg-violet-50' },
+              { id: 'analytics', icon: BarChart3, label: '分析ダッシュボード', color: 'text-indigo-600', bg: 'bg-indigo-50' },
+              { id: 'routines', icon: Layers, label: 'ルーチン検出', color: 'text-amber-600', bg: 'bg-amber-50' },
+            ].map((tab) => {
+              const TabIcon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold text-sm transition ${
+                    activeTab === tab.id ? `${tab.bg} ${tab.color} shadow-sm` : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                  }`}
+                >
+                  <TabIcon size={18} strokeWidth={2.25} /> {tab.label}
+                </button>
+              );
+            })}
           </nav>
 
-          <div className="flex flex-col md:flex-row gap-6 flex-1 min-w-0">
-          <div className="w-full md:w-64 xl:w-72 2xl:w-80 flex-shrink-0">
-            <div className="bg-white md:rounded-xl shadow-sm md:border border-slate-100 p-3 md:p-4 sticky top-24 -mx-4 px-4 md:mx-0">
-              <h2 className="text-xs md:text-sm font-bold text-slate-800 mb-2 md:mb-3 flex items-center gap-2 uppercase tracking-wide">
-                <Tag size={16} /> Tags & Progress
-              </h2>
-              <div className="flex overflow-x-auto md:flex-col gap-2 pb-2 md:pb-0 snap-x hide-scrollbar after:content-[''] after:w-1 after:shrink-0 md:after:hidden">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
+            <h2 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2 uppercase tracking-wide">
+              <Tag size={16} /> Tags
+            </h2>
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedTag(null)}
+                className={`px-3 py-2 rounded-lg text-sm font-medium text-left transition ${
+                  selectedTag === null ? 'bg-slate-800 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                すべて ({stats.total})
+              </button>
+              {tagStats.map((tagData) => (
                 <button
                   type="button"
-                  onClick={() => setSelectedTag(null)}
-                  className={`shrink-0 snap-start px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium text-left transition ${selectedTag === null ? 'bg-slate-800 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200 md:border-transparent'}`}
+                  key={tagData.tag}
+                  onClick={() => setSelectedTag(tagData.tag)}
+                  className={`p-3 rounded-lg text-left transition flex flex-col gap-1.5 border ${
+                    selectedTag === tagData.tag
+                      ? 'bg-blue-50 text-blue-700 border-blue-200 shadow-sm'
+                      : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-100'
+                  }`}
                 >
-                  すべて ({stats.total})
+                  <div className="flex justify-between items-center w-full">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          tagData.tag === '未分類' ? 'bg-slate-300' : getTagColor(tagData.tag).split(' ')[0]
+                        }`}
+                      />
+                      <span className="text-sm font-medium">{tagData.tag}</span>
+                    </div>
+                    <span className="text-xs bg-slate-100 px-1.5 py-0.5 rounded-full">
+                      {tagData.active > 0 ? tagData.active : '✓'}
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-200/70 rounded-full h-1 mt-0.5">
+                    <div
+                      className={`h-1 rounded-full ${tagData.rate === 100 ? 'bg-emerald-400' : 'bg-blue-500'}`}
+                      style={{ width: `${tagData.rate}%` }}
+                    />
+                  </div>
                 </button>
-                {tagStats.map((tagData) => (
-                  <button
-                    type="button"
-                    key={tagData.tag}
-                    onClick={() => setSelectedTag(tagData.tag)}
-                    className={`shrink-0 snap-start p-2 md:p-3 w-[140px] md:w-auto rounded-lg text-left transition flex flex-col gap-1.5 border ${
-                      selectedTag === tagData.tag ? 'bg-blue-50 text-blue-700 border-blue-200 shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200 md:border-transparent'
-                    }`}
-                  >
-                    <div className="flex justify-between items-center w-full">
-                      <div className="flex items-center gap-1.5 overflow-hidden">
-                        <span className={`shrink-0 w-2 h-2 rounded-full ${tagData.tag === '未分類' ? 'bg-slate-300' : getTagColor(tagData.tag).split(' ')[0]}`}></span>
-                        <span className="text-xs md:text-sm font-medium truncate">{tagData.tag}</span>
-                      </div>
-                      <span className={`text-[10px] md:text-xs px-1.5 py-0.5 rounded-full shrink-0 ${selectedTag === tagData.tag ? 'bg-blue-100' : 'bg-slate-100'}`}>
-                        {tagData.active > 0 ? tagData.active : '✓'}
-                      </span>
-                    </div>
-                    <div className="w-full bg-slate-200/70 rounded-full h-1 mt-0.5 overflow-hidden">
-                      <div className={`h-1 rounded-full transition-all duration-500 ${tagData.rate === 100 ? 'bg-emerald-400' : 'bg-blue-500'}`} style={{ width: `${tagData.rate}%` }}></div>
-                    </div>
-                  </button>
-                ))}
+              ))}
+            </div>
+          </div>
+        </aside>
+
+        <main className="flex-1 min-w-0 space-y-6 pb-12 overflow-x-hidden">
+          {/* === メイン領域上部：達成率ウィジェット（PC・モバイル共通） === */}
+          <div className="flex gap-4 overflow-x-auto snap-x hide-scrollbar pb-2">
+            <div className="min-w-[260px] flex-1 shrink-0 snap-start bg-gradient-to-br from-blue-600 to-indigo-700 p-5 rounded-xl text-white relative overflow-hidden">
+              <div className="relative z-10">
+                <p className="text-blue-100 text-sm font-medium mb-1 flex items-center gap-1.5">
+                  <TrendingUp size={16} /> 今週の達成率
+                </p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-bold">{weeklyStats.rate}</span>
+                  <span className="text-lg text-blue-200">%</span>
+                </div>
+                <p className="text-xs text-blue-200 mt-2">
+                  {weeklyStats.totalTarget === 0 ? '-' : `完了 ${weeklyStats.completed} / ${weeklyStats.totalTarget}`}
+                </p>
               </div>
+              <Target className="absolute -right-4 -bottom-4 text-white opacity-10" size={100} />
+            </div>
+            <div className="min-w-[160px] flex-1 shrink-0 snap-start">
+              <PeriodCard
+                label="今週"
+                icon={<Calendar size={14} />}
+                stats={weeklyStats}
+                accent="text-blue-600"
+                onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod('week'); }}
+              />
+            </div>
+            <div className="min-w-[160px] flex-1 shrink-0 snap-start">
+              <PeriodCard
+                label="来週"
+                icon={<Calendar size={14} />}
+                stats={nextWeekStats}
+                accent="text-indigo-600"
+                onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod('nextWeek'); }}
+              />
+            </div>
+            <div className="min-w-[160px] flex-1 shrink-0 snap-start">
+              <PeriodCard
+                label="今月"
+                icon={<Calendar size={14} />}
+                stats={monthStats}
+                accent="text-emerald-600"
+                onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod('month'); }}
+              />
             </div>
           </div>
 
-          <div className="flex-grow min-w-0 space-y-4">
-            <div className="hidden sm:flex xl:hidden flex-wrap gap-2 p-1 bg-slate-200/60 rounded-lg w-full">
+          {/* === モバイル用 Tags 横並び（達成率・件数付き） === */}
+          <div className="xl:hidden bg-white rounded-xl shadow-sm border border-slate-100 p-3 overflow-x-auto hide-scrollbar flex gap-3 snap-x">
+            <button
+              type="button"
+              onClick={() => setSelectedTag(null)}
+              className={`shrink-0 snap-start w-[140px] p-3 rounded-lg text-left transition flex flex-col gap-1.5 border ${
+                selectedTag === null ? 'bg-slate-800 text-white border-slate-800 shadow-md' : 'bg-slate-50 text-slate-600 border-slate-200'
+              }`}
+            >
+              <div className="font-medium text-sm">すべて ({stats.total})</div>
+              <div className="w-full bg-slate-200/30 rounded-full h-1 mt-0.5">
+                <div className="h-1 rounded-full bg-slate-400" style={{ width: `${stats.total === 0 ? 0 : (stats.completed / stats.total) * 100}%` }} />
+              </div>
+            </button>
+            {tagStats.map((tagData) => (
               <button
                 type="button"
-                onClick={() => setActiveTab('active')}
-                className={`flex-1 min-w-[100px] flex items-center justify-center gap-1.5 py-2 text-sm font-semibold rounded-md transition ${activeTab === 'active' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                key={tagData.tag}
+                onClick={() => setSelectedTag(tagData.tag)}
+                className={`shrink-0 snap-start w-[160px] p-3 rounded-lg text-left transition flex flex-col gap-1.5 border ${
+                  selectedTag === tagData.tag ? 'bg-blue-50 text-blue-700 border-blue-200 shadow-sm' : 'bg-white text-slate-600 border-slate-200'
+                }`}
               >
-                <Circle size={16} /> アクティブ
+                <div className="flex justify-between items-center w-full">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${tagData.tag === '未分類' ? 'bg-slate-300' : getTagColor(tagData.tag).split(' ')[0]}`} />
+                    <span className="text-sm font-medium truncate">{tagData.tag}</span>
+                  </div>
+                  <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded-full shrink-0">
+                    {tagData.active > 0 ? tagData.active : '✓'}
+                  </span>
+                </div>
+                <div className="w-full bg-slate-200/70 rounded-full h-1 mt-0.5">
+                  <div className={`h-1 rounded-full ${tagData.rate === 100 ? 'bg-emerald-400' : 'bg-blue-500'}`} style={{ width: `${tagData.rate}%` }} />
+                </div>
               </button>
+            ))}
+          </div>
+
+          <div className="xl:hidden flex flex-wrap gap-2 p-1 bg-slate-200/60 rounded-lg w-full">
+            {[
+              { id: 'active', label: 'アクティブ' },
+              { id: 'history', label: '履歴' },
+              { id: 'calendar', label: 'カレンダー' },
+              { id: 'analytics', label: '分析' },
+              { id: 'routines', label: 'ルーチン' }
+            ].map(tab => (
               <button
+                key={tab.id}
                 type="button"
-                onClick={() => setActiveTab('history')}
-                className={`flex-1 min-w-[100px] flex items-center justify-center gap-1.5 py-2 text-sm font-semibold rounded-md transition ${activeTab === 'history' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 min-w-[70px] py-2 text-xs font-semibold rounded-md transition ${
+                  activeTab === tab.id ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'
+                }`}
               >
-                <History size={16} /> 履歴
+                {tab.label}
               </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('calendar')}
-                className={`flex-1 min-w-[100px] flex items-center justify-center gap-1.5 py-2 text-sm font-semibold rounded-md transition ${activeTab === 'calendar' ? 'bg-white text-violet-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                <Calendar size={16} /> カレンダー
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('analytics')}
-                className={`flex-1 min-w-[100px] flex items-center justify-center gap-1.5 py-2 text-sm font-semibold rounded-md transition ${activeTab === 'analytics' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                <BarChart3 size={16} /> 分析
+            ))}
+          </div>
+
+          {searchQuery.trim() && (
+            <div className="bg-blue-50 text-blue-800 px-4 py-3 rounded-lg border border-blue-200 flex items-center justify-between">
+              <p className="text-sm">
+                「<strong>{searchQuery}</strong>」の検索結果:{' '}
+                <span className="font-bold">
+                  {activeTab === 'active'
+                    ? activeTotalCount
+                    : activeTab === 'history'
+                      ? historyList.length
+                      : tagAndSearchTaskCount}
+                </span>{' '}
+                件
+              </p>
+              <button type="button" onClick={() => setSearchQuery('')} className="p-1 hover:bg-blue-100 rounded-md" aria-label="検索をクリア">
+                <X size={16} />
               </button>
             </div>
+          )}
 
-            {activeTab === 'active' && (
-              <>
-                {taskFormExpanded ? (
-                  <form onSubmit={handleAddTask} className="bg-white rounded-xl shadow-sm border border-blue-100 p-4 transition-all focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                        <Plus size={18} className="text-blue-500" /> 新規タスク
-                      </span>
+          {activeTab === 'active' && (
+            <>
+              {taskFormExpanded ? (
+                <form onSubmit={handleAddTask} className="bg-white rounded-xl shadow-sm border border-blue-100 p-4 transition-all focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                      <Plus size={18} className="text-blue-500" /> 新規タスク
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setTaskFormExpanded(false)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+                      title="閉じる"
+                    >
+                      <ChevronUp size={18} />
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2">
+                      <span className="text-[10px] text-slate-500 leading-snug">改行で複数追加。カンマ区切りで日時指定可 (例: 買い物, 2024-05-01 15:00)</span>
                       <button
                         type="button"
-                        onClick={() => setTaskFormExpanded(false)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
-                        title="閉じる"
-                      >
-                        <ChevronUp size={18} />
-                      </button>
-                    </div>
-                    <div className="flex flex-col gap-3">
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2">
-                        <span className="text-[10px] text-slate-500 leading-snug">改行で複数追加。カンマ区切りで日時指定可 (例: 買い物, 2024-05-01 15:00)</span>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            const text = '以下のタスクリストを読み込み、それぞれのタスクを「タスク内容, YYYY-MM-DD HH:mm」の1行1タスク形式で出力してください。\n\n';
-                            try {
-                              await navigator.clipboard.writeText(text);
-                              alert('AI用プロンプトの雛形をコピーしました！');
-                            } catch {
-                              alert('クリップボードへのコピーに失敗しました');
-                            }
-                          }}
-                          className="text-xs text-blue-600 hover:underline flex items-center gap-1 shrink-0 self-end sm:self-auto"
-                        >
-                          <Copy size={12} /> AI用プロンプト雛形をコピー
-                        </button>
-                      </div>
-                      <textarea
-                        placeholder="内容を入力..."
-                        value={newTaskTitle}
-                        onChange={(e) => setNewTaskTitle(e.target.value)}
-                        rows={3}
-                        className="w-full py-2 px-3 outline-none text-slate-800 placeholder-slate-400 bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-500 focus:bg-white resize-y text-sm"
-                      />
-                      <div className="flex justify-end">
-                        <button type="submit" disabled={!newTaskTitle.trim() || loading} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg disabled:opacity-50 hover:bg-blue-700 transition shadow-sm">
-                          追加
-                        </button>
-                      </div>
-                    </div>
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-medium text-slate-400 flex items-center gap-1"><Tag size={12} /> タグ:</span>
-                      {newTaskTags.map(tag => (
-                        <span key={tag} className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 ${getTagColor(tag)}`}>
-                          {tag}
-                          <button type="button" onClick={() => setNewTaskTags(prev => prev.filter(t => t !== tag))} className="hover:text-red-500"><X size={12} /></button>
-                        </span>
-                      ))}
-                      {tagStats.filter(t => t.tag !== '未分類' && !newTaskTags.includes(t.tag)).slice(0, 5).map(t => (
-                        <button
-                          key={`sug-${t.tag}`} type="button"
-                          onClick={() => setNewTaskTags(prev => [...prev, t.tag])}
-                          className="text-xs px-2 py-1 rounded-full border border-dashed border-slate-300 text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition"
-                        >
-                          +{t.tag}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                      <label className="text-xs font-medium text-slate-400 flex items-center gap-1">
-                        <Calendar size={12} /> 期限(日時):
-                      </label>
-                      <input
-                        type="datetime-local"
-                        value={newTaskDue}
-                        onChange={(e) => setNewTaskDue(e.target.value)}
-                        className="text-xs px-2 py-1.5 border border-slate-200 rounded-md bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none"
-                      />
-                      {newTaskDue && (
-                        <button type="button" onClick={() => setNewTaskDue('')} className="text-xs text-slate-400 hover:text-red-500 flex items-center gap-1">
-                          <X size={12} /> 期限クリア
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const d = new Date();
-                          d.setHours(23, 59, 0, 0);
-                          setNewTaskDue(toDatetimeLocalValue(d));
+                        onClick={async () => {
+                          const text = '以下のタスクリストを読み込み、それぞれのタスクを「タスク内容, YYYY-MM-DD HH:mm」の1行1タスク形式で出力してください。\n\n';
+                          try {
+                            await navigator.clipboard.writeText(text);
+                            alert('AI用プロンプトの雛形をコピーしました！');
+                          } catch {
+                            alert('クリップボードへのコピーに失敗しました');
+                          }
                         }}
-                        className="text-xs px-2 py-1 rounded-md border border-dashed border-slate-300 text-slate-500 hover:bg-slate-50"
+                        className="text-xs text-blue-600 hover:underline flex items-center gap-1 shrink-0 self-end sm:self-auto"
                       >
-                        今日中
+                        <Copy size={12} /> AI用プロンプト雛形をコピー
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const d = new Date();
-                          d.setDate(d.getDate() + 1);
-                          d.setHours(23, 59, 0, 0);
-                          setNewTaskDue(toDatetimeLocalValue(d));
-                        }}
-                        className="text-xs px-2 py-1 rounded-md border border-dashed border-slate-300 text-slate-500 hover:bg-slate-50"
-                      >
-                        明日中
+                    </div>
+                    <textarea
+                      placeholder="内容を入力..."
+                      value={newTaskTitle}
+                      onChange={(e) => setNewTaskTitle(e.target.value)}
+                      rows={3}
+                      className="w-full py-2 px-3 outline-none text-slate-800 placeholder-slate-400 bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-500 focus:bg-white resize-y text-sm"
+                    />
+                    <div className="flex justify-end">
+                      <button type="submit" disabled={!newTaskTitle.trim() || loading} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg disabled:opacity-50 hover:bg-blue-700 transition shadow-sm">
+                        追加
                       </button>
-                      <span className="text-[10px] text-slate-400 w-full sm:w-auto sm:ml-auto">
-                        ※ APIは期限の時刻を落とすことがあるため、時刻はメモ欄の [time:HH:mm] にも保存します
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-medium text-slate-400 flex items-center gap-1"><Tag size={12} /> タグ:</span>
+                    {newTaskTags.map(tag => (
+                      <span key={tag} className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 ${getTagColor(tag)}`}>
+                        {tag}
+                        <button type="button" onClick={() => setNewTaskTags(prev => prev.filter(t => t !== tag))} className="hover:text-red-500"><X size={12} /></button>
                       </span>
-                    </div>
-                  </form>
-                ) : null}
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setShowOnlyNoDue(false)}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition flex items-center gap-1.5 ${
-                      !showOnlyNoDue ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    <Calendar size={14} /> 期限順ですべて
-                  </button>
-                  <button
-                    onClick={() => setShowOnlyNoDue(true)}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition flex items-center gap-1.5 ${
-                      showOnlyNoDue ? 'bg-slate-800 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    <CalendarOff size={14} /> 期限なしのみ
-                  </button>
-                </div>
-              </>
-            )}
-
-            {activeTab === 'analytics' ? (
-              <AnalyticsView
-                weeklyHistory={weeklyHistory}
-                monthlyHistory={monthlyHistory}
-                yearlyHistory={yearlyHistory}
-                overallCompletionRate={overallCompletionRate}
-                totalTasks={analyticsTotalTasks}
-                completedTasks={analyticsCompletedTasks}
-                tagStats={tagStats}
-                selectedTag={selectedTag}
-                toggleTaskStatus={toggleTaskStatus}
-              />
-            ) : activeTab === 'calendar' ? (
-              <CalendarView
-                tasks={calendarTasks}
-                mode={calendarMode}
-                setMode={setCalendarMode}
-                cursor={calendarCursor}
-                setCursor={setCalendarCursor}
-                toggleTaskStatus={toggleTaskStatus}
-                getTagColor={getTagColor}
-              />
-            ) : (
-              <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                <div className="px-3 py-1 border-b border-slate-100 bg-white flex flex-wrap items-center justify-between gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectionMode((prev) => {
-                        if (prev) setSelectedTasks(new Set());
-                        return !prev;
-                      });
-                    }}
-                    className={`px-2 py-0.5 text-[11px] font-medium rounded-md transition border shrink-0 ${
-                      selectionMode
-                        ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
-                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    {selectionMode ? '選択終了' : '選択モード'}
-                  </button>
-                  <span className="text-[9px] text-slate-400 text-right leading-tight flex-1 min-w-0 sm:max-w-[65%]">
-                    1–9タグ · Escすべて · ↑↓ · Enter完了 · Shift/行クリック複数 · ポップアップ←→
-                  </span>
-                </div>
-                <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50 flex justify-between items-center gap-2">
-                  <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-1.5 min-w-0">
-                    {selectedTag ? (
-                      <><span className="text-slate-400 shrink-0">#</span> <span className="truncate">{selectedTag}</span></>
-                    ) : (activeTab === 'active'
-                      ? (showOnlyNoDue ? '期限なしのアクティブタスク' : 'アクティブタスク（時系列・見出し別）')
-                      : 'すべての完了履歴')}
-                  </h2>
-                  <span className="text-[10px] font-medium text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-200 shadow-sm shrink-0 tabular-nums">
-                    {activeTab === 'active' ? activeTotalCount : historyList.length} 件
-                  </span>
-                </div>
-
-                {selectedTasks.size > 0 && (
-                  <div className="bg-slate-800 text-white px-4 py-3 shadow-lg flex items-center justify-between sticky top-[108px] z-[25] animate-in fade-in slide-in-from-top-2 border-b border-slate-700">
-                    <span className="text-sm font-medium">{selectedTasks.size} 件を選択中</span>
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => setSelectedTasks(new Set())} className="px-3 py-1.5 text-xs font-medium bg-slate-700 hover:bg-slate-600 rounded-lg transition">キャンセル</button>
-                      <button type="button" onClick={handleDeleteSelected} className="px-3 py-1.5 text-xs font-medium bg-red-500 hover:bg-red-600 text-white rounded-lg transition flex items-center gap-1.5 shadow-sm">
-                        <Trash2 size={14} /> 削除
+                    ))}
+                    {tagStats.filter(t => t.tag !== '未分類' && !newTaskTags.includes(t.tag)).slice(0, 5).map(t => (
+                      <button
+                        key={`sug-${t.tag}`} type="button"
+                        onClick={() => setNewTaskTags(prev => [...prev, t.tag])}
+                        className="text-xs px-2 py-1 rounded-full border border-dashed border-slate-300 text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition"
+                      >
+                        +{t.tag}
                       </button>
-                    </div>
-                  </div>
-                )}
-
-                {loading ? (
-                  <div className="p-12 text-center text-slate-400 flex flex-col items-center">
-                    <RefreshCw className="animate-spin mb-3" size={28} />
-                    <p>読み込み中...</p>
-                  </div>
-                ) : (activeTab === 'active' ? activeTotalCount === 0 : historyList.length === 0) ? (
-                  <div className="p-12 text-center text-slate-400">
-                    <CheckCircle2 size={40} className="mx-auto mb-3 opacity-20" />
-                    <p>{activeTab === 'active'
-                      ? (showOnlyNoDue ? '期限なしのタスクはありません' : 'タスクはすべて完了しました！🎉')
-                      : '完了したタスクはありません'}</p>
-                  </div>
-                ) : activeTab === 'active' ? (
-                  <div>
-                    {activeGroups.map(group => (
-                      <section key={group.bucket} className="border-b border-slate-100 last:border-b-0">
-                        <div className="sticky top-16 z-[5] px-4 py-2.5 bg-white/95 backdrop-blur-md border-b border-slate-100 flex items-baseline justify-between gap-2">
-                          <h3 className="text-sm font-bold text-slate-800">{group.title}</h3>
-                          <span className="text-[11px] font-medium text-slate-500 tabular-nums">{group.tasks.length} 件</span>
-                        </div>
-                        <div className="divide-y divide-slate-100">
-                          {group.tasks.map(task => {
-                            const overdue = task.status !== 'completed' && isOverdue(task.due);
-                            const isKbFocus = keyboardFocusedTaskId === task.id;
-                            const isMultiSel = showCheckboxes && selectedTasks.has(task.id);
-                            return (
-                              <div
-                                key={task.id}
-                                data-task-row-id={task.id}
-                                onClick={() => { if (showCheckboxes) toggleSelection(task.id); }}
-                                className={`p-4 flex items-start gap-3 transition group ${
-                                  isKbFocus ? 'ring-2 ring-inset ring-blue-500 z-[1]' : ''
-                                } ${
-                                  isMultiSel
-                                    ? overdue
-                                      ? 'bg-red-200/70 hover:bg-red-200/85 border-l-4 border-red-500'
-                                      : 'bg-slate-300/80 hover:bg-slate-300'
-                                    : overdue
-                                      ? 'bg-red-50/40 hover:bg-red-50 border-l-4 border-red-400'
-                                      : 'hover:bg-slate-50'
-                                } ${showCheckboxes ? 'cursor-pointer' : ''}`}
-                              >
-                                <button
-                                  type="button"
-                                  onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }}
-                                  className="mt-1 p-0.5 -ml-0.5 flex-shrink-0 focus:outline-none transition-transform active:scale-90"
-                                >
-                                  {task.status === 'completed' ? (
-                                    <CheckCircle2 className="text-emerald-500 hover:text-emerald-600 transition" size={22} />
-                                  ) : (
-                                    <Circle className={`${overdue ? 'text-red-400 group-hover:text-red-500' : 'text-slate-300 group-hover:text-blue-500'} transition`} size={22} />
-                                  )}
-                                </button>
-                                <div className="flex-grow min-w-0">
-                                  <h3 className={`font-medium text-base mb-1.5 whitespace-normal break-words ${overdue ? 'text-red-700' : 'text-slate-800'}`}>
-                                    {task.cleanTitle}
-                                  </h3>
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    {(task.platforms || []).map(p => (
-                                      <span
-                                        key={p}
-                                        className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${getLmsBadgeClass(p)}`}
-                                      >
-                                        {p}
-                                      </span>
-                                    ))}
-                                    {task.tags.map(tag => (
-                                      <span
-                                        key={tag}
-                                        onClick={(e) => { e.stopPropagation(); setSelectedTag(tag); }}
-                                        className={`text-[11px] font-medium px-2 py-0.5 rounded-full border cursor-pointer hover:opacity-80 transition ${getTagColor(tag)}`}
-                                      >
-                                        {tag}
-                                      </span>
-                                    ))}
-                                    {task.due && (
-                                      <div className={`flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border ${
-                                        overdue
-                                          ? 'text-red-700 bg-red-100 border-red-300 animate-pulse'
-                                          : 'text-amber-700 bg-amber-50 border-amber-200'
-                                      }`}>
-                                        {overdue ? <AlertCircle size={11} /> : <Calendar size={11} />}
-                                        {overdue ? '期限超過: ' : '期限: '}{formatDue(task.due)}
-                                      </div>
-                                    )}
-                                    {!task.due && (
-                                      <div className="flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-200">
-                                        <CalendarOff size={11} /> 期限なし
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </section>
                     ))}
                   </div>
-                ) : (
-                  <div className="divide-y divide-slate-100">
-                    {historyList.map(task => {
-                      const overdue = task.status !== 'completed' && isOverdue(task.due);
-                      const isKbFocus = keyboardFocusedTaskId === task.id;
-                      const isMultiSel = showCheckboxes && selectedTasks.has(task.id);
-                      return (
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <label className="text-xs font-medium text-slate-400 flex items-center gap-1">
+                      <Calendar size={12} /> 期限(日時):
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={newTaskDue}
+                      onChange={(e) => setNewTaskDue(e.target.value)}
+                      className="text-xs px-2 py-1.5 border border-slate-200 rounded-md bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                    {newTaskDue && (
+                      <button type="button" onClick={() => setNewTaskDue('')} className="text-xs text-slate-400 hover:text-red-500 flex items-center gap-1">
+                        <X size={12} /> 期限クリア
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const d = new Date();
+                        d.setHours(23, 59, 0, 0);
+                        setNewTaskDue(toDatetimeLocalValue(d));
+                      }}
+                      className="text-xs px-2 py-1 rounded-md border border-dashed border-slate-300 text-slate-500 hover:bg-slate-50"
+                    >
+                      今日中
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const d = new Date();
+                        d.setDate(d.getDate() + 1);
+                        d.setHours(23, 59, 0, 0);
+                        setNewTaskDue(toDatetimeLocalValue(d));
+                      }}
+                      className="text-xs px-2 py-1 rounded-md border border-dashed border-slate-300 text-slate-500 hover:bg-slate-50"
+                    >
+                      明日中
+                    </button>
+                    <span className="text-[10px] text-slate-400 w-full sm:w-auto sm:ml-auto">
+                      ※ APIは期限の時刻を落とすことがあるため、時刻はメモ欄の [time:HH:mm] にも保存します
+                    </span>
+                  </div>
+                </form>
+              ) : null}
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowOnlyNoDue(false)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition flex items-center gap-1.5 ${!showOnlyNoDue ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                  <Calendar size={14} /> 期限順ですべて
+                </button>
+                <button
+                  onClick={() => setShowOnlyNoDue(true)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition flex items-center gap-1.5 ${showOnlyNoDue ? 'bg-slate-800 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                  <CalendarOff size={14} /> 期限なしのみ
+                </button>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'analytics' && (
+            <AnalyticsView
+              tasks={tasks}
+              weeklyHistory={weeklyHistory}
+              monthlyHistory={monthlyHistory}
+              yearlyHistory={yearlyHistory}
+              overallCompletionRate={overallCompletionRate}
+              totalTasks={analyticsTotalTasks}
+              completedTasks={analyticsCompletedTasks}
+              tagStats={tagStats}
+              selectedTag={selectedTag}
+              toggleTaskStatus={toggleTaskStatus}
+            />
+          )}
+          {activeTab === 'calendar' && (
+            <CalendarView
+              tasks={calendarTasks}
+              mode={calendarMode}
+              setMode={setCalendarMode}
+              cursor={calendarCursor}
+              setCursor={setCalendarCursor}
+              toggleTaskStatus={toggleTaskStatus}
+              getTagColor={getTagColor}
+            />
+          )}
+          {activeTab === 'routines' && (
+            <RoutineDetectorView
+              routineGroups={routineGroups}
+              toggleTaskStatus={toggleTaskStatus}
+              selectedTasks={selectedTasks}
+              toggleSelection={toggleSelection}
+              setSelectedTasks={setSelectedTasks}
+              handleDeleteSelected={handleDeleteSelected}
+              showCheckboxes={showCheckboxes}
+              selectionMode={selectionMode}
+              setSelectionMode={setSelectionMode}
+            />
+          )}
+          {(activeTab === 'active' || activeTab === 'history') && (
+            <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+              <div className="px-3 py-1 border-b border-slate-100 bg-white flex flex-wrap items-center justify-between gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectionMode((prev) => {
+                      if (prev) setSelectedTasks(new Set());
+                      return !prev;
+                    });
+                  }}
+                  className={`px-2 py-0.5 text-[11px] font-medium rounded-md transition border shrink-0 ${selectionMode
+                    ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                  {selectionMode ? '選択終了' : '選択モード'}
+                </button>
+                <span className="text-[9px] text-slate-400 text-right leading-tight flex-1 min-w-0 sm:max-w-[65%]">
+                  1–9タグ · Escすべて · ↑↓ · Enter完了 · Shift/行クリック複数 · ポップアップ←→
+                </span>
+              </div>
+              <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50 flex justify-between items-center gap-2">
+                <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-1.5 min-w-0">
+                  {selectedTag ? (
+                    <><span className="text-slate-400 shrink-0">#</span> <span className="truncate">{selectedTag}</span></>
+                  ) : (activeTab === 'active'
+                    ? (showOnlyNoDue ? '期限なしのアクティブタスク' : 'アクティブタスク（時系列・見出し別）')
+                    : 'すべての完了履歴')}
+                </h2>
+                <span className="text-[10px] font-medium text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-200 shadow-sm shrink-0 tabular-nums">
+                  {activeTab === 'active' ? activeTotalCount : historyList.length} 件
+                </span>
+              </div>
+
+              {selectedTasks.size > 0 && (
+                <div className="bg-slate-800 text-white px-4 py-3 shadow-lg flex items-center justify-between sticky top-[108px] z-[25] animate-in fade-in slide-in-from-top-2 border-b border-slate-700">
+                  <span className="text-sm font-medium">{selectedTasks.size} 件を選択中</span>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => setSelectedTasks(new Set())} className="px-3 py-1.5 text-xs font-medium bg-slate-700 hover:bg-slate-600 rounded-lg transition">キャンセル</button>
+                    <button type="button" onClick={handleDeleteSelected} className="px-3 py-1.5 text-xs font-medium bg-red-500 hover:bg-red-600 text-white rounded-lg transition flex items-center gap-1.5 shadow-sm">
+                      <Trash2 size={14} /> 削除
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {loading ? (
+                <div className="p-12 text-center text-slate-400 flex flex-col items-center">
+                  <RefreshCw className="animate-spin mb-3" size={28} />
+                  <p>読み込み中...</p>
+                </div>
+              ) : (activeTab === 'active' ? activeTotalCount === 0 : historyList.length === 0) ? (
+                <div className="p-12 text-center text-slate-400">
+                  <CheckCircle2 size={40} className="mx-auto mb-3 opacity-20" />
+                  <p>{activeTab === 'active'
+                    ? (showOnlyNoDue ? '期限なしのタスクはありません' : 'タスクはすべて完了しました！🎉')
+                    : '完了したタスクはありません'}</p>
+                </div>
+              ) : activeTab === 'active' ? (
+                <div>
+                  {activeGroups.map(group => (
+                    <section key={group.bucket} className="border-b border-slate-100 last:border-b-0">
+                      <div className="sticky top-16 z-[5] px-4 py-2.5 bg-white/95 backdrop-blur-md border-b border-slate-100 flex items-baseline justify-between gap-2">
+                        <h3 className="text-sm font-bold text-slate-800">{group.title}</h3>
+                        <span className="text-[11px] font-medium text-slate-500 tabular-nums">{group.tasks.length} 件</span>
+                      </div>
+                      <div className="divide-y divide-slate-100">
+                        {group.tasks.map(task => {
+                          const overdue = task.status !== 'completed' && isOverdue(task.due);
+                          const isKbFocus = keyboardFocusedTaskId === task.id;
+                          const isMultiSel = showCheckboxes && selectedTasks.has(task.id);
+                          return (
+                            <div
+                              key={task.id}
+                              data-task-row-id={task.id}
+                              onClick={() => { if (showCheckboxes) toggleSelection(task.id); }}
+                              className={`p-4 flex items-start gap-3 transition group ${isKbFocus ? 'ring-2 ring-inset ring-blue-500 z-[1]' : ''
+                                } ${isMultiSel
+                                  ? overdue
+                                    ? 'bg-red-200/70 hover:bg-red-200/85 border-l-4 border-red-500'
+                                    : 'bg-slate-300/80 hover:bg-slate-300'
+                                  : overdue
+                                    ? 'bg-red-50/40 hover:bg-red-50 border-l-4 border-red-400'
+                                    : 'hover:bg-slate-50'
+                                } ${showCheckboxes ? 'cursor-pointer' : ''}`}
+                            >
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }}
+                                className="mt-1 p-0.5 -ml-0.5 flex-shrink-0 focus:outline-none transition-transform active:scale-90"
+                              >
+                                {task.status === 'completed' ? (
+                                  <CheckCircle2 className="text-emerald-500 hover:text-emerald-600 transition" size={22} />
+                                ) : (
+                                  <Circle className={`${overdue ? 'text-red-400 group-hover:text-red-500' : 'text-slate-300 group-hover:text-blue-500'} transition`} size={22} />
+                                )}
+                              </button>
+                              <div className="flex-grow min-w-0">
+                                <h3 className={`font-medium text-base mb-1.5 whitespace-normal break-words ${overdue ? 'text-red-700' : 'text-slate-800'}`}>
+                                  {task.cleanTitle}
+                                </h3>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  {(task.platforms || []).map(p => (
+                                    <span
+                                      key={p}
+                                      className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${getLmsBadgeClass(p)}`}
+                                    >
+                                      {p}
+                                    </span>
+                                  ))}
+                                  {task.tags.map(tag => (
+                                    <span
+                                      key={tag}
+                                      onClick={(e) => { e.stopPropagation(); setSelectedTag(tag); }}
+                                      className={`text-[11px] font-medium px-2 py-0.5 rounded-full border cursor-pointer hover:opacity-80 transition ${getTagColor(tag)}`}
+                                    >
+                                      {tag}
+                                    </span>
+                                  ))}
+                                  {task.due && (
+                                    <div className={`flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border ${overdue
+                                      ? 'text-red-700 bg-red-100 border-red-300 animate-pulse'
+                                      : 'text-amber-700 bg-amber-50 border-amber-200'
+                                      }`}>
+                                      {overdue ? <AlertCircle size={11} /> : <Calendar size={11} />}
+                                      {overdue ? '期限超過: ' : '期限: '}{formatDue(task.due)}
+                                    </div>
+                                  )}
+                                  {!task.due && (
+                                    <div className="flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-200">
+                                      <CalendarOff size={11} /> 期限なし
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {historyList.map(task => {
+                    const overdue = task.status !== 'completed' && isOverdue(task.due);
+                    const isKbFocus = keyboardFocusedTaskId === task.id;
+                    const isMultiSel = showCheckboxes && selectedTasks.has(task.id);
+                    return (
                       <div
                         key={task.id}
                         data-task-row-id={task.id}
                         onClick={() => { if (showCheckboxes) toggleSelection(task.id); }}
-                        className={`p-4 flex items-start gap-3 transition group ${
-                          isKbFocus ? 'ring-2 ring-inset ring-blue-500 z-[1]' : ''
-                        } ${
-                          isMultiSel
+                        className={`p-4 flex items-start gap-3 transition group ${isKbFocus ? 'ring-2 ring-inset ring-blue-500 z-[1]' : ''
+                          } ${isMultiSel
                             ? task.status === 'completed'
                               ? 'bg-slate-300/70 opacity-90'
                               : overdue
@@ -1638,7 +1787,7 @@ export default function App() {
                               : overdue
                                 ? 'bg-red-50/40 hover:bg-red-50 border-l-4 border-red-400'
                                 : 'hover:bg-slate-50'
-                        } ${showCheckboxes ? 'cursor-pointer' : ''}`}
+                          } ${showCheckboxes ? 'cursor-pointer' : ''}`}
                       >
                         <button
                           type="button"
@@ -1653,11 +1802,10 @@ export default function App() {
                         </button>
 
                         <div className="flex-grow min-w-0">
-                          <h3 className={`font-medium text-base mb-1.5 whitespace-normal break-words ${
-                            task.status === 'completed'
-                              ? 'line-through text-slate-500'
-                              : overdue ? 'text-red-700' : 'text-slate-800'
-                          }`}>
+                          <h3 className={`font-medium text-base mb-1.5 whitespace-normal break-words ${task.status === 'completed'
+                            ? 'line-through text-slate-500'
+                            : overdue ? 'text-red-700' : 'text-slate-800'
+                            }`}>
                             {task.cleanTitle}
                           </h3>
 
@@ -1681,11 +1829,10 @@ export default function App() {
                             ))}
 
                             {task.due && task.status !== 'completed' && (
-                              <div className={`flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border ${
-                                overdue
-                                  ? 'text-red-700 bg-red-100 border-red-300 animate-pulse'
-                                  : 'text-amber-700 bg-amber-50 border-amber-200'
-                              }`}>
+                              <div className={`flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border ${overdue
+                                ? 'text-red-700 bg-red-100 border-red-300 animate-pulse'
+                                : 'text-amber-700 bg-amber-50 border-amber-200'
+                                }`}>
                                 {overdue ? <AlertCircle size={11} /> : <Calendar size={11} />}
                                 {overdue ? '期限超過: ' : '期限: '}{formatDue(task.due)}
                               </div>
@@ -1706,15 +1853,14 @@ export default function App() {
                           </div>
                         </div>
                       </div>
-                    );})}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-        </div>
-      </main>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </main>
+      </div>
 
       {(accessToken || isDemo) && activeTab === 'active' && (
         <button
@@ -2095,9 +2241,8 @@ function PeriodCard({ label, icon, stats, accent, onClick }) {
       <div className="mt-2 w-full">
         <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
           <div
-            className={`h-1.5 rounded-full transition-all duration-500 ${
-              isEmpty ? 'bg-slate-200' : rate === 100 ? 'bg-emerald-400' : 'bg-blue-500'
-            }`}
+            className={`h-1.5 rounded-full transition-all duration-500 ${isEmpty ? 'bg-slate-200' : rate === 100 ? 'bg-emerald-400' : 'bg-blue-500'
+              }`}
             style={{ width: `${isEmpty ? 0 : rate}%` }}
           />
         </div>
@@ -2109,7 +2254,125 @@ function PeriodCard({ label, icon, stats, accent, onClick }) {
   );
 }
 
-function AnalyticsView({ weeklyHistory, monthlyHistory, yearlyHistory, overallCompletionRate, totalTasks, completedTasks, tagStats, selectedTag, toggleTaskStatus }) {
+function RoutineDetectorView({
+  routineGroups,
+  toggleTaskStatus,
+  selectedTasks,
+  toggleSelection,
+  setSelectedTasks,
+  handleDeleteSelected,
+  showCheckboxes,
+  selectionMode,
+  setSelectionMode,
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-100">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setSelectionMode((prev) => {
+                if (prev) setSelectedTasks(new Set());
+                return !prev;
+              });
+            }}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition border shrink-0 ${
+              selectionMode
+                ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            {selectionMode ? '選択終了' : '選択モード'}
+          </button>
+          <span className="text-[10px] text-slate-400">Shiftキー長押しでも複数選択可</span>
+        </div>
+      </div>
+
+      {selectedTasks.size > 0 && (
+        <div className="bg-slate-800 text-white px-4 py-3 rounded-lg shadow-lg flex items-center justify-between sticky top-[80px] z-20 animate-in fade-in slide-in-from-top-2">
+          <span className="text-sm font-medium">{selectedTasks.size} 件を選択中</span>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setSelectedTasks(new Set())} className="px-3 py-1.5 text-xs font-medium bg-slate-700 hover:bg-slate-600 rounded-lg">キャンセル</button>
+            <button type="button" onClick={handleDeleteSelected} className="px-3 py-1.5 text-xs font-medium bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center gap-1.5"><Trash2 size={14} /> 削除</button>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {routineGroups.length === 0 ? (
+          <div className="col-span-full p-12 text-center text-slate-400 bg-white rounded-xl border border-slate-100">
+            <Layers size={40} className="mx-auto mb-3 opacity-20" />
+            <p>検出されたルーチンタスクはありません</p>
+          </div>
+        ) : (
+          routineGroups.map((group, idx) => {
+            const sortedTasks = [...group.tasks].sort((a, b) => {
+              if (!a.due) return 1;
+              if (!b.due) return -1;
+              return new Date(a.due).getTime() - new Date(b.due).getTime();
+            });
+
+            return (
+              <div key={group.title + String(idx)} className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
+                <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
+                  <h3 className="font-bold text-slate-800 text-base truncate flex-1 pr-4">{group.title}</h3>
+                  <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-full shrink-0">{group.count} 回出現</span>
+                </div>
+                <div className="p-3 bg-white flex justify-between items-center border-b border-slate-50">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const ids = group.tasks.map((t) => t.id);
+                      setSelectedTasks((prev) => {
+                        const next = new Set(prev);
+                        const allSelected = ids.every((id) => next.has(id));
+                        ids.forEach((id) => (allSelected ? next.delete(id) : next.add(id)));
+                        return next;
+                      });
+                    }}
+                    className="text-xs text-blue-600 hover:underline"
+                  >
+                    このグループをすべて選択
+                  </button>
+                </div>
+                <div className="max-h-[300px] overflow-y-auto divide-y divide-slate-50 p-2">
+                  {sortedTasks.map((task) => {
+                    const done = task.status === 'completed';
+                    const isSelected = selectedTasks.has(task.id);
+                    return (
+                      <div
+                        key={task.id}
+                        onClick={() => { if (showCheckboxes) toggleSelection(task.id); }}
+                        className={`flex items-start gap-3 p-2 rounded-lg transition group ${
+                          showCheckboxes ? 'cursor-pointer' : ''
+                        } ${isSelected ? 'bg-blue-50 ring-1 ring-blue-300' : 'hover:bg-slate-50'}`}
+                      >
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }}
+                          className="mt-0.5 shrink-0 focus:outline-none transition-transform active:scale-90"
+                        >
+                          {done ? <CheckCircle2 size={16} className="text-emerald-500" /> : <Circle size={16} className="text-slate-300 group-hover:text-blue-500 transition" />}
+                        </button>
+                        <div className="min-w-0 flex-1">
+                          <p className={`text-sm ${done ? 'line-through text-slate-400' : 'text-slate-700'}`}>{task.cleanTitle}</p>
+                          {task.due && <p className="text-[10px] text-slate-400 mt-0.5">{new Date(task.due).toLocaleDateString()}</p>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AnalyticsView({ tasks, weeklyHistory, monthlyHistory, yearlyHistory, overallCompletionRate, totalTasks, completedTasks, tagStats, selectedTag, toggleTaskStatus }) {
   const [granularity, setGranularity] = useState('week');
   const [expandedRow, setExpandedRow] = useState(null);
   const series = granularity === 'week' ? weeklyHistory : granularity === 'month' ? monthlyHistory : yearlyHistory;
@@ -2117,17 +2380,11 @@ function AnalyticsView({ weeklyHistory, monthlyHistory, yearlyHistory, overallCo
 
   useEffect(() => setExpandedRow(null), [granularity]);
 
-  const scopeHint = selectedTag
-    ? `（タグ「${selectedTag}」のタスクのみ）`
-    : '';
+  const scopeHint = selectedTag ? `（タグ「${selectedTag}」のタスクのみ）` : '';
   const chartTitle =
     granularity === 'week' ? `週次（過去7週＋今週＋来週）${scopeHint}`
       : granularity === 'month' ? `月次（過去12ヶ月）${scopeHint}`
         : `年次（過去5年）${scopeHint}`;
-  const chartHint =
-    granularity === 'week' ? '期限日が含まれる週のタスクを集計'
-      : granularity === 'month' ? '期限日が含まれる月のタスクを集計'
-        : '期限日が含まれる年のタスクを集計';
 
   const labelFor = (w) => {
     if (granularity === 'week') {
@@ -2141,126 +2398,165 @@ function AnalyticsView({ weeklyHistory, monthlyHistory, yearlyHistory, overallCo
     return w.isCurrent ? '今年' : w.label;
   };
 
-  const tagRowsForDisplay = selectedTag
-    ? tagStats.filter(t => t.tag === selectedTag).slice(0, 5)
-    : tagStats.slice(0, 5);
+  // Heatmap Data Processing
+  const heatmap = useMemo(() => {
+    const grid = Array(7).fill(0).map(() => Array(4).fill(0));
+    tasks.forEach((t) => {
+      if (t.status === 'completed' && t.completed) {
+        const d = new Date(t.completed);
+        const day = d.getDay();
+        const hour = d.getHours();
+        let timeSlot = 0;
+        if (hour >= 6 && hour < 12) timeSlot = 1;
+        else if (hour >= 12 && hour < 17) timeSlot = 2;
+        else if (hour >= 17 && hour < 22) timeSlot = 3;
+        grid[day][timeSlot] += 1;
+      }
+    });
+    return grid;
+  }, [tasks]);
+  const maxHeat = Math.max(1, ...heatmap.flat());
+  const timeLabels = ['深夜(0-6/22-24)', '朝(6-12)', '昼(12-17)', '夜(17-22)'];
+  const dayLabels = ['日', '月', '火', '水', '木', '金', '土'];
+
+  // Punctuality & Overdue Data
+  const punctuality = useMemo(() => {
+    let early = 0, onTime = 0, late = 0;
+    tasks.forEach(t => {
+      if (t.status === 'completed' && t.completed && t.due) {
+        const c = new Date(t.completed).getTime();
+        const d = new Date(t.due).getTime();
+        if (c <= d - 86400000) early++;
+        else if (c <= d + 86400000) onTime++;
+        else late++;
+      }
+    });
+    return { early, onTime, late, total: Math.max(early + onTime + late, 1) };
+  }, [tasks]);
+
+  const overdueList = tasks.filter((t) => t.status !== 'completed' && t.due && new Date(t.due).getTime() < Date.now() - 3 * 24 * 60 * 60 * 1000).sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime());
+
+  const totalTagged = tagStats.reduce((sum, t) => sum + t.total, 0) || 1;
 
   return (
     <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-sm p-6 text-white relative overflow-hidden">
+          <div className="relative z-10">
+            <p className="text-emerald-100 text-sm font-medium mb-1 flex items-center gap-1.5"><Target size={16} /> 全体達成率 {scopeHint}</p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-5xl font-bold">{overallCompletionRate}</span><span className="text-xl text-emerald-100">%</span>
+            </div>
+            <p className="text-sm text-emerald-100 mt-2">完了 {completedTasks} / 全体 {totalTasks}</p>
+          </div>
+          <Target className="absolute -right-4 -bottom-4 text-white opacity-10" size={120} />
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 flex flex-col justify-center">
+          <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Clock size={18} className="text-blue-500"/> 完了ペース (期限設定ありのタスク)</h3>
+          <div className="flex w-full h-4 rounded-full overflow-hidden mb-3 bg-slate-100">
+            <div className="bg-emerald-400" style={{ width: `${(punctuality.early / punctuality.total) * 100}%` }} title="期限前"></div>
+            <div className="bg-blue-400" style={{ width: `${(punctuality.onTime / punctuality.total) * 100}%` }} title="当日"></div>
+            <div className="bg-amber-400" style={{ width: `${(punctuality.late / punctuality.total) * 100}%` }} title="遅延"></div>
+          </div>
+          <div className="flex justify-between text-xs text-slate-500 font-medium">
+            <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400"></span> 期限前 ({punctuality.early})</div>
+            <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-400"></span> 当日 ({punctuality.onTime})</div>
+            <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400"></span> 遅延 ({punctuality.late})</div>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-            <BarChart3 size={18} className="text-indigo-600" /> 達成率推移
-          </h2>
+          <h3 className="font-bold text-slate-800 flex items-center gap-2"><BarChart3 size={18} className="text-indigo-600" /> 達成率推移</h3>
           <div className="flex flex-wrap gap-1.5 p-1 bg-slate-100 rounded-lg">
-            {[
-              { id: 'week', label: '週次' },
-              { id: 'month', label: '月次' },
-              { id: 'year', label: '年次' },
-            ].map(({ id, label }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setGranularity(id)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition ${
-                  granularity === id ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                {label}
-              </button>
+            {[{ id: 'week', label: '週次' }, { id: 'month', label: '月次' }, { id: 'year', label: '年次' }].map(({ id, label }) => (
+              <button key={id} onClick={() => setGranularity(id)} className={`px-3 py-1.5 text-xs font-semibold rounded-md transition ${granularity === id ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{label}</button>
             ))}
           </div>
         </div>
-        <p className="text-xs text-slate-500 mb-3">{chartTitle} — {chartHint}</p>
-
+        <p className="text-xs text-slate-500 mb-3">{chartTitle}</p>
         <div className="flex items-end gap-1 sm:gap-2 h-52 px-1 sm:px-2 border-b border-slate-100 overflow-x-auto">
           {series.map(w => (
             <div key={w.key} className="flex-1 min-w-[28px] flex flex-col items-center justify-end gap-1">
-              <span className={`text-[10px] sm:text-[11px] font-semibold ${w.total === 0 ? 'text-slate-300' : w.isFuture ? 'text-slate-400' : 'text-slate-600'}`}>
-                {w.total === 0 ? '-' : `${w.rate}%`}
-              </span>
-              <div
-                className={`w-full rounded-t-md transition-all ${
-                  w.isCurrent
-                    ? 'bg-gradient-to-t from-indigo-600 to-blue-500'
-                    : w.isFuture
-                      ? 'bg-gradient-to-t from-slate-300 to-slate-200 border border-dashed border-slate-300'
-                      : w.rate >= 80 ? 'bg-emerald-400'
-                        : w.rate >= 50 ? 'bg-blue-400'
-                          : w.rate > 0 ? 'bg-amber-400'
-                            : 'bg-slate-200'
-                }`}
-                style={{ height: `${(w.rate / maxRate) * 100}%`, minHeight: w.total === 0 ? '4px' : '8px' }}
-                title={`${w.label}：完了 ${w.completed}/${w.total}`}
-              />
+              <span className={`text-[10px] sm:text-[11px] font-semibold ${w.total === 0 ? 'text-slate-300' : w.isFuture ? 'text-slate-400' : 'text-slate-600'}`}>{w.total === 0 ? '-' : `${w.rate}%`}</span>
+              <div className={`w-full rounded-t-md transition-all ${w.isCurrent ? 'bg-gradient-to-t from-indigo-600 to-blue-500' : w.isFuture ? 'bg-gradient-to-t from-slate-300 to-slate-200 border border-dashed border-slate-300' : w.rate >= 80 ? 'bg-emerald-400' : w.rate >= 50 ? 'bg-blue-400' : w.rate > 0 ? 'bg-amber-400' : 'bg-slate-200'}`} style={{ height: `${(w.rate / maxRate) * 100}%`, minHeight: w.total === 0 ? '4px' : '8px' }} title={`${w.label}：完了 ${w.completed}/${w.total}`} />
             </div>
           ))}
         </div>
         <div className="flex gap-1 sm:gap-2 mt-2 px-1 sm:px-2 overflow-x-auto">
-          {series.map(w => (
-            <div key={`l-${w.key}`} className={`flex-1 min-w-[28px] text-[9px] sm:text-[10px] text-center truncate ${w.isCurrent ? 'text-indigo-600 font-semibold' : w.isFuture ? 'text-slate-400 italic' : 'text-slate-400'}`}>
-              {labelFor(w)}
-            </div>
-          ))}
-        </div>
-        <div className="flex gap-1 sm:gap-2 mt-1 px-1 sm:px-2 overflow-x-auto">
-          {series.map(w => (
-            <div key={`n-${w.key}`} className="flex-1 min-w-[28px] text-[9px] sm:text-[10px] text-center text-slate-400 truncate">
-              {w.completed}/{w.total}
-            </div>
-          ))}
+          {series.map(w => (<div key={`l-${w.key}`} className={`flex-1 min-w-[28px] text-[9px] sm:text-[10px] text-center truncate ${w.isCurrent ? 'text-indigo-600 font-semibold' : w.isFuture ? 'text-slate-400 italic' : 'text-slate-400'}`}>{labelFor(w)}</div>))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-sm p-5 text-white relative overflow-hidden">
-          <div className="relative z-10">
-            <p className="text-emerald-100 text-sm font-medium mb-1 flex items-center gap-1.5">
-              <Target size={16} /> {selectedTag ? '選択タグの達成率' : '全体の達成率'}
-            </p>
-            <div className="flex items-baseline gap-1">
-              <span className="text-4xl font-bold">{overallCompletionRate}</span>
-              <span className="text-lg text-emerald-100">%</span>
-            </div>
-            <p className="text-xs text-emerald-100 mt-2">
-              完了 {completedTasks} / {selectedTag ? '対象' : '全体'} {totalTasks}
-            </p>
-          </div>
-          <Target className="absolute -right-4 -bottom-4 text-white opacity-10" size={100} />
-        </div>
-
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
-          <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
-            <Tag size={16} className="text-blue-600" />{' '}
-            {selectedTag ? `「${selectedTag}」の内訳` : 'タグ別 完了率 TOP5'}
-          </p>
-          <div className="space-y-2.5">
-            {tagRowsForDisplay.map(t => (
-              <div key={`a-${t.tag}`}>
-                <div className="flex justify-between text-xs text-slate-600 mb-1">
-                  <span className="truncate max-w-[140px]">{t.tag}</span>
-                  <span className="font-semibold">{t.rate}% <span className="text-slate-400 font-normal">({t.completed}/{t.total})</span></span>
+          <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><PieChart size={18} className="text-rose-500" /> リソース配分状況 (タグ別)</h3>
+          <div className="space-y-4">
+            {tagStats.slice(0, 8).map((tag) => (
+              <div key={tag.tag}>
+                <div className="flex justify-between text-xs font-semibold text-slate-600 mb-1">
+                  <span>{tag.tag}</span>
+                  <span>{Math.round((tag.total / totalTagged) * 100)}% ({tag.total}件)</span>
                 </div>
-                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className={`h-1.5 rounded-full transition-all duration-500 ${t.rate === 100 ? 'bg-emerald-400' : 'bg-blue-500'}`}
-                    style={{ width: `${t.rate}%` }}
-                  />
+                <div className="w-full bg-slate-100 rounded-full h-2">
+                  <div className="bg-rose-400 h-2 rounded-full" style={{ width: `${(tag.total / totalTagged) * 100}%` }} />
                 </div>
               </div>
             ))}
-            {tagRowsForDisplay.length === 0 && (
-              <p className="text-xs text-slate-400">集計対象がまだありません</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
+          <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Flame size={18} className="text-orange-500" /> 集中度ヒートマップ (完了時間帯)</h3>
+          <div className="overflow-x-auto">
+            <div className="min-w-[300px]">
+              <div className="grid grid-cols-5 gap-1 mb-1">
+                <div className="text-[10px] text-slate-400 text-center" />
+                {timeLabels.map((l) => (<div key={l} className="text-[10px] text-slate-500 text-center">{l}</div>))}
+              </div>
+              {dayLabels.map((day, dIdx) => (
+                <div key={day} className="grid grid-cols-5 gap-1 mb-1">
+                  <div className="text-xs font-semibold text-slate-600 flex items-center justify-center">{day}</div>
+                  {heatmap[dIdx].map((val, tIdx) => {
+                    const intensity = val / maxHeat;
+                    return (
+                      <div key={`${dIdx}-${tIdx}`} className="h-8 rounded flex items-center justify-center text-[10px] text-white font-bold transition-all hover:scale-105" style={{ backgroundColor: `rgba(249, 115, 22, ${intensity === 0 ? 0.05 : 0.2 + intensity * 0.8})`, color: intensity > 0.4 ? 'white' : 'transparent' }} title={`${day}曜日 ${timeLabels[tIdx]}: ${val}件完了`}>
+                        {val > 0 ? val : ''}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+              <p className="text-[10px] text-slate-400 text-right mt-2">※過去の完了タイムスタンプに基づく</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="col-span-full bg-white rounded-xl shadow-sm border border-slate-100 p-5">
+          <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><AlertCircle size={18} className="text-red-500" /> 長期滞留アラート</h3>
+          <p className="text-xs text-slate-500 mb-4">期限が過ぎてから3日以上長期間放置されているタスクです。</p>
+          <div className="divide-y divide-slate-100 max-h-[300px] overflow-y-auto">
+            {overdueList.length === 0 ? (
+              <p className="text-sm text-slate-400 text-center py-4">長期滞留しているタスクはありません🎉</p>
+            ) : (
+              overdueList.map((t) => (
+                <div key={t.id} className="py-3 flex justify-between items-center gap-4">
+                  <span className="text-sm font-medium text-slate-700 truncate">{t.cleanTitle}</span>
+                  <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded whitespace-nowrap">
+                    期限から {Math.floor((Date.now() - new Date(t.due).getTime()) / (1000 * 60 * 60 * 24))} 日経過
+                  </span>
+                </div>
+              ))
             )}
           </div>
         </div>
       </div>
-
+      
+      {/* 既存の期間詳細テーブル */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
-        <p className="text-sm font-semibold text-slate-700 mb-3">
-          {granularity === 'week' ? '週次' : granularity === 'month' ? '月次' : '年次'}の詳細{scopeHint}
-          <span className="text-xs font-normal text-slate-400 ml-2">行をクリックしてタスクを展開</span>
-        </p>
+        <p className="text-sm font-semibold text-slate-700 mb-3">{granularity === 'week' ? '週次' : granularity === 'month' ? '月次' : '年次'}の詳細 <span className="text-xs font-normal text-slate-400 ml-2">行をクリックしてタスクを展開</span></p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -2280,53 +2576,73 @@ function AnalyticsView({ weeklyHistory, monthlyHistory, yearlyHistory, overallCo
 
                 return (
                   <React.Fragment key={`t-${w.key}`}>
-                    <tr
-                      onClick={() => setExpandedRow(isExpanded ? null : w.key)}
-                      className={`border-b border-slate-50 last:border-0 cursor-pointer transition hover:bg-slate-50 ${isExpanded ? 'bg-slate-50' : ''}`}
-                    >
+                    <tr onClick={() => setExpandedRow(isExpanded ? null : w.key)} className={`border-b border-slate-50 last:border-0 cursor-pointer transition hover:bg-slate-50 ${isExpanded ? 'bg-slate-50' : ''}`}>
                       <td className="py-2.5 pr-4 text-slate-700">
                         <div className="flex items-center gap-1.5">
                           {isExpanded ? <ChevronDown size={14} className="text-slate-400 shrink-0" /> : <ChevronRight size={14} className="text-slate-300 shrink-0" />}
-                          {granularity === 'week' && w.isCurrent
-                            ? <span className="font-semibold text-indigo-600">今週 <span className="text-slate-400 font-normal">({w.label})</span></span>
-                            : granularity === 'week' && w.isFuture
-                              ? <span className="text-slate-500">来週 <span className="text-slate-400">({w.label})</span></span>
-                              : w.label}
+                          {granularity === 'week' && w.isCurrent ? <span className="font-semibold text-indigo-600">今週 <span className="text-slate-400 font-normal">({w.label})</span></span> : granularity === 'week' && w.isFuture ? <span className="text-slate-500">来週 <span className="text-slate-400">({w.label})</span></span> : w.label}
                         </div>
                       </td>
                       <td className="py-2.5 pr-4 text-slate-600">{w.total}</td>
                       <td className="py-2.5 pr-4 text-slate-600">{w.completed}</td>
                       <td className="py-2.5 pr-4 font-semibold">
-                        <span className={w.total === 0 ? 'text-slate-300' : w.rate >= 80 ? 'text-emerald-600' : w.rate >= 50 ? 'text-blue-600' : 'text-amber-600'}>
-                          {w.total === 0 ? '-' : `${w.rate}%`}
-                        </span>
+                        <span className={w.total === 0 ? 'text-slate-300' : w.rate >= 80 ? 'text-emerald-600' : w.rate >= 50 ? 'text-blue-600' : 'text-amber-600'}>{w.total === 0 ? '-' : `${w.rate}%`}</span>
                       </td>
                     </tr>
                     {isExpanded && (
                       <tr>
                         <td colSpan={4} className="bg-slate-50 border-b border-slate-100 p-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <h5 className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200 inline-block">未達成 ({tasksUndone.length})</h5>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                              <h5 className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200 inline-block sticky top-0 z-10">未達成 ({tasksUndone.length})</h5>
                               {tasksUndone.length === 0 ? <p className="text-xs text-slate-400 px-1">なし</p> : tasksUndone.map((t) => (
                                 <div key={t.id} className="flex items-start gap-2 text-xs bg-white p-2 rounded border border-slate-200 shadow-sm">
-                                  <button type="button" onClick={(e) => { e.stopPropagation(); toggleTaskStatus(t); }} className="mt-0.5 shrink-0">
-                                    <Circle size={12} className="text-slate-300 hover:text-blue-500" />
-                                  </button>
+                                  <button type="button" onClick={(e) => { e.stopPropagation(); toggleTaskStatus(t); }} className="mt-0.5 shrink-0"><Circle size={12} className="text-slate-300 hover:text-blue-500" /></button>
                                   <span className="text-slate-700 leading-tight">{t.cleanTitle}</span>
                                 </div>
                               ))}
                             </div>
-                            <div className="space-y-2">
-                              <h5 className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200 inline-block">達成済 ({tasksDone.length})</h5>
+                            <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                              <h5 className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200 inline-block sticky top-0 z-10">達成済 ({tasksDone.length})</h5>
                               {tasksDone.length === 0 ? <p className="text-xs text-slate-400 px-1">なし</p> : tasksDone.map((t) => (
                                 <div key={t.id} className="flex items-start gap-2 text-xs bg-white p-2 rounded border border-slate-200 shadow-sm opacity-70">
-                                  <button type="button" onClick={(e) => { e.stopPropagation(); toggleTaskStatus(t); }} className="mt-0.5 shrink-0">
-                                    <CheckCircle2 size={12} className="text-emerald-500" />
-                                  </button>
+                                  <button type="button" onClick={(e) => { e.stopPropagation(); toggleTaskStatus(t); }} className="mt-0.5 shrink-0"><CheckCircle2 size={12} className="text-emerald-500" /></button>
                                   <span className="text-slate-500 line-through leading-tight">{t.cleanTitle}</span>
                                 </div>
                               ))}
+                            </div>
+                            <div className="space-y-2">
+                              <h5 className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-1 rounded border border-indigo-200 inline-block">期間内のタグ構成</h5>
+                              {(() => {
+                                const periodTagCounts = {};
+                                let periodTaggedTotal = 0;
+                                rowTasks.forEach(t => {
+                                  const tgs = t.tags.length > 0 ? t.tags : ['未分類'];
+                                  tgs.forEach(tag => {
+                                    periodTagCounts[tag] = (periodTagCounts[tag] || 0) + 1;
+                                    periodTaggedTotal++;
+                                  });
+                                });
+                                const periodTagStats = Object.entries(periodTagCounts)
+                                  .map(([tag, count]) => ({ tag, count, rate: Math.round((count / periodTaggedTotal) * 100) }))
+                                  .sort((a, b) => b.count - a.count);
+
+                                return periodTagStats.length === 0 ? <p className="text-xs text-slate-400 px-1">データなし</p> : (
+                                  <div className="space-y-2.5 mt-2 bg-white p-3 rounded border border-slate-200 shadow-sm">
+                                    {periodTagStats.map(t => (
+                                      <div key={t.tag}>
+                                        <div className="flex justify-between items-center text-[10px] text-slate-600 mb-1">
+                                          <span className="truncate pr-2 font-medium">{t.tag}</span>
+                                          <span className="shrink-0">{t.rate}% <span className="text-slate-400">({t.count})</span></span>
+                                        </div>
+                                        <div className="w-full bg-slate-100 rounded-full h-1.5">
+                                          <div className="bg-indigo-400 h-1.5 rounded-full" style={{ width: `${t.rate}%` }} />
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              })()}
                             </div>
                           </div>
                         </td>
