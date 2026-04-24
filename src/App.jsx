@@ -598,6 +598,13 @@ export default function App() {
           ...(listsPageToken ? { pageToken: listsPageToken } : {}),
         });
         const listsRes = await fetch(`https://tasks.googleapis.com/tasks/v1/users/@me/lists?${query.toString()}`, { headers });
+        
+        if (listsRes.status === 401 || listsRes.status === 403) {
+          clearStoredOAuth();
+          setAccessToken(null);
+          throw new Error('セッションが期限切れか、権限がありません。もう一度ログインしてください。');
+        }
+        
         if (!listsRes.ok) throw new Error('タスクリストの取得に失敗しました');
         const listsData = await listsRes.json();
         lists = [...lists, ...(listsData.items || [])];
@@ -615,6 +622,13 @@ export default function App() {
             ...(tasksPageToken ? { pageToken: tasksPageToken } : {}),
           });
           const tasksRes = await fetch(`https://tasks.googleapis.com/tasks/v1/lists/${list.id}/tasks?${query.toString()}`, { headers });
+          
+          if (tasksRes.status === 401 || tasksRes.status === 403) {
+            clearStoredOAuth();
+            setAccessToken(null);
+            throw new Error('セッションが期限切れになりました。再ログインしてください。');
+          }
+          
           if (!tasksRes.ok) break;
           const tasksData = await tasksRes.json();
           if (tasksData.items) {
@@ -1343,9 +1357,67 @@ export default function App() {
             <p className="text-slate-300 text-sm mt-1">タグ分類＆達成率分析付き ToDo</p>
           </div>
           <div className="p-6 space-y-6">
-            <button onClick={loadDemo} disabled={loading} className="w-full py-2.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium rounded-lg transition flex items-center justify-center gap-2 shadow-sm">
-              <Play size={18} /> デモデータで試す
-            </button>
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2 text-red-700 text-xs">
+                <AlertCircle className="shrink-0 mt-0.5" size={14} />
+                <p>{error}</p>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <button
+                onClick={handleAuth}
+                disabled={loading}
+                className={`w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition shadow-md flex items-center justify-center gap-2 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+              >
+                {loading ? <RefreshCw className="animate-spin" size={20} /> : <Play size={20} />}
+                Google でログイン
+              </button>
+              <button
+                onClick={loadDemo}
+                disabled={loading}
+                className="w-full py-2.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium rounded-lg transition flex items-center justify-center gap-2 shadow-sm"
+              >
+                デモデータで試す
+              </button>
+            </div>
+
+            <div className="pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setClientIdOverrideOpen(!clientIdOverrideOpen)}
+                className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1 transition mx-auto"
+              >
+                {clientIdOverrideOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                Client ID の設定
+              </button>
+
+              {clientIdOverrideOpen && (
+                <div className="mt-3 space-y-3 p-4 bg-slate-50 rounded-xl border border-slate-100 animate-in fade-in slide-in-from-top-2">
+                  <p className="text-[10px] text-slate-500 leading-relaxed">
+                    Google Cloud Console で作成した「Web アプリケーション」の Client ID を入力してください。
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={clientId}
+                      onChange={(e) => setClientId(e.target.value)}
+                      placeholder="Client ID を入力..."
+                      className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                    <button
+                      onClick={() => {
+                        localStorage.setItem('google_tasks_client_id', clientId);
+                        setError("Client IDを保存しました。再開してください。");
+                      }}
+                      className="px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-lg hover:bg-slate-700 transition"
+                    >
+                      保存
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
