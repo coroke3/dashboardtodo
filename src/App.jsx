@@ -5,7 +5,7 @@ import {
   Plus, X, History, Target, TrendingUp, BarChart3, CalendarOff,
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Trash2, Copy,
   Search, Layers, PieChart, Settings, Flame, Clock, Inbox, CheckSquare,
-  ChevronRight as ChevronRightIcon, ChevronDown as ChevronDownIcon,
+  ChevronRight as ChevronRightIcon, ChevronDown as ChevronDownIcon, Sparkles,
 } from 'lucide-react';
 
 const today = new Date();
@@ -93,52 +93,50 @@ const I18N = {
 const t = (key, lang) => I18N[key]?.[lang] || key;
 
 // === UIテーマプリセット (実在のハイクオリティデザインを分析・オマージュした30選) ===
+// === UIテーマプリセット (実在のハイクオリティデザインを分析・オマージュした30選) ===
 const THEME_PRESETS = [
-  // モノクロ・ミニマル系 (映像・写真を引き立てる額縁)
-  { id: '1', name: 'Studio Noir', config: { bgTheme: 'pitchBlack', radius: 'none', font: 'sans', weight: 'light', accent: 'white', texture: 'flat', density: 'normal', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'none', language: 'en' } },
-  { id: '2', name: 'Pure White', config: { bgTheme: 'white', radius: 'none', font: 'sans', weight: 'normal', accent: 'black', texture: 'flat', density: 'loose', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'none', language: 'en_mix' } },
-  { id: '3', name: 'Gallery Slate', config: { bgTheme: 'gray', radius: 'sm', font: 'sans', weight: 'normal', accent: 'zinc', texture: 'simple', density: 'loose', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'none', language: 'en_mix' } },
-  
-  // エディトリアル・紙系 (雑誌のようなレイアウト、セリフ体の美しさ)
-  { id: '4', name: 'Editorial Serif', config: { bgTheme: 'paper', radius: 'none', font: 'shippori', weight: 'medium', accent: 'black', texture: 'paper', density: 'loose', animation: 'smooth', iconStyle: 'text', widgetDecor: 'none', language: 'ja' } },
-  { id: '5', name: 'Old Sepia', config: { bgTheme: 'sepia', radius: 'sm', font: 'zenOld', weight: 'medium', accent: 'bronze', texture: 'paper', density: 'normal', animation: 'off', iconStyle: 'text', widgetDecor: 'none', language: 'ja' } },
-  { id: '6', name: 'Classic Cream', config: { bgTheme: 'cream', radius: 'md', font: 'serif', weight: 'normal', accent: 'gold', texture: 'simple', density: 'loose', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'none', language: 'en_mix' } },
-  
-  // ギーク・サイバー系 (エディタ画面、ネオンカラー、グリッチ)
-  { id: '7', name: 'Hacker Terminal', config: { bgTheme: 'pitchBlack', radius: 'none', font: 'mono', weight: 'normal', accent: 'emerald', texture: 'flat', density: 'compact', animation: 'smooth', iconStyle: 'text', widgetDecor: 'none', language: 'en' } },
-  { id: '8', name: 'Cyber Neon', config: { bgTheme: 'navy', radius: 'sm', font: 'mono', weight: 'bold', accent: 'cyan', texture: 'neon', density: 'normal', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'target', language: 'en' } },
-  { id: '9', name: 'Synthwave', config: { bgTheme: 'dark', radius: 'none', font: 'mono', weight: 'bold', accent: 'fuchsia', texture: 'neon', density: 'compact', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'target', language: 'en' } },
-  
-  // ポップ・カジュアル系 (丸みを帯びたフォント、親しみやすさ)
-  { id: '10', name: 'Pop Candy', config: { bgTheme: 'light', radius: 'xl', font: 'rounded', weight: 'bold', accent: 'rose', texture: 'flat', density: 'loose', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'sparkle', language: 'ja' } },
-  { id: '11', name: 'Line Seed Green', config: { bgTheme: 'white', radius: 'xl', font: 'lineSeed', weight: 'bold', accent: 'emerald', texture: 'simple', density: 'normal', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'none', language: 'ja' } },
-  { id: '12', name: 'Amber Sunset', config: { bgTheme: 'cream', radius: 'lg', font: 'rounded', weight: 'medium', accent: 'amber', texture: 'glass', density: 'loose', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'sparkle', language: 'ja' } },
-  
-  // プロフェッショナル・コーポレート系 (信頼感、青や紺の配色)
-  { id: '13', name: 'Corporate Blue', config: { bgTheme: 'light', radius: 'sm', font: 'sans', weight: 'medium', accent: 'blue', texture: 'flat', density: 'normal', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'none', language: 'ja' } },
-  { id: '14', name: 'Tech Indigo', config: { bgTheme: 'gray', radius: 'md', font: 'sans', weight: 'normal', accent: 'indigo', texture: 'glass', density: 'compact', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'target', language: 'en_mix' } },
-  { id: '15', name: 'Deep Teal', config: { bgTheme: 'dark', radius: 'md', font: 'sans', weight: 'normal', accent: 'teal', texture: 'simple', density: 'normal', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'none', language: 'en_mix' } },
-  
-  // ガラス・透明感系 (ブラー効果、重なり合うレイアウト)
-  { id: '16', name: 'Frosted Glass', config: { bgTheme: 'gray', radius: 'lg', font: 'sans', weight: 'light', accent: 'white', texture: 'glass', density: 'loose', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'sparkle', language: 'en' } },
-  { id: '17', name: 'Ocean Blur', config: { bgTheme: 'navy', radius: 'xl', font: 'sans', weight: 'medium', accent: 'cyan', texture: 'glass', density: 'normal', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'none', language: 'en_mix' } },
-  { id: '18', name: 'Rose Water', config: { bgTheme: 'light', radius: 'lg', font: 'shippori', weight: 'medium', accent: 'rose', texture: 'glass', density: 'loose', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'sparkle', language: 'ja' } },
-  
-  // モダン・アーティスティック系 (極太フォント、ディストーション)
-  { id: '19', name: 'Dynamic Bold', config: { bgTheme: 'white', radius: 'none', font: 'zenKakuAntique', weight: 'black', accent: 'black', texture: 'liquid', density: 'compact', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'none', language: 'en_mix' } },
-  { id: '20', name: 'Brutalism', config: { bgTheme: 'light', radius: 'none', font: 'bizUD', weight: 'bold', accent: 'blue', texture: 'flat', density: 'compact', animation: 'off', iconStyle: 'text', widgetDecor: 'target', language: 'en' } },
-  { id: '21', name: 'Elegant Violet', config: { bgTheme: 'dark', radius: 'md', font: 'serif', weight: 'normal', accent: 'violet', texture: 'simple', density: 'loose', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'none', language: 'ja' } },
-  
-  // その他 バリエーション
-  { id: '22', name: 'Forest Echo', config: { bgTheme: 'dark', radius: 'sm', font: 'zenOld', weight: 'medium', accent: 'emerald', texture: 'paper', density: 'normal', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'none', language: 'ja' } },
-  { id: '23', name: 'Midnight Gold', config: { bgTheme: 'navy', radius: 'none', font: 'serif', weight: 'normal', accent: 'gold', texture: 'flat', density: 'loose', animation: 'smooth', iconStyle: 'text', widgetDecor: 'none', language: 'en_mix' } },
-  { id: '24', name: 'Sandstone', config: { bgTheme: 'paper', radius: 'md', font: 'sans', weight: 'normal', accent: 'sand', texture: 'simple', density: 'normal', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'none', language: 'ja' } },
-  { id: '25', name: 'Gamer Pink', config: { bgTheme: 'pitchBlack', radius: 'lg', font: 'mono', weight: 'bold', accent: 'rose', texture: 'neon', density: 'compact', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'target', language: 'en' } },
-  { id: '26', name: 'Chalkboard', config: { bgTheme: 'gray', radius: 'none', font: 'mono', weight: 'medium', accent: 'slate', texture: 'paper', density: 'loose', animation: 'off', iconStyle: 'text', widgetDecor: 'none', language: 'en' } },
-  { id: '27', name: 'Clear Sky', config: { bgTheme: 'white', radius: 'xl', font: 'rounded', weight: 'bold', accent: 'cyan', texture: 'glass', density: 'normal', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'sparkle', language: 'ja' } },
-  { id: '28', name: 'Autumn Leaf', config: { bgTheme: 'sepia', radius: 'md', font: 'shippori', weight: 'bold', accent: 'rose', texture: 'simple', density: 'normal', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'none', language: 'ja' } },
-  { id: '29', name: 'Night City', config: { bgTheme: 'dark', radius: 'lg', font: 'sans', weight: 'normal', accent: 'fuchsia', texture: 'glass', density: 'compact', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'neon', language: 'en_mix' } },
-  { id: '30', name: 'Absolute Zero', config: { bgTheme: 'pitchBlack', radius: 'none', font: 'sans', weight: 'black', accent: 'white', texture: 'liquid', density: 'compact', animation: 'smooth', iconStyle: 'text', widgetDecor: 'none', language: 'en' } },
+  // 視認性・高コントラスト系
+  { id: '31', category: '視認性・高コントラスト', name: 'UD Focus', config: { bgTheme: 'light', radius: 'md', font: 'bizUD', weight: 'bold', accent: 'blue', texture: 'flat', density: 'normal', animation: 'fade', mouseEffect: 'none', iconStyle: 'lucide', widgetDecor: 'none', language: 'ja', useGradient: false } },
+  { id: '32', category: '視認性・高コントラスト', name: 'High Contrast (Light)', config: { bgTheme: 'white', radius: 'none', font: 'bizUD', weight: 'black', accent: 'black', texture: 'simple', density: 'normal', animation: 'off', mouseEffect: 'none', iconStyle: 'lucide', widgetDecor: 'none', language: 'ja', useGradient: false } },
+  { id: '33', category: '視認性・高コントラスト', name: 'High Contrast (Dark)', config: { bgTheme: 'pitchBlack', radius: 'none', font: 'bizUD', weight: 'black', accent: 'amber', texture: 'simple', density: 'loose', animation: 'off', mouseEffect: 'none', iconStyle: 'lucide', widgetDecor: 'none', language: 'ja', useGradient: false } },
+
+  // モノクロ・ミニマル系
+  { id: '1', category: 'モノクロ・ミニマル', name: 'Studio Noir', config: { bgTheme: 'pitchBlack', radius: 'none', font: 'sans', weight: 'light', accent: 'white', texture: 'flat', density: 'normal', animation: 'fade', mouseEffect: 'glow', iconStyle: 'lucide', widgetDecor: 'none', language: 'en', useGradient: false } },
+  { id: '2', category: 'モノクロ・ミニマル', name: 'Pure White', config: { bgTheme: 'white', radius: 'none', font: 'sans', weight: 'normal', accent: 'black', texture: 'flat', density: 'loose', animation: 'slide', mouseEffect: 'none', iconStyle: 'lucide', widgetDecor: 'none', language: 'en_mix', useGradient: false } },
+  { id: '3', category: 'モノクロ・ミニマル', name: 'Silver Slate', config: { bgTheme: 'gray', radius: 'lg', font: 'sans', weight: 'normal', accent: 'zinc', texture: 'flat', density: 'normal', animation: 'smooth', mouseEffect: 'none', iconStyle: 'lucide', widgetDecor: 'none', language: 'en_mix', useGradient: true } },
+
+  // ライト・温かみ系
+  { id: '4', category: 'ライト・温かみ', name: 'Editorial Serif', config: { bgTheme: 'paper', radius: 'none', font: 'shippori', weight: 'medium', accent: 'black', texture: 'paper', density: 'loose', animation: 'fade', mouseEffect: 'none', iconStyle: 'text', widgetDecor: 'none', language: 'ja', useGradient: false } },
+  { id: '5', category: 'ライト・温かみ', name: 'Morning Latte', config: { bgTheme: 'cream', radius: 'xl', font: 'rounded', weight: 'bold', accent: 'amber', texture: 'simple', density: 'normal', animation: 'spring', mouseEffect: 'none', iconStyle: 'lucide', widgetDecor: 'sparkle', language: 'ja', useGradient: true } },
+  { id: '18', category: 'ライト・温かみ', name: 'Rose Water', config: { bgTheme: 'light', radius: 'lg', font: 'shippori', weight: 'medium', accent: 'rose', texture: 'glass', density: 'loose', animation: 'blur', mouseEffect: 'glow', iconStyle: 'lucide', widgetDecor: 'sparkle', language: 'ja', useGradient: true } },
+
+  // ダーク・サイバー系
+  { id: '7', category: 'ダーク・サイバー', name: 'Hacker Terminal', config: { bgTheme: 'pitchBlack', radius: 'none', font: 'mono', weight: 'normal', accent: 'emerald', texture: 'flat', density: 'compact', animation: 'slide', mouseEffect: 'glow', iconStyle: 'text', widgetDecor: 'none', language: 'en', useGradient: false } },
+  { id: '8', category: 'ダーク・サイバー', name: 'Cyber Neon', config: { bgTheme: 'navy', radius: 'sm', font: 'mono', weight: 'bold', accent: 'cyan', texture: 'neon', density: 'normal', animation: 'spring', mouseEffect: 'glow', iconStyle: 'lucide', widgetDecor: 'target', language: 'en', useGradient: true } },
+  { id: '9', category: 'ダーク・サイバー', name: 'Deep Space', config: { bgTheme: 'navy', radius: 'lg', font: 'sans', weight: 'light', accent: 'fuchsia', texture: 'glass', density: 'loose', animation: 'blur', mouseEffect: 'glow', iconStyle: 'lucide', widgetDecor: 'sparkle', language: 'en', useGradient: true } },
+
+  // ポップ・モダン系
+  { id: '10', category: 'ポップ・モダン', name: 'Pop Candy', config: { bgTheme: 'light', radius: 'xl', font: 'rounded', weight: 'bold', accent: 'rose', texture: 'flat', density: 'loose', animation: 'spring', mouseEffect: 'none', iconStyle: 'lucide', widgetDecor: 'sparkle', language: 'ja', useGradient: true } },
+  { id: '11', category: 'ポップ・モダン', name: 'Line Seed Green', config: { bgTheme: 'white', radius: 'xl', font: 'lineSeed', weight: 'bold', accent: 'emerald', texture: 'simple', density: 'normal', animation: 'slide', mouseEffect: 'none', iconStyle: 'lucide', widgetDecor: 'none', language: 'ja', useGradient: true } },
+  { id: '12', category: 'ポップ・モダン', name: 'Ocean Blue', config: { bgTheme: 'white', radius: 'md', font: 'sans', weight: 'medium', accent: 'blue', texture: 'flat', density: 'normal', animation: 'smooth', mouseEffect: 'none', iconStyle: 'lucide', widgetDecor: 'none', language: 'ja', useGradient: true } },
+  { id: '13', category: 'ポップ・モダン', name: 'Mint Breeze', config: { bgTheme: 'light', radius: 'xl', font: 'rounded', weight: 'bold', accent: 'teal', texture: 'flat', density: 'loose', animation: 'spring', mouseEffect: 'none', iconStyle: 'lucide', widgetDecor: 'sparkle', language: 'ja', useGradient: true } },
+  { id: '14', category: 'ポップ・モダン', name: 'Sakura Bloom', config: { bgTheme: 'white', radius: 'xl', font: 'sans', weight: 'medium', accent: 'rose', texture: 'glass', density: 'normal', animation: 'blur', mouseEffect: 'glow', iconStyle: 'lucide', widgetDecor: 'sparkle', language: 'ja', useGradient: true } },
+
+  // エレガント・リッチ系
+  { id: '41', category: 'エレガント・リッチ', name: 'Glass Morphism', config: { bgTheme: 'dark', radius: 'lg', font: 'sans', weight: 'medium', accent: 'violet', texture: 'glass', density: 'loose', animation: 'blur', mouseEffect: 'glow', iconStyle: 'lucide', widgetDecor: 'sparkle', language: 'en_mix', useGradient: true } },
+  { id: '42', category: 'エレガント・リッチ', name: 'Golden Hour', config: { bgTheme: 'cream', radius: 'md', font: 'serif', weight: 'medium', accent: 'gold', texture: 'flat', density: 'loose', animation: 'blur', mouseEffect: 'glow', iconStyle: 'lucide', widgetDecor: 'target', language: 'en_mix', useGradient: true } },
+  { id: '43', category: 'エレガント・リッチ', name: 'Deep Ocean', config: { bgTheme: 'navy', radius: 'xl', font: 'sans', weight: 'bold', accent: 'teal', texture: 'glass', density: 'normal', animation: 'spring', mouseEffect: 'glow', iconStyle: 'lucide', widgetDecor: 'target', language: 'en', useGradient: true } },
+  { id: '44', category: 'エレガント・リッチ', name: 'Frosty Morning', config: { bgTheme: 'light', radius: 'lg', font: 'sans', weight: 'light', accent: 'cyan', texture: 'glass', density: 'loose', animation: 'blur', mouseEffect: 'glow', iconStyle: 'lucide', widgetDecor: 'sparkle', language: 'en_mix', useGradient: true } },
+  { id: '45', category: 'エレガント・リッチ', name: 'Midnight Violet', config: { bgTheme: 'navy', radius: 'md', font: 'serif', weight: 'normal', accent: 'indigo', texture: 'glass', density: 'loose', animation: 'blur', mouseEffect: 'glow', iconStyle: 'lucide', widgetDecor: 'target', language: 'en', useGradient: true } },
+
+  // ネイチャー・アース系
+  { id: '51', category: 'ネイチャー・アース', name: 'Forest Walk', config: { bgTheme: 'paper', radius: 'md', font: 'zenOld', weight: 'normal', accent: 'emerald', texture: 'paper', density: 'normal', animation: 'fade', mouseEffect: 'none', iconStyle: 'lucide', widgetDecor: 'none', language: 'ja', useGradient: true } },
+  { id: '52', category: 'ネイチャー・アース', name: 'Desert Sand', config: { bgTheme: 'sepia', radius: 'none', font: 'serif', weight: 'medium', accent: 'bronze', texture: 'flat', density: 'loose', animation: 'slide', mouseEffect: 'none', iconStyle: 'text', widgetDecor: 'none', language: 'en', useGradient: false } },
+  { id: '53', category: 'ネイチャー・アース', name: 'Coffee Shop', config: { bgTheme: 'sepia', radius: 'md', font: 'zenOld', weight: 'bold', accent: 'amber', texture: 'paper', density: 'normal', animation: 'fade', mouseEffect: 'none', iconStyle: 'lucide', widgetDecor: 'none', language: 'en_mix', useGradient: false } },
+
+  // レトロ・ノスタルジー系
+  { id: '61', category: 'レトロ・ノスタルジー', name: '8-Bit Arcade', config: { bgTheme: 'pitchBlack', radius: 'none', font: 'mono', weight: 'normal', accent: 'amber', texture: 'neon', density: 'compact', animation: 'off', mouseEffect: 'none', iconStyle: 'text', widgetDecor: 'target', language: 'en', useGradient: false } },
+  { id: '62', category: 'レトロ・ノスタルジー', name: 'Vintage Mac', config: { bgTheme: 'gray', radius: 'sm', font: 'sans', weight: 'bold', accent: 'zinc', texture: 'simple', density: 'compact', animation: 'off', mouseEffect: 'none', iconStyle: 'lucide', widgetDecor: 'none', language: 'en_mix', useGradient: false } }
 ];
 
 // === 選択要素のスライドアニメーション用コンポーネント ===
@@ -334,10 +332,10 @@ const LMS_IN_TITLE = [
 ];
 
 const getLmsBadgeClass = (label) => {
-  if (label === 'Moodle') return 'bg-orange-50 text-orange-800 border-orange-200';
-  if (label === 'Canvas') return 'bg-sky-50 text-sky-800 border-sky-200';
-  if (label === 'Classroom') return 'bg-emerald-50 text-emerald-800 border-emerald-200';
-  return 'bg-slate-100 text-slate-700 border-slate-200';
+  if (label === 'Moodle') return 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20';
+  if (label === 'Canvas') return 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20';
+  if (label === 'Classroom') return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+  return 'bg-slate-500/10 text-[var(--ui-text-muted)] border-slate-500/20';
 };
 
 export default function App() {
@@ -369,8 +367,13 @@ export default function App() {
   const [selectedRoutine, setSelectedRoutine] = useState(null);
   const [routineShowCompleted, setRoutineShowCompleted] = useState(true);
   const [tagShowCompleted, setTagShowCompleted] = useState(true);
+
+  // Sidebar highlight & Mouse effects
+  const sidebarNavRef = useRef(null);
+  const [navHighlightStyle, setNavHighlightStyle] = useState({ top: 0, height: 0, opacity: 0, ready: false });
+
   const [uiConfig, setUiConfig] = useState(() => {
-    const fallback = { bgTheme: 'light', radius: 'md', font: 'sans', weight: 'normal', accent: 'blue', texture: 'flat', density: 'normal', animation: 'smooth', iconStyle: 'lucide', widgetDecor: 'target', language: 'en_mix' };
+    const fallback = { bgTheme: 'light', radius: 'md', font: 'sans', weight: 'normal', accent: 'blue', texture: 'flat', density: 'normal', animation: 'spring', mouseEffect: 'glow', iconStyle: 'lucide', widgetDecor: 'target', language: 'en_mix', useGradient: false };
     try {
       const s = localStorage.getItem('task_dashboard_ui_v5');
       const parsed = s ? JSON.parse(s) : null;
@@ -402,15 +405,15 @@ export default function App() {
   };
 
   const bgThemes = {
-    white: { bg: '#ffffff', text: '#0f172a', textMuted: '#64748b', panel: '#ffffff', border: '#f1f5f9' },
-    light: { bg: '#f8fafc', text: '#1e293b', textMuted: '#64748b', panel: '#ffffff', border: '#e2e8f0' },
-    paper: { bg: '#fdfcf8', text: '#3f3e3a', textMuted: '#8b8a84', panel: '#ffffff', border: '#f5f4ef' },
-    gray: { bg: '#e5e7eb', text: '#1f2937', textMuted: '#6b7280', panel: '#f3f4f6', border: '#d1d5db' },
-    dark: { bg: '#1e293b', text: '#f8fafc', textMuted: '#94a3b8', panel: '#0f172a', border: '#334155' },
-    navy: { bg: '#0a0a2a', text: '#e0e7ff', textMuted: '#818cf8', panel: '#05051a', border: '#1e1e4a' },
-    pitchBlack: { bg: '#000000', text: '#ffffff', textMuted: '#a1a1aa', panel: '#09090b', border: '#27272a' },
-    cream: { bg: '#fefce8', text: '#451a03', textMuted: '#92400e', panel: '#fffbeb', border: '#fef3c7' },
-    sepia: { bg: '#f3e8d2', text: '#433422', textMuted: '#8a7156', panel: '#fdf8ee', border: '#e6d5b8' }
+    white: { bg: '#ffffff', text: '#0f172a', textMuted: '#475569', panel: '#ffffff', border: '#f1f5f9' },
+    light: { bg: '#f8fafc', text: '#1e293b', textMuted: '#475569', panel: '#ffffff', border: '#e2e8f0' },
+    paper: { bg: '#fdfcf8', text: '#3f3e3a', textMuted: '#78716c', panel: '#ffffff', border: '#f5f4ef' },
+    gray: { bg: '#e5e7eb', text: '#1f2937', textMuted: '#4b5563', panel: '#f3f4f6', border: '#d1d5db' },
+    dark: { bg: '#1e293b', text: '#f8fafc', textMuted: '#cbd5e1', panel: '#0f172a', border: '#334155' },
+    navy: { bg: '#0a0a2a', text: '#e0e7ff', textMuted: '#a5b4fc', panel: '#05051a', border: '#1e1e4a' },
+    pitchBlack: { bg: '#000000', text: '#ffffff', textMuted: '#d4d4d8', panel: '#09090b', border: '#27272a' },
+    cream: { bg: '#fefce8', text: '#451a03', textMuted: '#78350f', panel: '#fffbeb', border: '#fef3c7' },
+    sepia: { bg: '#f3e8d2', text: '#433422', textMuted: '#713f12', panel: '#fdf8ee', border: '#e6d5b8' }
   };
 
   const uiColors = palette[uiConfig.accent] || palette.blue;
@@ -711,30 +714,50 @@ export default function App() {
     else if (accessToken) fetchRealTasks(accessToken);
   };
 
+  const copyAiPrompt = () => {
+    const prompt = "以下の要件でタスクリストを生成して。形式は「[タグ] タスク名, 日付(YYYY-MM-DD)」として、各タスクは改行で区切って出力してください。";
+    navigator.clipboard.writeText(prompt);
+    alert("AIアシスタント用のプロンプトをコピーしました。");
+  };
+
   const handleAddTask = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!newTaskTitle.trim()) return;
 
     setLoading(true);
     const lines = newTaskTitle.split('\n').filter((l) => l.trim() !== '');
     const newTasks = [];
 
-    for (const line of lines) {
-      let titlePart = line.trim();
-      let dueIso = newTaskDue ? new Date(newTaskDue).toISOString() : undefined;
+    // GUIで設定された期限とタグ
+    const guiDueIso = newTaskDue ? new Date(newTaskDue).toISOString() : undefined;
 
-      const commaIdx = titlePart.lastIndexOf(',');
-      if (commaIdx !== -1) {
-        const potentialDate = titlePart.slice(commaIdx + 1).trim();
+    for (const line of lines) {
+      let text = line.trim();
+      let dueIso = guiDueIso; // デフォルトはGUIの指定
+      let tags = [...newTaskTags]; // デフォルトはGUIの指定
+
+      // 日付のスマートパース（行末の ", 日付" を探す）
+      const dateMatch = text.match(/(.*),\s*([^,]+)$/);
+      if (dateMatch) {
+        const potentialDate = dateMatch[2].trim();
         const d = new Date(potentialDate);
         if (!Number.isNaN(d.getTime())) {
-          titlePart = titlePart.slice(0, commaIdx).trim();
-          dueIso = d.toISOString();
+          text = dateMatch[1].trim();
+          dueIso = d.toISOString(); // テキスト指定があれば上書き
         }
       }
 
-      const prefix = newTaskTags.map((t) => `[${t}]`).join('');
-      const fullTitle = prefix ? `${prefix} ${titlePart}` : titlePart;
+      // タグのパース [Tag]
+      const tagMatches = text.matchAll(/\[(.*?)\]/g);
+      for (const m of tagMatches) {
+        tags.push(m[1].toLowerCase());
+      }
+      tags = [...new Set(tags)]; // 重複排除
+
+      // API制約上、title内にタグを埋め込んで保存する
+      const cleanTitleForApi = text.replace(/\[.*?\]/g, '').trim();
+      const prefix = tags.map((t) => `[${t}]`).join('');
+      const fullTitle = prefix ? `${prefix} ${cleanTitleForApi}` : cleanTitleForApi;
 
       let notes = '';
       if (dueIso) {
@@ -1334,13 +1357,41 @@ export default function App() {
     isDemo,
   ]);
 
+  // === マウス連動アニメーションの座標追従 ===
+  useEffect(() => {
+    if (uiConfig.mouseEffect !== 'glow') return;
+    const handleMouseMove = (e) => {
+      document.documentElement.style.setProperty('--mouse-x', `${e.clientX}px`);
+      document.documentElement.style.setProperty('--mouse-y', `${e.clientY}px`);
+    };
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [uiConfig.mouseEffect]);
+
+  // === サイドバーのハイライト追従 ===
+  useEffect(() => {
+    if (!sidebarNavRef.current) return;
+    const activeEl = sidebarNavRef.current.querySelector(`[data-menu-val="${activeTab}"]`);
+    if (activeEl) {
+      setNavHighlightStyle({
+        top: activeEl.offsetTop,
+        height: activeEl.offsetHeight,
+        opacity: 1,
+        ready: true
+      });
+    }
+  }, [activeTab]);
+
 
   const getTagColor = (tag) => {
     const s = String(tag || '');
     const colors = [
-      'bg-blue-100 text-blue-800 border-blue-200', 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      'bg-purple-100 text-purple-800 border-purple-200', 'bg-amber-100 text-amber-800 border-amber-200',
-      'bg-rose-100 text-rose-800 border-rose-200', 'bg-indigo-100 text-indigo-800 border-indigo-200',
+      'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+      'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+      'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+      'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+      'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+      'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
     ];
     let hash = 0;
     for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
@@ -1434,10 +1485,11 @@ export default function App() {
   let panelBorder = `1px solid ${tColors.border}`;
   
   if (uiConfig.texture === 'glass') {
-    panelBg = isDark ? 'rgba(15, 23, 42, 0.4)' : 'rgba(255, 255, 255, 0.5)';
+    // 変更後: 透明度を抑え、すりガラスの質感を残しつつ視認性を確保
+    panelBg = isDark ? 'rgba(15, 23, 42, 0.75)' : 'rgba(255, 255, 255, 0.85)';
     panelBlur = '24px';
     panelShadow = isDark ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.06)';
-    panelBorder = isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(255,255,255,0.5)';
+    panelBorder = isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.6)';
   } else if (uiConfig.texture === 'simple') {
     panelShadow = 'none';
     panelBorder = `1px solid ${tColors.border}`;
@@ -1452,9 +1504,39 @@ export default function App() {
 
   return (
     <div className="min-h-screen pb-12 w-full flex flex-col" style={{ fontFamily: fontMap[uiConfig.font], background: appBgColor, color: tColors.text, fontWeight: currentWeight.base, transition: `background-color ${animDurBg}, color ${animDurBg}` }}>
+      {/* マウス追従グロウエフェクト（うるさすぎない程度に） */}
+      {uiConfig.mouseEffect === 'glow' && (
+        <div 
+          className="pointer-events-none fixed inset-0 z-[100] transition-opacity duration-500"
+          style={{
+            background: `radial-gradient(800px circle at var(--mouse-x, 50vw) var(--mouse-y, 50vh), var(--ui-accent-light), transparent 40%)`,
+            opacity: isDark ? 0.08 : 0.4,
+            mixBlendMode: isDark ? 'screen' : 'multiply'
+          }}
+        />
+      )}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=JetBrains+Mono:wght@400;700&family=M+PLUS+Rounded+1c:wght@400;700;900&family=Noto+Sans+JP:wght@300;400;500;700;900&family=Noto+Serif+JP:wght@300;400;700;900&family=Shippori+Mincho+B1:wght@400;500;700;800&family=Zen+Kaku+Gothic+Antique:wght@400;500;700;900&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Zen+Old+Mincho:wght@400;700;900&display=swap');
         @import url('https://cdn.jsdelivr.net/npm/@line/seed-sans-jp@1.0.0/dist/line-seed-sans-jp.css');
+
+        /* ページ遷移アニメーションの拡充（ブラー、スプリングなど） */
+        @keyframes page-fade { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes page-slide { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes page-spring { 
+          0% { opacity: 0; transform: translateY(25px) scale(0.96); } 
+          60% { opacity: 1; transform: translateY(-3px) scale(1.01); } 
+          100% { opacity: 1; transform: translateY(0) scale(1); } 
+        }
+        @keyframes page-blur { 
+          0% { opacity: 0; filter: blur(12px); transform: scale(0.98); } 
+          100% { opacity: 1; filter: blur(0px); transform: scale(1); } 
+        }
+        
+        .page-transition-fade { animation: page-fade 0.3s ease-out forwards; }
+        .page-transition-slide { animation: page-slide 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        .page-transition-spring { animation: page-spring 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .page-transition-blur { animation: page-blur 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        .page-transition-off { animation: none; }
 
         :root {
           --ui-accent: ${uiColors.main};
@@ -1474,17 +1556,27 @@ export default function App() {
           --ui-icon-weight: ${uiConfig.iconWeight === 'light' ? '1.25' : uiConfig.iconWeight === 'bold' ? '2.75' : '2'};
           --ui-density-gap: ${densityValues[uiConfig.density].gap};
           --ui-density-p: ${densityValues[uiConfig.density].p};
+          --ui-bg: ${tColors.bg};
+          --ui-panel-bg: ${panelBg};
           
-          /* セマンティックカラー */
-          --ui-danger: ${isDark ? '#f87171' : '#ef4444'};
-          --ui-danger-bg: ${isDark ? '#450a0a' : '#fef2f2'};
-          --ui-success: ${isDark ? '#34d399' : '#10b981'};
-          --ui-warning: ${isDark ? '#fbbf24' : '#f59e0b'};
+          /* セマンティックカラー (テーマに馴染むように彩度/明度・透過度を調整) */
+          --ui-danger: ${isDark ? '#f43f5e' : '#e11d48'}; /* Rose系のエレガントな赤 */
+          --ui-danger-bg: ${isDark ? 'rgba(244, 63, 94, 0.15)' : 'rgba(225, 29, 72, 0.08)'};
+          --ui-success: ${isDark ? '#10b981' : '#059669'}; /* Emerald系 */
+          --ui-success-bg: ${isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(5, 150, 105, 0.08)'};
+          --ui-warning: ${isDark ? '#f59e0b' : '#d97706'}; /* Amber系 */
+          --ui-warning-bg: ${isDark ? 'rgba(245, 158, 11, 0.15)' : 'rgba(217, 119, 6, 0.08)'};
+        }
+
+        html, body {
+          overflow-y: scroll;
+          overflow-x: hidden;
+          width: 100vw;
         }
 
         * {
           transition-duration: var(--ui-transition) !important;
-          transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+          transition-timing-function: cubic-bezier(0.23, 1, 0.32, 1) !important;
         }
 
         /* アイコン太さ一括制御 */
@@ -1595,20 +1687,25 @@ export default function App() {
       <header className="border-b sticky top-0 z-30" style={{ background: panelBg, backdropFilter: `blur(${panelBlur})` }}>
         <div className="max-w-[100rem] mx-auto px-4 sm:px-6 xl:px-8 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 shrink-0">
-            <LayoutDashboard className="text-blue-600" size={24} />
-            <h1 className="font-bold text-lg hidden sm:block">Task Dashboard</h1>
+            <LayoutDashboard style={{ color: 'var(--ui-accent)' }} size={24} />
+            <h1 className="font-bold text-lg hidden sm:block" style={{ color: 'var(--ui-text)' }}>Task Dashboard</h1>
             {isDemo && <span className="text-xs font-medium bg-amber-100 text-amber-800 px-2 py-0.5 rounded border border-amber-200">DEMO</span>}
           </div>
 
           {((accessToken && !error) || isDemo) && (
             <div className="flex-1 min-w-0 max-w-md relative flex items-center">
-              <Search className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+              <Search className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 opacity-40" size={14} style={{ color: 'var(--ui-text)' }} />
               <input
                 type="text"
                 placeholder="検索..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-7 sm:pl-9 pr-2 sm:pr-4 py-1.5 sm:py-2 bg-slate-100/80 border border-transparent rounded-lg text-xs sm:text-sm focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 outline-none transition"
+                className="w-full pl-7 sm:pl-9 pr-2 sm:pr-4 py-1.5 sm:py-2 border rounded-lg text-xs sm:text-sm outline-none transition-all"
+                style={{ 
+                  backgroundColor: 'var(--ui-panel-bg)', 
+                  color: 'var(--ui-text)',
+                  borderColor: 'var(--ui-border)'
+                }}
               />
             </div>
           )}
@@ -1618,15 +1715,16 @@ export default function App() {
               type="button"
               onClick={handleRefresh}
               disabled={loading}
-              className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition disabled:opacity-50"
+              className="p-2 rounded-full transition disabled:opacity-50 hover:bg-black/5 dark:hover:bg-white/10"
+              style={{ color: 'var(--ui-text)' }}
               title="更新"
             >
-              <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+              <RefreshCw size={20} className={loading ? 'animate-spin' : 'opacity-70 hover:opacity-100'} />
             </button>
             <button
               type="button"
               onClick={handleLogout}
-              className="flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg transition"
+              className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg transition hover:bg-red-500/10 text-red-500"
             >
               <LogOut size={16} /> 切断
             </button>
@@ -1634,7 +1732,8 @@ export default function App() {
 
           <button
             type="button"
-            className="xl:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition relative w-10 h-10 flex flex-col justify-center items-center gap-1.5"
+            className="xl:hidden p-2 rounded-lg transition relative w-10 h-10 flex flex-col justify-center items-center gap-1.5 hover:bg-black/5 dark:hover:bg-white/10"
+            style={{ color: 'var(--ui-text)' }}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-expanded={isMobileMenuOpen}
             aria-label="メニュー"
@@ -1644,75 +1743,159 @@ export default function App() {
             <span className={`block w-5 h-0.5 bg-current transition-all duration-300 ${isMobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
           </button>
         </div>
+      </header>
 
-        {isMobileMenuOpen && (
-          <div className="xl:hidden border-t border-slate-100 bg-slate-50 px-4 py-4 flex flex-col gap-4 animate-in slide-in-from-top-2 shadow-inner">
-            {routineGroups.length > 0 && (
-              <div>
-                <p className="text-xs font-bold text-slate-500 mb-1.5 flex items-center gap-1"><Layers size={12} /> ルーチン絞り込み</p>
-                <div className="flex flex-wrap gap-1.5">
-                  <button type="button" onClick={() => setSelectedRoutine(null)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition border ${selectedRoutine === null ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200'}`}>
-                    すべて
+      {/* --- 修正：<header> の直後にモバイルメニューを配置する --- */}
+      {/* --- モバイルメニュー（開閉アニメーションとUIの改善） --- */}
+      <div className={`fixed inset-0 z-[100] xl:hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${isMobileMenuOpen ? 'visible' : 'invisible pointer-events-none'}`}>
+        {/* Backdrop with Blur */}
+        <div 
+          className={`absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0'}`} 
+          onClick={() => setIsMobileMenuOpen(false)} 
+        />
+        {/* Side Panel */}
+        <div 
+          className={`absolute top-0 right-0 h-[100dvh] w-[85%] max-w-[340px] shadow-2xl p-6 flex flex-col overflow-y-auto hide-scrollbar border-l transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
+          style={{ 
+            background: panelBg, 
+            backdropFilter: `blur(${panelBlur})`, 
+            borderColor: 'var(--ui-border)',
+            color: 'var(--ui-text)' 
+          }}
+        >
+          <div className="flex items-center justify-between mb-8">
+            <span className="font-black text-xl tracking-tight flex items-center gap-2">
+              <Sparkles className="text-[var(--ui-accent)]" size={24} />
+              MENU
+            </span>
+            {/* アニメーションする×ボタン（ハンバーガーアイコンと共通UI） */}
+            <button
+              type="button"
+              className="p-2 rounded-lg transition relative w-10 h-10 flex flex-col justify-center items-center gap-1.5 hover:bg-black/5 dark:hover:bg-white/10"
+              onClick={() => setIsMobileMenuOpen(false)}
+              aria-label="閉じる"
+            >
+              <span className={`block w-5 h-0.5 bg-current transition-all duration-300 ${isMobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`} />
+              <span className={`block w-5 h-0.5 bg-current transition-all duration-300 ${isMobileMenuOpen ? 'opacity-0' : ''}`} />
+              <span className={`block w-5 h-0.5 bg-current transition-all duration-300 ${isMobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
+            </button>
+          </div>
+
+          <div className="space-y-8 pb-12">
+            {/* 1. Navigation */}
+            <div className="space-y-3">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5 opacity-60">
+                <LayoutDashboard size={12} /> Navigation
+              </p>
+              <div className="grid grid-cols-1 gap-2">
+                {[
+                  { value: 'active', icon: Circle, label: t('active', uiConfig.language) },
+                  { value: 'history', icon: History, label: t('history', uiConfig.language) },
+                  { value: 'calendar', icon: Calendar, label: t('calendar', uiConfig.language) },
+                  { value: 'analytics', icon: BarChart3, label: t('analytics', uiConfig.language) },
+                  { value: 'routines', icon: Layers, label: t('routines', uiConfig.language) },
+                  { value: 'tags', icon: Tag, label: t('tags', uiConfig.language) },
+                  { value: 'replace', icon: RefreshCw, label: t('replace', uiConfig.language) },
+                  { value: 'settings', icon: Settings, label: t('settings', uiConfig.language) },
+                ].map(({ value, icon: Icon, label }) => (
+                  <button key={value} type="button" 
+                    onClick={() => { setActiveTab(value); setIsMobileMenuOpen(false); }} 
+                    className={`flex items-center gap-4 px-4 py-4 rounded-2xl text-sm font-bold transition ${activeTab === value ? 'bg-[var(--ui-accent-light)] text-[var(--ui-accent-dark)] shadow-sm' : 'bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10'}`}>
+                    <Icon size={20} className={activeTab === value ? 'opacity-100' : 'opacity-40'} />
+                    {label}
                   </button>
-                  {routineGroups.slice(0, 10).map(g => (
-                    <button key={`mob-r-${g.titleLabel}`} type="button"
-                      onClick={() => setSelectedRoutine(prev => prev === g.titleLabel ? null : g.titleLabel)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition border ${selectedRoutine === g.titleLabel ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-white text-slate-600 border-slate-200'}`}>
-                      {g.titleLabel} ({g.activeCount})
+                ))}
+              </div>
+            </div>
+
+            {/* 2. Tags */}
+            <div className="space-y-3">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5 opacity-60">
+                <Tag size={12} /> Tags
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => { setSelectedTag(null); setIsMobileMenuOpen(false); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition border ${selectedTag === null ? 'bg-[var(--ui-accent)] text-[var(--ui-accent-contrast)] border-[var(--ui-accent)] shadow-md' : 'bg-transparent text-[var(--ui-text-muted)] border-[var(--ui-border)] hover:border-[var(--ui-accent)]'}`}
+                >
+                  {t('all', uiConfig.language)}
+                </button>
+                {tagStats.map(tData => (
+                  <button
+                    key={tData.tag}
+                    onClick={() => { setSelectedTag(prev => prev === tData.tag ? null : tData.tag); setIsMobileMenuOpen(false); }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition border ${selectedTag === tData.tag ? 'bg-[var(--ui-accent)] text-[var(--ui-accent-contrast)] border-[var(--ui-accent)] shadow-md' : 'bg-transparent text-[var(--ui-text-muted)] border-[var(--ui-border)] hover:border-[var(--ui-accent)]'}`}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${tData.tag === '未分類' ? 'bg-slate-300' : getTagColor(tData.tag).split(' ')[0].replace('/10', '')}`} />
+                    {tData.tag}
+                    <span className="opacity-60 font-medium ml-1 bg-black/10 dark:bg-white/20 px-1.5 py-0.5 rounded">{tData.active > 0 ? tData.active : '✓'}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 3. Routines (タグと同じピル型UIに変更) */}
+            {routineGroups.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5 opacity-60">
+                  <Layers size={12} /> {t('routines', uiConfig.language)}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => { setSelectedRoutine(null); setIsMobileMenuOpen(false); }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition border ${selectedRoutine === null ? 'bg-[var(--ui-accent)] text-[var(--ui-accent-contrast)] border-[var(--ui-accent)] shadow-md' : 'bg-transparent text-[var(--ui-text-muted)] border-[var(--ui-border)] hover:border-[var(--ui-accent)]'}`}
+                  >
+                    {t('all', uiConfig.language)}
+                  </button>
+                  {routineGroups.slice(0, 12).map(g => (
+                    <button
+                      key={`mob-r-${g.titleLabel}`}
+                      onClick={() => { setSelectedRoutine(prev => prev === g.titleLabel ? null : g.titleLabel); setIsMobileMenuOpen(false); }}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition border ${selectedRoutine === g.titleLabel ? 'bg-[var(--ui-accent)] text-[var(--ui-accent-contrast)] border-[var(--ui-accent)] shadow-md' : 'bg-transparent text-[var(--ui-text-muted)] border-[var(--ui-border)] hover:border-[var(--ui-accent)]'}`}
+                    >
+                      <span className="truncate">{g.titleLabel}</span>
+                      <span className="opacity-60 font-medium ml-1 bg-black/10 dark:bg-white/20 px-1.5 py-0.5 rounded shrink-0">{g.activeCount > 0 ? g.activeCount : '✓'}</span>
                     </button>
                   ))}
                 </div>
               </div>
             )}
-            <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => { setActiveTab('active'); setIsMobileMenuOpen(false); }} className={`py-2 text-sm font-semibold rounded-lg border ${activeTab === 'active' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}>
-                {uiConfig.iconStyle !== 'text' && <Circle size={14} className="inline mr-1" />} {t('active', uiConfig.language)}
-              </button>
-              <button type="button" onClick={() => { setActiveTab('history'); setIsMobileMenuOpen(false); }} className={`py-2 text-sm font-semibold rounded-lg border ${activeTab === 'history' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}>
-                {uiConfig.iconStyle !== 'text' && <History size={14} className="inline mr-1" />} {t('history', uiConfig.language)}
-              </button>
-              <button type="button" onClick={() => { setActiveTab('calendar'); setIsMobileMenuOpen(false); }} className={`py-2 text-sm font-semibold rounded-lg border ${activeTab === 'calendar' ? 'bg-white text-violet-600 shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}>
-                {uiConfig.iconStyle !== 'text' && <Calendar size={14} className="inline mr-1" />} {t('calendar', uiConfig.language)}
-              </button>
-              <button type="button" onClick={() => { setActiveTab('analytics'); setIsMobileMenuOpen(false); }} className={`py-2 text-sm font-semibold rounded-lg border ${activeTab === 'analytics' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}>
-                {uiConfig.iconStyle !== 'text' && <BarChart3 size={14} className="inline mr-1" />} {t('analytics', uiConfig.language)}
-              </button>
-              <button type="button" onClick={() => { setActiveTab('routines'); setIsMobileMenuOpen(false); }} className={`py-2 text-sm font-semibold rounded-lg border ${activeTab === 'routines' ? 'bg-white text-amber-600 shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}>
-                {uiConfig.iconStyle !== 'text' && <Layers size={14} className="inline mr-1" />} {t('routines', uiConfig.language)}
-              </button>
-              <button type="button" onClick={() => { setActiveTab('tags'); setIsMobileMenuOpen(false); }} className={`py-2 text-sm font-semibold rounded-lg border ${activeTab === 'tags' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}>
-                {uiConfig.iconStyle !== 'text' && <Tag size={14} className="inline mr-1" />} {t('tags', uiConfig.language)}
-              </button>
-              <button type="button" onClick={() => { setActiveTab('replace'); setIsMobileMenuOpen(false); }} className={`py-2 text-sm font-semibold rounded-lg border ${activeTab === 'replace' ? 'bg-white text-cyan-600 shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}>
-                {uiConfig.iconStyle !== 'text' && <RefreshCw size={14} className="inline mr-1" />} {t('replace', uiConfig.language)}
-              </button>
-              <button type="button" onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }} className={`py-2 text-sm font-semibold rounded-lg border ${activeTab === 'settings' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}>
-                {uiConfig.iconStyle !== 'text' && <Settings size={14} className="inline mr-1" />} {t('settings', uiConfig.language)}
-              </button>
-            </div>
-            <div className="flex gap-2 border-t border-slate-200 pt-4">
-              <button type="button" onClick={() => { handleRefresh(); setIsMobileMenuOpen(false); }} className="flex-1 flex justify-center items-center gap-2 py-2 bg-white border border-slate-200 shadow-sm rounded-lg text-sm font-medium text-slate-700">
-                <RefreshCw size={16} className={loading ? 'animate-spin' : ''} /> {t('refresh', uiConfig.language)}
-              </button>
-              <button type="button" onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }} className="flex-1 flex justify-center items-center gap-2 py-2 bg-white border border-slate-200 shadow-sm rounded-lg text-sm font-medium text-red-600">
-                <LogOut size={16} /> {t('logout', uiConfig.language)}
+
+            <div className="pt-4 mt-4 border-t" style={{ borderColor: 'var(--ui-border)' }}>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 px-4 py-4 rounded-2xl text-sm font-black text-[var(--ui-danger)] bg-[var(--ui-danger-bg)] hover:opacity-80 transition shadow-sm"
+              >
+                <LogOut size={18} /> システム切断
               </button>
             </div>
           </div>
-        )}
-      </header>
+        </div>
+      </div>
 
       <div className="max-w-[100rem] mx-auto px-4 sm:px-6 xl:px-8 pt-6 xl:pt-8 flex flex-col lg:flex-row ui-layout-gap items-start w-full">
         <aside
-          className="hidden xl:flex flex-col w-[260px] 2xl:w-[300px] shrink-0 ui-layout-gap sticky top-[88px] h-[calc(100vh-88px)] overflow-y-auto hide-scrollbar pb-10"
+          className="hidden xl:flex flex-col w-[260px] 2xl:w-[300px] shrink-0 ui-layout-gap sticky top-[88px] h-[calc(100dvh-88px)] overflow-y-auto hide-scrollbar pb-32"
         >
           {/* メインメニュー */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 ui-panel">
             <h2 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2 uppercase tracking-wide">
               {uiConfig.iconStyle !== 'text' && <LayoutDashboard size={16} />} Menu
             </h2>
-            <nav className="flex flex-col gap-2" aria-label="メインメニュー">
+            <nav ref={sidebarNavRef} className="flex flex-col gap-2 relative" aria-label="メインメニュー">
+              {/* 選択背景の別オブジェクト（スライドアニメーション用） */}
+              <div 
+                className="absolute left-0 right-0 rounded-lg pointer-events-none ui-highlight-bg"
+                style={{
+                  top: navHighlightStyle.top,
+                  height: navHighlightStyle.height,
+                  opacity: navHighlightStyle.opacity,
+                  transition: navHighlightStyle.ready ? 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none',
+                  backgroundColor: 'var(--ui-text)',
+                  border: 'none'
+                }}
+              />
               {[
                 { value: 'active', icon: Circle, textIcon: 'ACT', label: t('active', uiConfig.language) },
                 { value: 'history', icon: History, textIcon: 'HIS', label: t('history', uiConfig.language) },
@@ -1728,11 +1911,12 @@ export default function App() {
                   <button
                     key={value}
                     type="button"
+                    data-menu-val={value}
                     onClick={() => setActiveTab(value)}
-                    className={`px-3 py-2 rounded-lg text-sm transition flex items-center gap-2 ${
+                    className={`px-3 py-2 rounded-lg text-sm transition relative z-10 flex items-center gap-2 ${
                       isActive
-                        ? 'text-[var(--ui-accent)] font-bold bg-slate-500/10'
-                        : 'text-[var(--ui-text-muted)] hover:bg-slate-500/5'
+                        ? 'text-[var(--ui-accent)] font-bold'
+                        : 'text-[var(--ui-text-muted)] hover:bg-slate-500/5 hover:text-[var(--ui-text)]'
                     }`}
                   >
                     {uiConfig.iconStyle === 'text' ? <span className="font-mono font-bold text-xs">[{textIcon}]</span> : <Icon size={16} />}
@@ -1818,51 +2002,57 @@ export default function App() {
         </aside>
 
         <main className="flex-1 min-w-0 flex flex-col ui-layout-gap pb-12 w-full">
+          {/* 変更：key に selectedTag と selectedRoutine を含めることで、クリック時にページ遷移アニメーションを共通で発火させる */}
+          <div 
+            key={`${activeTab}-${selectedTag || 'all'}-${selectedRoutine || 'all'}`} 
+            className={`page-transition-${uiConfig.animation} w-full flex flex-col ui-layout-gap`}
+          >
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pb-2 w-full">
-            <div className="col-span-2 lg:col-span-1 ui-gradient-card ui-panel rounded-xl relative overflow-hidden shadow-sm flex flex-col justify-between min-h-[120px]">
-              <div className="relative z-10 text-white">
-                <p className="text-sm font-bold mb-1 flex items-center gap-1.5">
-                  {uiConfig.iconStyle !== 'text' && <TrendingUp size={16} />} {t('weeklyProgress', uiConfig.language)}
-                </p>
-                <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-4xl font-black">{weeklyStats.rate}</span>
-                  <span className="text-lg font-bold">%</span>
+          {/* KPI Cards Area (横スクロール対応 & 大画面ワイド対応) */}
+          <div className="-mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto hide-scrollbar pb-2 pt-1">
+            <div className="flex sm:grid sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 gap-3 w-max sm:w-full snap-x snap-mandatory pr-4 sm:pr-0">
+              
+              <div className="snap-center shrink-0 w-[85vw] sm:w-auto col-span-2 lg:col-span-1 2xl:col-span-2 ui-gradient-card ui-panel rounded-xl relative overflow-hidden shadow-sm flex flex-col justify-between min-h-[120px]">
+                <div className="relative z-10 text-white">
+                  <p className="text-sm font-bold mb-1 flex items-center gap-1.5">
+                    {uiConfig.iconStyle !== 'text' && <TrendingUp size={16} />} {t('weeklyProgress', uiConfig.language)}
+                  </p>
+                  <div className="flex items-baseline gap-1 mt-2">
+                    <span className="text-4xl font-black">{weeklyStats.rate}</span>
+                    <span className="text-lg font-bold">%</span>
+                  </div>
+                  <p className="text-xs mt-2 font-medium opacity-80">
+                    {weeklyStats.totalTarget === 0 ? '-' : `${t('completed', uiConfig.language)} ${weeklyStats.completed} / ${t('total', uiConfig.language)} ${weeklyStats.totalTarget}`}
+                  </p>
                 </div>
-                <p className="text-xs mt-2 font-medium opacity-80">
-                  {weeklyStats.totalTarget === 0 ? '-' : `${t('completed', uiConfig.language)} ${weeklyStats.completed} / ${t('total', uiConfig.language)} ${weeklyStats.totalTarget}`}
-                </p>
+                {uiConfig.widgetDecor === 'target' && <Target className="absolute -right-4 -bottom-4 opacity-10 text-white" size={100} />}
+                {uiConfig.widgetDecor === 'sparkle' && <Sparkles className="absolute right-2 bottom-2 text-white opacity-25" size={64} strokeWidth={1.5} />}
+                {uiConfig.widgetDecor === 'neon' && <div className="absolute right-0 bottom-0 w-32 h-32 bg-white rounded-full blur-3xl opacity-20 mix-blend-overlay" />}
               </div>
-              {uiConfig.widgetDecor === 'target' && <Target className="absolute -right-4 -bottom-4 opacity-10 text-white" size={100} />}
-              {uiConfig.widgetDecor === 'sparkle' && <span className="absolute right-2 bottom-2 text-5xl opacity-20">✨</span>}
-              {uiConfig.widgetDecor === 'neon' && <div className="absolute right-0 bottom-0 w-32 h-32 bg-white rounded-full blur-3xl opacity-20 mix-blend-overlay" />}
-            </div>
-            <div className="col-span-1">
-              <PeriodCard
-                label={t('thisWeek', uiConfig.language)}
-                icon={uiConfig.iconStyle !== 'text' && <Calendar size={14} />}
-                stats={weeklyStats}
-                accent="text-[var(--ui-accent)]"
-                onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod('week'); }}
-              />
-            </div>
-            <div className="col-span-1">
-              <PeriodCard
-                label={t('thisWeek', uiConfig.language)}
-                icon={uiConfig.iconStyle !== 'text' && <Calendar size={14} />}
-                stats={nextWeekStats}
-                accent="text-[var(--ui-accent-dark)]"
-                onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod('nextWeek'); }}
-              />
-            </div>
-            <div className="col-span-2 lg:col-span-1">
-              <PeriodCard
-                label={t('thisMonth', uiConfig.language)}
-                icon={uiConfig.iconStyle !== 'text' && <Calendar size={14} />}
-                stats={monthStats}
-                accent="text-[var(--ui-accent-dark)] opacity-70"
-                onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod('month'); }}
-              />
+              
+              <div className="snap-center shrink-0 w-[85vw] sm:w-auto col-span-1">
+                <PeriodCard
+                  label={t('thisWeek', uiConfig.language)} icon={uiConfig.iconStyle !== 'text' && <Calendar size={14} />}
+                  stats={weeklyStats} accent="text-[var(--ui-accent)]"
+                  onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod('week'); }}
+                />
+              </div>
+              
+              <div className="snap-center shrink-0 w-[85vw] sm:w-auto col-span-1">
+                <PeriodCard
+                  label={t('nextWeek', uiConfig.language)} icon={uiConfig.iconStyle !== 'text' && <Calendar size={14} />}
+                  stats={nextWeekStats} accent="text-[var(--ui-accent-dark)]"
+                  onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod('nextWeek'); }}
+                />
+              </div>
+              
+              <div className="snap-center shrink-0 w-[85vw] sm:w-auto col-span-2 lg:col-span-1">
+                <PeriodCard
+                  label={t('thisMonth', uiConfig.language)} icon={uiConfig.iconStyle !== 'text' && <Calendar size={14} />}
+                  stats={monthStats} accent="text-[var(--ui-accent-dark)] opacity-70"
+                  onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod('month'); }}
+                />
+              </div>
             </div>
           </div>
 
@@ -1870,25 +2060,103 @@ export default function App() {
           {activeTab === 'active' && (
             <>
               {taskFormExpanded ? (
-                <form onSubmit={handleAddTask} className="bg-white rounded-xl shadow-sm border border-blue-100 p-4 transition-all">
+                <div className="bg-white rounded-xl shadow-lg border p-4 animate-in slide-in-from-bottom-4" style={{ borderColor: 'var(--ui-border)', background: 'var(--ui-panel-bg)' }}>
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                       <Plus size={18} className="text-blue-500" /> {t('addLabel', uiConfig.language) || 'New Task'}
-                    </span>
-                    <button type="button" onClick={() => setTaskFormExpanded(false)} className="p-1 px-2 text-xs font-bold text-slate-400 hover:bg-slate-100 rounded-lg transition" >
-                      {t('closeLabel', uiConfig.language) || 'Close'}
-                    </button>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    <textarea placeholder={t('titlePlaceholder', uiConfig.language) || 'Enter title...'} value={newTaskTitle} onChange={(e) => setNewTaskTitle(e.target.value)} rows={3}
-                      className="w-full py-2 px-3 outline-none text-slate-800 placeholder-slate-400 bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-500 focus:bg-white resize-y text-sm" />
-                    <div className="flex justify-end">
-                      <button type="submit" disabled={!newTaskTitle.trim() || loading} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg disabled:opacity-50 shadow-sm" >
-                        {t('add', uiConfig.language) || 'Add'}
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-bold opacity-80" style={{ color: 'var(--ui-text)' }}>タスク追加</span>
+                      <button 
+                        type="button" 
+                        onClick={copyAiPrompt}
+                        className="text-[10px] px-2.5 py-1 rounded-md font-bold flex items-center gap-1.5 transition"
+                        style={{ backgroundColor: 'var(--ui-accent-light)', color: 'var(--ui-accent-dark)' }}
+                      >
+                        <Sparkles size={12} /> AIプロンプト作成
                       </button>
                     </div>
+                    <button type="button" onClick={() => setTaskFormExpanded(false)} className="p-1 opacity-50 hover:opacity-100 transition" style={{ color: 'var(--ui-text)' }}><X size={18} /></button>
                   </div>
-                </form>
+                  
+                  <textarea
+                    autoFocus
+                    rows={4}
+                    value={newTaskTitle}
+                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                    placeholder={"タスクを入力...\n（例: [Univ] レポート作成, 2024-05-15）\n※改行で複数同時に入力できます"}
+                    className="w-full p-3 text-sm rounded-lg border focus:ring-2 outline-none transition-all resize-y"
+                    style={{ background: 'var(--ui-bg)', color: 'var(--ui-text)', borderColor: 'var(--ui-border)', '--tw-ring-color': 'var(--ui-accent)' }}
+                  />
+                  
+                  {/* GUI設定エリア */}
+                  <div className="mt-3 flex flex-col sm:flex-row sm:items-start gap-3">
+                    {/* 日付指定 */}
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg border flex-1" style={{ borderColor: 'var(--ui-border)', background: 'var(--ui-bg)' }}>
+                      <Calendar size={14} className="opacity-50 shrink-0" style={{ color: 'var(--ui-text)' }} />
+                      <input 
+                        type="datetime-local" 
+                        value={newTaskDue}
+                        onChange={(e) => setNewTaskDue(e.target.value)}
+                        className="text-xs w-full bg-transparent outline-none cursor-pointer"
+                        style={{ color: 'var(--ui-text)', colorScheme: isDark ? 'dark' : 'light' }}
+                      />
+                      {newTaskDue && (
+                        <button type="button" onClick={() => setNewTaskDue('')} className="opacity-40 hover:opacity-100 shrink-0" style={{ color: 'var(--ui-text)' }}>
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* タグ指定 */}
+                    <div className="flex flex-col gap-2 flex-[2]">
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border min-h-[38px] flex-wrap" style={{ borderColor: 'var(--ui-border)', background: 'var(--ui-bg)' }}>
+                        <Tag size={14} className="opacity-50 shrink-0" style={{ color: 'var(--ui-text)' }} />
+                        {newTaskTags.map(tag => (
+                          <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 font-medium border" style={{ backgroundColor: 'var(--ui-accent-light)', color: 'var(--ui-accent-dark)', borderColor: 'var(--ui-accent-border)' }}>
+                            {tag} 
+                            <button type="button" onClick={() => setNewTaskTags(prev => prev.filter(t => t !== tag))} className="opacity-60 hover:opacity-100"><X size={10}/></button>
+                          </span>
+                        ))}
+                        <input 
+                           type="text" 
+                           placeholder="タグ入力 (Enterで追加)" 
+                           className="text-xs bg-transparent outline-none flex-1 min-w-[100px]"
+                           style={{ color: 'var(--ui-text)' }}
+                           onKeyDown={(e) => {
+                             if (e.key === 'Enter') {
+                               e.preventDefault();
+                               const val = e.target.value.trim();
+                               if (val && !newTaskTags.includes(val)) setNewTaskTags([...newTaskTags, val]);
+                               e.target.value = '';
+                             }
+                           }}
+                        />
+                      </div>
+                      {/* 既存タグサジェスト */}
+                      {tagStats.length > 0 && (
+                        <div className="flex gap-1.5 flex-wrap px-1">
+                          {tagStats.slice(0, 8).map(t => !newTaskTags.includes(t.tag) && t.tag !== '未分類' && (
+                            <button key={`sug-${t.tag}`} type="button" onClick={() => setNewTaskTags(prev => [...prev, t.tag])}
+                              className="text-[9px] px-1.5 py-0.5 rounded border opacity-60 hover:opacity-100 transition"
+                              style={{ borderColor: 'var(--ui-border)', color: 'var(--ui-text)' }}>
+                              + {t.tag}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center mt-4 pt-4 border-t" style={{ borderColor: 'var(--ui-border)' }}>
+                    <p className="text-[10px] opacity-50 hidden sm:block" style={{ color: 'var(--ui-text)' }}>ヒント: テキスト内の記法（[タグ] や 行末の日付）は、GUI設定を上書きします</p>
+                    <button 
+                      type="button" 
+                      onClick={handleAddTask}
+                      className="px-6 py-2 rounded-lg font-bold shadow-md transition active:scale-95 text-sm ml-auto"
+                      style={{ backgroundColor: 'var(--ui-accent)', color: 'var(--ui-accent-contrast)' }}
+                    >
+                      {loading ? "追加中..." : "タスクを一括登録"}
+                    </button>
+                  </div>
+                </div>
               ) : null}
             </>
           )}
@@ -1989,15 +2257,15 @@ export default function App() {
                               key={task.id}
                               data-task-row-id={task.id}
                               onClick={() => { if (showCheckboxes) toggleSelection(task.id); }}
-                              className={`p-4 flex items-start gap-3 transition group ${isKbFocus ? 'ring-2 ring-inset ring-blue-500 z-[1]' : ''
-                                } ${isMultiSel
-                                  ? overdue
-                                    ? 'bg-red-200/70 hover:bg-red-200/85 border-l-4 border-red-500'
-                                    : 'bg-slate-300/80 hover:bg-slate-300'
+                              className={`p-4 flex items-start gap-3 transition-all duration-300 group border-l-2 ${
+                                isKbFocus ? 'ring-2 ring-inset ring-[var(--ui-accent)] z-[1]' : ''
+                              } ${
+                                isMultiSel
+                                  ? 'bg-[var(--ui-accent-light)] border-[var(--ui-accent)]'
                                   : overdue
-                                    ? 'bg-red-50/40 hover:bg-red-50 border-l-4 border-red-400'
-                                    : 'hover:bg-slate-50'
-                                } ${showCheckboxes ? 'cursor-pointer' : ''}`}
+                                    ? 'bg-[var(--ui-danger-bg)] border-[var(--ui-danger)] hover:brightness-95'
+                                    : 'border-transparent hover:bg-black/5 dark:hover:bg-white/5'
+                              } ${showCheckboxes ? 'cursor-pointer' : ''}`}
                             >
                               <button
                                 type="button"
@@ -2005,13 +2273,13 @@ export default function App() {
                                 className="mt-1 p-0.5 -ml-0.5 flex-shrink-0 focus:outline-none transition-transform active:scale-90"
                               >
                                 {task.status === 'completed' ? (
-                                  <CheckCircle2 className="text-emerald-500 hover:text-emerald-600 transition" size={22} />
+                                  <CheckCircle2 className="text-[var(--ui-success)] transition" size={22} />
                                 ) : (
-                                  <Circle className={`${overdue ? 'text-red-400 group-hover:text-red-500' : 'text-slate-300 group-hover:text-blue-500'} transition`} size={22} />
+                                  <Circle className={`${overdue ? 'text-[var(--ui-danger)] opacity-70' : 'text-[var(--ui-text-muted)] opacity-40 group-hover:text-[var(--ui-accent)] group-hover:opacity-100'} transition`} size={22} />
                                 )}
                               </button>
                               <div className="flex-grow min-w-0">
-                                <h3 className={`font-medium text-base mb-1.5 whitespace-normal break-words ${overdue ? 'text-red-700' : 'text-slate-800'}`}>
+                                <h3 className={`font-medium text-base mb-1.5 whitespace-normal break-words ${overdue ? 'text-[var(--ui-danger)]' : 'text-[var(--ui-text)]'}`}>
                                   {task.cleanTitle}
                                 </h3>
                                 <div className="flex flex-wrap items-center gap-2">
@@ -2033,10 +2301,11 @@ export default function App() {
                                     </span>
                                   ))}
                                   {task.due && (
-                                    <div className={`flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border ${overdue
-                                      ? 'text-red-700 bg-red-100 border-red-300 animate-pulse'
-                                      : 'text-amber-700 bg-amber-50 border-amber-200'
-                                      }`}>
+                                    <div className={`flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border ${
+                                      overdue
+                                        ? 'text-[var(--ui-danger)] bg-[var(--ui-danger-bg)] border-[var(--ui-danger)] border-opacity-30'
+                                        : 'text-[var(--ui-warning)] bg-[var(--ui-warning-bg)] border-[var(--ui-warning)] border-opacity-30'
+                                    }`}>
                                       {overdue ? <AlertCircle size={11} /> : <Calendar size={11} />}
                                       {overdue ? '期限超過: ' : '期限: '}{formatDue(task.due)}
                                     </div>
@@ -2066,19 +2335,13 @@ export default function App() {
                         key={task.id}
                         data-task-row-id={task.id}
                         onClick={() => { if (showCheckboxes) toggleSelection(task.id); }}
-                        className={`p-4 flex items-start gap-3 transition group ${isKbFocus ? 'ring-2 ring-inset ring-blue-500 z-[1]' : ''
-                          } ${isMultiSel
-                            ? task.status === 'completed'
-                              ? 'bg-slate-300/70 opacity-90'
-                              : overdue
-                                ? 'bg-red-200/70 border-l-4 border-red-500'
-                                : 'bg-slate-300/80'
-                            : task.status === 'completed'
-                              ? 'opacity-70 bg-slate-50/50 hover:bg-slate-50'
-                              : overdue
-                                ? 'bg-red-50/40 hover:bg-red-50 border-l-4 border-red-400'
-                                : 'hover:bg-slate-50'
-                          } ${showCheckboxes ? 'cursor-pointer' : ''}`}
+                        className={`p-4 flex items-start gap-3 transition-all duration-300 group border-l-2 ${
+                          isKbFocus ? 'ring-2 ring-inset ring-[var(--ui-accent)] z-[1]' : ''
+                        } ${
+                          isMultiSel
+                            ? 'bg-[var(--ui-accent-light)] border-[var(--ui-accent)] opacity-100 grayscale-0'
+                            : 'border-transparent opacity-50 grayscale hover:opacity-100 hover:grayscale-0 hover:bg-black/5 dark:hover:bg-white/5'
+                        } ${showCheckboxes ? 'cursor-pointer' : ''}`}
                       >
                         <button
                           type="button"
@@ -2086,17 +2349,14 @@ export default function App() {
                           className="mt-1 p-0.5 -ml-0.5 flex-shrink-0 focus:outline-none transition-transform active:scale-90"
                         >
                           {task.status === 'completed' ? (
-                            <CheckCircle2 className="text-emerald-500 hover:text-emerald-600 transition" size={22} />
+                            <CheckCircle2 className="text-[var(--ui-success)] transition" size={22} />
                           ) : (
                             <Circle className={`${overdue ? 'text-red-400 group-hover:text-red-500' : 'text-slate-300 group-hover:text-blue-500'} transition`} size={22} />
                           )}
                         </button>
 
                         <div className="flex-grow min-w-0">
-                          <h3 className={`font-medium text-base mb-1.5 whitespace-normal break-words ${task.status === 'completed'
-                            ? 'line-through text-slate-500'
-                            : overdue ? 'text-red-700' : 'text-slate-800'
-                            }`}>
+                          <h3 className={`font-medium text-base mb-1.5 whitespace-normal break-words line-through text-[var(--ui-text-muted)]`}>
                             {task.cleanTitle}
                           </h3>
 
@@ -2136,7 +2396,7 @@ export default function App() {
                             )}
 
                             {task.completed && task.status === 'completed' && (
-                              <div className="flex items-center gap-1 text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                              <div className="flex items-center gap-1 text-[11px] font-medium text-[var(--ui-text-muted)] bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-full border border-[var(--ui-border)]">
                                 <History size={11} />
                                 完了: {formatDate(task.completed)}
                               </div>
@@ -2150,6 +2410,7 @@ export default function App() {
               )}
             </div>
           )}
+          </div>
         </main>
       </div>
 
@@ -2270,16 +2531,19 @@ export default function App() {
                         <h4 className="text-xs font-bold text-slate-500 mb-2 border-b border-slate-200 pb-1">{dateLabel}</h4>
                         <div className="space-y-2">
                           {sorted.map((task) => {
-                            const overdue = task.status !== 'completed' && isOverdue(task.due);
+                            // 👇 ここに完了判定（done）の宣言を追加
+                            const done = task.status === 'completed';
+                            const overdue = !done && task.due && isOverdue(task.due);
+                            
                             return (
-                              <div key={task.id} className="flex items-start gap-3 p-3 bg-white border border-slate-100 rounded-lg shadow-sm">
+                              <div key={task.id} className={`flex items-start gap-3 p-3 rounded-lg shadow-sm transition-all border ${done ? 'opacity-50 grayscale border-transparent bg-transparent' : 'bg-[var(--ui-panel-bg)] border-black/5 dark:border-white/5'}`}>
                                 <button type="button" onClick={() => toggleTaskStatus(task)} className="mt-0.5 shrink-0 focus:outline-none transition-transform active:scale-90">
-                                  {task.status === 'completed'
-                                    ? <CheckCircle2 size={18} className="text-emerald-500" />
-                                    : <Circle size={18} className={overdue ? 'text-red-400' : 'text-slate-300'} />}
+                                  {done
+                                    ? <CheckCircle2 size={18} className="text-[var(--ui-success)]" />
+                                    : <Circle size={18} className={overdue ? 'text-[var(--ui-danger)]' : 'text-[var(--ui-text-muted)] opacity-40'} />}
                                 </button>
                                 <div className="min-w-0 flex-1">
-                                  <p className={`text-sm font-medium whitespace-normal break-words leading-tight ${task.status === 'completed' ? 'line-through text-slate-400' : overdue ? 'text-red-700' : 'text-slate-800'}`}>
+                                  <p className={`text-sm font-medium whitespace-normal break-words leading-tight ${done ? 'line-through text-[var(--ui-text-muted)]' : overdue ? 'text-[var(--ui-danger)]' : 'text-[var(--ui-text)]'}`}>
                                     {task.cleanTitle}
                                   </p>
                                   {((task.platforms?.length > 0) || (task.tags?.length > 0)) && (
@@ -2351,16 +2615,12 @@ function CalendarView({ tasks, mode, setMode, cursor, setCursor, toggleTaskStatu
     const done = task.status === 'completed';
     const overdue = !done && task.due && isOverdue(task.due);
     return (
-      <div key={task.id} className={`flex items-start gap-1.5 py-1.5 text-left border-b border-slate-100/80 last:border-0 ${done ? 'opacity-50' : ''}`}>
-        <button
-          type="button"
-          onClick={() => toggleTaskStatus(task)}
-          className="mt-0.5 shrink-0 focus:outline-none"
-        >
-          {done ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Circle size={14} className={overdue ? 'text-red-400' : 'text-slate-300'} />}
+      <div key={task.id} className={`flex items-start gap-1.5 py-1.5 text-left border-b border-black/5 dark:border-white/5 last:border-0 transition-opacity ${done ? 'opacity-50 grayscale' : ''}`}>
+        <button type="button" onClick={() => toggleTaskStatus(task)} className="mt-0.5 shrink-0 focus:outline-none">
+          {done ? <CheckCircle2 size={14} className="text-[var(--ui-success)]" /> : <Circle size={14} className={overdue ? 'text-[var(--ui-danger)]' : 'text-[var(--ui-text-muted)] opacity-40'} />}
         </button>
         <div className="min-w-0 flex-1">
-          <p className={`text-[10px] sm:text-[11px] leading-snug break-words whitespace-normal hyphens-auto ${done ? 'line-through text-slate-400' : overdue ? 'text-red-700 font-medium' : 'text-slate-700'}`}>
+          <p className={`text-[10px] sm:text-[11px] leading-snug break-words whitespace-normal hyphens-auto ${done ? 'line-through text-[var(--ui-text-muted)]' : overdue ? 'text-[var(--ui-danger)] font-medium' : 'text-[var(--ui-text)]'}`}>
             {task.cleanTitle}
           </p>
           {((task.platforms?.length > 0) || (task.tags?.length > 0)) && (
@@ -2538,7 +2798,7 @@ function RoutineDetectorView({
         </div>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6 items-start">
         {routineGroups.length === 0 ? (
           <div className="col-span-full p-12 text-center text-slate-400 bg-white rounded-xl border border-slate-100">
             <Layers size={40} className="mx-auto mb-3 opacity-20" />
@@ -2598,19 +2858,15 @@ function RoutineDetectorView({
                       <div
                         key={task.id}
                         onClick={() => { if (showCheckboxes) toggleSelection(task.id); }}
-                        className={`flex items-start gap-3 p-2 rounded-lg transition group ${showCheckboxes ? 'cursor-pointer' : ''
-                          } ${isSelected ? 'bg-blue-50 ring-1 ring-blue-300' : 'hover:bg-slate-50'}`}
+                        className={`flex items-start gap-3 p-2 rounded-lg transition-all duration-300 group ${showCheckboxes ? 'cursor-pointer' : ''
+                          } ${isSelected ? 'bg-[var(--ui-accent-light)] ring-1 ring-[var(--ui-accent)]' : 'hover:bg-black/5 dark:hover:bg-white/5'} ${done ? 'opacity-60 grayscale hover:grayscale-0' : ''}`}
                       >
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }}
-                          className="mt-0.5 shrink-0 focus:outline-none transition-transform active:scale-90"
-                        >
-                          {done ? <CheckCircle2 size={16} className="text-emerald-500" /> : <Circle size={16} className="text-slate-300 group-hover:text-blue-500 transition" />}
+                        <button type="button" onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }} className="mt-0.5 shrink-0 focus:outline-none transition-transform active:scale-90">
+                          {done ? <CheckCircle2 size={16} className="text-[var(--ui-success)]" /> : <Circle size={16} className="text-[var(--ui-text-muted)] opacity-40 group-hover:text-[var(--ui-accent)] group-hover:opacity-100 transition" />}
                         </button>
                         <div className="min-w-0 flex-1">
-                          <p className={`text-sm ${done ? 'line-through text-slate-400' : 'text-slate-700'}`}>{task.cleanTitle}</p>
-                          {task.due && <p className="text-[10px] text-slate-400 mt-0.5">{new Date(task.due).toLocaleDateString()}</p>}
+                          <p className={`text-sm ${done ? 'line-through text-[var(--ui-text-muted)]' : 'text-[var(--ui-text)]'}`}>{task.cleanTitle}</p>
+                          {task.due && <p className="text-[10px] text-[var(--ui-text-muted)] mt-0.5 opacity-80">{new Date(task.due).toLocaleDateString()}</p>}
                         </div>
                       </div>
                     );
@@ -2786,29 +3042,31 @@ function BatchReplaceView({ tasks, accessToken, fetchRealTasks, isDemo }) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 space-y-4">
-      <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2"><RefreshCw className="text-cyan-500" size={20}/> タスク名一括置換</h2>
-      <p className="text-xs text-slate-500">API制限を避けるため、一度に最大10件ずつ置換を実行します。</p>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-1">
-          <label className="text-[10px] font-bold text-slate-400 uppercase">検索文字列</label>
-          <input type="text" placeholder="例: 課題1" value={searchText} onChange={e => setSearchText(e.target.value)} className="w-full border border-slate-200 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white transition"/>
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start w-full">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 space-y-4 sticky top-24">
+        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2"><RefreshCw className="text-cyan-500" size={20}/> タスク名一括置換</h2>
+        <p className="text-xs text-slate-500">API制限を避けるため、一度に最大10件ずつ置換を実行します。</p>
+        
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-400 uppercase">検索文字列</label>
+            <input type="text" placeholder="例: 課題1" value={searchText} onChange={e => setSearchText(e.target.value)} className="w-full border border-slate-200 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white transition"/>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-400 uppercase">置換後文字列</label>
+            <input type="text" placeholder="例: Report 1" value={replaceText} onChange={e => setReplaceText(e.target.value)} className="w-full border border-slate-200 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white transition"/>
+          </div>
         </div>
-        <div className="space-y-1">
-          <label className="text-[10px] font-bold text-slate-400 uppercase">置換後文字列</label>
-          <input type="text" placeholder="例: Report 1" value={replaceText} onChange={e => setReplaceText(e.target.value)} className="w-full border border-slate-200 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white transition"/>
+        
+        <div className="flex justify-between items-center pt-2">
+          <p className="text-sm font-medium text-slate-600">一致: <span className="text-blue-600">{matchedTasks.length}</span> 件</p>
+          <button onClick={handleReplace} disabled={replacing || matchedTasks.length === 0} className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-bold disabled:opacity-50 transition hover:bg-blue-700 shadow-md active:scale-[0.98]">
+            {replacing ? '置換中...' : `上から10件を置換実行`}
+          </button>
         </div>
       </div>
       
-      <div className="flex justify-between items-center pt-2">
-        <p className="text-sm font-medium text-slate-600">一致件数: <span className="text-blue-600">{matchedTasks.length}</span> 件</p>
-        <button onClick={handleReplace} disabled={replacing || matchedTasks.length === 0} className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-bold disabled:opacity-50 transition hover:bg-blue-700 shadow-md active:scale-[0.98]">
-          {replacing ? '置換中...' : `上から10件を置換実行`}
-        </button>
-      </div>
-      
-      <div className="max-h-[400px] overflow-y-auto border border-slate-100 rounded-xl divide-y divide-slate-100 mt-2 bg-slate-50 shadow-inner">
+      <div className="max-h-[70vh] overflow-y-auto border border-slate-100 rounded-xl divide-y divide-slate-100 bg-slate-50 shadow-inner">
         {matchedTasks.length === 0 ? (
           <div className="p-12 text-center text-slate-300">置換対象のタスクが見つかりませんでした</div>
         ) : (
@@ -2873,7 +3131,7 @@ function AnalyticsView({ tasks, weeklyHistory, monthlyHistory, yearlyHistory, ov
         <CompositeChart series={series} labelFor={labelFor} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6 items-start">
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
           <p className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
             <Clock size={18} className="text-blue-500" />
@@ -3118,61 +3376,86 @@ function UISettingsView({ uiConfig, setUiConfig }) {
   const applyPreset = (config) => setUiConfig(config);
 
   const Section = ({ title, children }) => (
-    <div className="bg-white rounded-xl shadow-sm border p-5 space-y-4">
-      <h3 className="font-bold text-sm uppercase tracking-wider opacity-80">{title}</h3>
+    <div className="bg-white rounded-xl shadow-sm border p-5 space-y-4" style={{ background: 'var(--ui-panel-bg)', borderColor: 'var(--ui-border)' }}>
+      <h3 className="font-bold text-sm uppercase tracking-wider" style={{ color: 'var(--ui-text)' }}>{title}</h3>
       {children}
     </div>
   );
 
   const OptionRow = ({ label, options, current, onChange }) => (
-    <div className="flex flex-col lg:flex-row lg:items-center gap-3 border-b border-slate-100/10 pb-4 last:border-0 last:pb-0">
-      <span className="text-sm font-semibold w-40 shrink-0 opacity-80">{label}</span>
-      <div className="flex-1 p-1.5 rounded-xl border" style={{ background: 'var(--ui-accent-light)' }}>
+    <div className="flex flex-col lg:flex-row lg:items-center gap-3 border-b border-slate-100/20 pb-4 last:border-0 last:pb-0">
+      <span className="text-sm font-bold w-40 shrink-0" style={{ color: 'var(--ui-text)' }}>{label}</span>
+      <div className="flex-1 p-1.5 rounded-xl border border-slate-200/50" style={{ background: 'var(--ui-bg)' }}>
         <AnimatedToggle options={options} current={current} onChange={onChange} className="w-full" optionClassName="flex-1 min-w-[80px]" />
       </div>
     </div>
   );
 
+  // カテゴリごとにプリセットを整理
+  const categories = [...new Set(THEME_PRESETS.map(p => p.category))];
+  const radiusVals = { none: '0px', sm: '4px', md: '8px', lg: '16px', xl: '24px' };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full xl:max-w-6xl">
       <div className="flex items-center gap-2 mb-2 px-2">
         <Settings className="opacity-80" size={28} />
         <h2 className="text-2xl font-bold">UI / デザイン設定</h2>
       </div>
 
-      <Section title="🎨 デザインプリセット (テーマの特徴が一目でわかる30選)">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {THEME_PRESETS.map((preset) => {
-            const bgColors = { white: '#ffffff', light: '#f8fafc', paper: '#fdfcf8', gray: '#e5e7eb', dark: '#1e293b', navy: '#0a0a2a', pitchBlack: '#000000', cream: '#fefce8', sepia: '#f3e8d2' };
-            const textColors = { white: '#0f172a', light: '#1e293b', paper: '#3f3e3a', gray: '#1f2937', dark: '#f8fafc', navy: '#e0e7ff', pitchBlack: '#ffffff', cream: '#451a03', sepia: '#433422' };
-            const accentColors = { blue: '#2563eb', indigo: '#4f46e5', emerald: '#059669', teal: '#0d9488', cyan: '#0891b2', rose: '#e11d48', fuchsia: '#c026d3', amber: '#d97706', violet: '#7c3aed', slate: '#64748b', zinc: '#52525b', white: '#ffffff', black: '#09090b', gold: '#d4af37', bronze: '#cd7f32', sand: '#e7e5e4' };
+      <Section title="🎨 デザインプリセット (カテゴリ別)">
+        <div className="space-y-8">
+          {categories.map(cat => (
+            <div key={cat}>
+              <h4 className="text-xs font-bold text-slate-500 mb-3 border-b border-slate-100 pb-1">{cat}</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 items-stretch">
+                {THEME_PRESETS.filter(p => p.category === cat).map((preset) => {
+                  const bgColors = { white: '#ffffff', light: '#f8fafc', paper: '#fdfcf8', gray: '#e5e7eb', dark: '#1e293b', navy: '#0a0a2a', pitchBlack: '#000000', cream: '#fefce8', sepia: '#f3e8d2' };
+                  const textColors = { white: '#0f172a', light: '#1e293b', paper: '#3f3e3a', gray: '#1f2937', dark: '#f8fafc', navy: '#e0e7ff', pitchBlack: '#ffffff', cream: '#451a03', sepia: '#433422' };
+                  const accentColors = { blue: '#2563eb', indigo: '#4f46e5', emerald: '#059669', teal: '#0d9488', cyan: '#0891b2', rose: '#e11d48', fuchsia: '#c026d3', amber: '#d97706', violet: '#7c3aed', slate: '#64748b', zinc: '#52525b', white: '#ffffff', black: '#09090b', gold: '#d4af37', bronze: '#cd7f32', sand: '#e7e5e4' };
 
-            const bgColor = bgColors[preset.config.bgTheme] || '#ffffff';
-            const textColor = textColors[preset.config.bgTheme] || '#0f172a';
-            const accentColor = accentColors[preset.config.accent] || '#2563eb';
+                  const bgColor = bgColors[preset.config.bgTheme] || '#ffffff';
+                  const textColor = textColors[preset.config.bgTheme] || '#0f172a';
+                  const accentColor = accentColors[preset.config.accent] || '#2563eb';
 
-            return (
-              <button
-                key={preset.id}
-                onClick={() => applyPreset(preset.config)}
-                className="flex items-center gap-3 p-3 border-2 border-slate-200/60 rounded-xl hover:border-blue-500 hover:shadow-md transition active:scale-95 text-left bg-white"
-              >
-                {/* カラーパレットプレビュー */}
-                <div className="flex shrink-0 -space-x-2">
-                  <span className="w-8 h-8 rounded-full border-2 border-white shadow-sm z-10" style={{ backgroundColor: bgColor }} title="背景色" />
-                  <span className="w-8 h-8 rounded-full border-2 border-white shadow-sm z-20" style={{ backgroundColor: textColor }} title="文字色" />
-                  <span className="w-8 h-8 rounded-full border-2 border-white shadow-sm z-30" style={{ backgroundColor: accentColor }} title="アクセント" />
-                </div>
-                <div className="flex flex-col flex-1 min-w-0">
-                  <span className="font-bold text-xs truncate text-slate-800">{preset.name}</span>
-                  <div className="flex gap-1 mt-1">
-                    <span className="text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded">{preset.config.bgTheme}</span>
-                    <span className="text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded">{preset.config.texture}</span>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
+                  return (
+                    <button key={preset.id} onClick={() => applyPreset(preset.config)}
+                      className={`group relative flex flex-col items-start gap-2 p-4 text-left h-full overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-1 hover:shadow-xl ${uiConfig.id === preset.id ? 'scale-[1.03] z-10' : 'scale-100 hover:scale-[1.02]'}`}
+                      style={{ 
+                        backgroundColor: bgColor, 
+                        borderRadius: radiusVals[preset.config.radius] || '8px',
+                        boxShadow: uiConfig.id === preset.id 
+                          ? `0 10px 40px -10px ${accentColor}90, 0 0 0 2px ${accentColor}` 
+                          : '0 4px 20px -5px rgba(0,0,0,0.08)',
+                        border: 'none'
+                      }}>
+                      
+                      {/* ホバー時のブラー/光彩エフェクト */}
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
+                        style={{
+                          background: `radial-gradient(circle at 50% 0%, ${accentColor}25 0%, transparent 70%)`,
+                          filter: 'blur(12px)'
+                        }}
+                      />
+
+                      <div className="flex items-center gap-3 w-full relative z-10">
+                        <div className="flex shrink-0 -space-x-2">
+                          <span className="w-6 h-6 rounded-full shadow-sm z-10 ring-2" style={{ backgroundColor: bgColor, borderColor: 'var(--ui-panel-bg)' }} title="背景色" />
+                          <span className="w-6 h-6 rounded-full shadow-sm z-20 ring-2" style={{ backgroundColor: textColor, borderColor: 'var(--ui-panel-bg)' }} title="文字色" />
+                          <span className="w-6 h-6 rounded-full shadow-sm z-30 ring-2" style={{ backgroundColor: accentColor, borderColor: 'var(--ui-panel-bg)' }} title="アクセント" />
+                        </div>
+                        <span className="font-bold text-sm truncate leading-tight" style={{ color: textColor }}>{preset.name}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 mt-auto pt-4 w-full relative z-10">
+                        <span className="text-[10px] px-2 py-0.5 rounded font-medium backdrop-blur-md" style={{ backgroundColor: textColor + '15', color: textColor }}>{preset.config.animation}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded font-medium backdrop-blur-md" style={{ backgroundColor: textColor + '15', color: textColor }}>R: {preset.config.radius}</span>
+                        {preset.config.useGradient && <span className="text-[10px] px-2 py-0.5 bg-gradient-to-r from-blue-400 to-fuchsia-400 text-white rounded font-bold shadow-sm">Grad</span>}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </Section>
 
@@ -3185,6 +3468,12 @@ function UISettingsView({ uiConfig, setUiConfig }) {
               { value: 'en', label: 'フル英語' },
             ]} />
 
+          <OptionRow label="グラデーション使用" current={uiConfig.useGradient ? 'on' : 'off'} onChange={v => update('useGradient', v === 'on')}
+            options={[
+              { value: 'on', label: 'オン (リッチ)' },
+              { value: 'off', label: 'オフ (フラット)' },
+            ]} />
+
           <OptionRow label="アイコンの太さ" current={uiConfig.iconWeight} onChange={v => update('iconWeight', v)}
             options={[
               { value: 'light', label: 'Light' },
@@ -3192,21 +3481,30 @@ function UISettingsView({ uiConfig, setUiConfig }) {
               { value: 'bold', label: 'Bold' },
             ]} />
 
-          <OptionRow label="アニメーション" current={uiConfig.animation} onChange={v => update('animation', v)}
+          <OptionRow label="ページ遷移アニメーション" current={uiConfig.animation} onChange={v => update('animation', v)}
             options={[
-              { value: 'smooth', label: 'オン (滑らか)' },
-              { value: 'off', label: 'オフ (即時反映)' },
+              { value: 'blur', label: 'ブラー (リッチ)' },
+              { value: 'spring', label: 'スプリング (弾む)' },
+              { value: 'slide', label: 'スライド' },
+              { value: 'fade', label: 'フェード' },
+              { value: 'off', label: 'オフ' },
+            ]} />
+
+          <OptionRow label="マウス連動エフェクト" current={uiConfig.mouseEffect} onChange={v => update('mouseEffect', v)}
+            options={[
+              { value: 'glow', label: 'グロウ (追従発光)' },
+              { value: 'none', label: 'オフ' },
             ]} />
 
           <OptionRow label="ベーステーマ" current={uiConfig.bgTheme} onChange={v => update('bgTheme', v)}
             options={[
-              { value: 'white', label: 'ピュアホワイト' },
+              { value: 'white', label: 'ホワイト' },
               { value: 'light', label: 'ライト' },
               { value: 'paper', label: 'ペーパー' },
               { value: 'gray', label: 'グレー' },
               { value: 'dark', label: 'ダーク' },
               { value: 'navy', label: 'ネイビー' },
-              { value: 'pitchBlack', label: 'ピッチブラック' },
+              { value: 'pitchBlack', label: 'ブラック' },
             ]} />
 
           <OptionRow label="フォント" current={uiConfig.font} onChange={v => update('font', v)}
@@ -3219,7 +3517,7 @@ function UISettingsView({ uiConfig, setUiConfig }) {
               { value: 'zenOld', label: 'Zen Old Mincho' },
               { value: 'zenKakuNew', label: 'Zen Kaku Gothic New' },
               { value: 'zenKakuAntique', label: 'Zen Kaku Gothic Antique' },
-              { value: 'bizUD', label: 'BIZ UDPGothic' },
+              { value: 'bizUD', label: 'BIZ UDPGothic (UD)' },
               { value: 'lineSeed', label: 'LINE Seed JP' },
             ]} />
             
@@ -3259,7 +3557,7 @@ function UISettingsView({ uiConfig, setUiConfig }) {
             ]} />
 
           <div className="flex flex-col lg:flex-row lg:items-center gap-3 pt-2">
-            <span className="text-sm font-semibold w-40 shrink-0 opacity-80">アクセントカラー</span>
+            <span className="text-sm font-bold w-40 shrink-0" style={{ color: 'var(--ui-text)' }}>アクセントカラー</span>
             <div className="flex flex-wrap gap-2 p-2 bg-slate-50/50 rounded-xl border border-slate-200/50 flex-1">
               {[
                 { value: 'blue', color: 'bg-blue-500' },
@@ -3286,8 +3584,8 @@ function UISettingsView({ uiConfig, setUiConfig }) {
       </Section>
       <Section title="👁️ プレビュー">
         <div className="p-6 rounded-xl border flex flex-col items-start gap-4 relative overflow-hidden ui-highlight-bg">
-          <button style={{ borderRadius: 'var(--ui-radius)', fontFamily: 'var(--ui-font)', color: 'var(--ui-accent)' }}
-            className="px-6 py-2.5 inline-block text-sm font-bold shadow-md bg-white transition hover:brightness-110 active:scale-95 z-10">
+          <button style={{ borderRadius: 'var(--ui-radius)', fontFamily: 'var(--ui-font)' }}
+            className="px-6 py-2.5 inline-block text-sm font-bold shadow-md transition hover:brightness-110 active:scale-95 z-10 ui-gradient-card">
             アクセントボタン
           </button>
           <div className="bg-white p-4 rounded-lg border max-w-lg w-full z-10">
@@ -3305,7 +3603,7 @@ function UISettingsView({ uiConfig, setUiConfig }) {
 
       <div className="flex justify-end pt-2 pb-8">
         <button type="button"
-          onClick={() => setUiConfig({ bgTheme: 'light', radius: 'md', font: 'sans', weight: 'medium', accent: 'blue', texture: 'flat', density: 'normal', animation: 'smooth', iconWeight: 'normal', language: 'en_mix' })}
+          onClick={() => setUiConfig({ bgTheme: 'light', radius: 'md', font: 'sans', weight: 'medium', accent: 'blue', texture: 'flat', density: 'normal', animation: 'spring', mouseEffect: 'glow', iconWeight: 'normal', language: 'en_mix', useGradient: false })}
           className="px-4 py-2 text-sm font-bold opacity-60 hover:opacity-100 border rounded-xl transition shadow-sm bg-transparent">
           設定をデフォルトにリセット
         </button>
@@ -3313,3 +3611,4 @@ function UISettingsView({ uiConfig, setUiConfig }) {
     </div>
   );
 }
+
