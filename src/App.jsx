@@ -421,7 +421,20 @@ export default function App() {
   });
   const silentAuthTried = useRef(false);
   const [isDemo, setIsDemo] = useState(false);
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState(() => {
+    try {
+      const cached = localStorage.getItem('google_tasks_cache');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    if (tasks.length > 0 && !isDemo) {
+      localStorage.setItem('google_tasks_cache', JSON.stringify(tasks));
+    }
+  }, [tasks, isDemo]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedTag, setSelectedTag] = useState(null);
@@ -684,7 +697,11 @@ export default function App() {
         if (listsRes.status === 401 || listsRes.status === 403) {
           clearStoredOAuth();
           setAccessToken(null);
-          throw new Error('セッションが期限切れか、権限がありません。もう一度ログインしてください。');
+          if (tasks.length > 0) {
+            throw new Error('セッションが期限切れになりました。表示はキャッシュです。操作するには再接続してください。');
+          } else {
+            throw new Error('セッションが期限切れか、権限がありません。もう一度ログインしてください。');
+          }
         }
 
         if (!listsRes.ok) throw new Error('タスクリストの取得に失敗しました');
@@ -708,7 +725,7 @@ export default function App() {
           if (tasksRes.status === 401 || tasksRes.status === 403) {
             clearStoredOAuth();
             setAccessToken(null);
-            throw new Error('セッションが期限切れになりました。再ログインしてください。');
+            throw new Error('セッションが期限切れになりました。表示はキャッシュです。操作するには再接続してください。');
           }
 
           if (!tasksRes.ok) break;
@@ -742,6 +759,7 @@ export default function App() {
   const handleLogout = () => {
     clearStoredOAuth();
     localStorage.removeItem('google_tasks_auto_login');
+    localStorage.removeItem('google_tasks_cache');
     setAccessToken(null);
     setTasks([]);
     setIsDemo(false);
@@ -763,6 +781,11 @@ export default function App() {
   };
 
   const handleDeleteSelected = async () => {
+    if (!accessToken && !isDemo) {
+      alert('セッションが切れています。再接続してください。');
+      handleAuth();
+      return;
+    }
     if (!window.confirm(`${selectedTasks.size}件のタスクを削除しますか？`)) return;
     setLoading(true);
     const tasksToDelete = tasks.filter((t) => selectedTasks.has(t.id));
@@ -802,6 +825,12 @@ export default function App() {
   const handleAddTask = async (e) => {
     if (e) e.preventDefault();
     if (!newTaskTitle.trim()) return;
+
+    if (!accessToken && !isDemo) {
+      alert('セッションが切れています。再接続してください。');
+      handleAuth();
+      return;
+    }
 
     setLoading(true);
     const lines = newTaskTitle.split('\n').filter((l) => l.trim() !== '');
@@ -887,6 +916,11 @@ export default function App() {
   };
 
   const toggleTaskStatus = async (task) => {
+    if (!accessToken && !isDemo) {
+      alert('セッションが切れています。再接続してください。');
+      handleAuth();
+      return;
+    }
     const newStatus = task.status === 'completed' ? 'needsAction' : 'completed';
     const now = new Date().toISOString();
     setTasks(prev => prev.map(t => t.id === task.id ? {
@@ -1473,7 +1507,9 @@ export default function App() {
 
   const scrollAreaRef = useRef(null);
 
-  if (!accessToken && !isDemo) {
+  const showLoginScreen = !accessToken && !isDemo && tasks.length === 0;
+
+  if (showLoginScreen) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 font-sans text-slate-800">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
@@ -1669,7 +1705,7 @@ export default function App() {
           --tag-6-border: ${isDark ? 'rgba(34, 211, 238, 0.3)' : 'rgba(8, 145, 178, 0.2)'};
         }
 
-        html, body { overflow: hidden; width: 100vw; height: 100%; }
+        html, body { overflow: hidden; width: 100%; height: 100%; }
 
         * { transition-duration: var(--ui-transition) !important; transition-timing-function: cubic-bezier(0.23, 1, 0.32, 1) !important; }
         svg.lucide { stroke-width: var(--ui-icon-weight) !important; }
@@ -1708,6 +1744,14 @@ export default function App() {
         .ui-highlight-bg { background-color: var(--ui-text) !important; opacity: 0.08 !important; border:none !important; }
       `}</style>
 
+      {error && !showLoginScreen && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-100 border border-red-300 text-red-800 px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 text-sm animate-in fade-in slide-in-from-top-4">
+          <AlertCircle size={16} />
+          {error}
+          <button onClick={() => setError(null)} className="ml-2 p-1 hover:bg-red-200 rounded-full"><X size={14} /></button>
+        </div>
+      )}
+
       <header className="border-b z-30 shrink-0 xl:hidden" style={{ background: panelBg, backdropFilter: panelBackdropFilter }}>
         <div className="max-w-[100rem] mx-auto px-4 sm:px-6 xl:px-8 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 shrink-0">
@@ -1715,11 +1759,21 @@ export default function App() {
             <h1 className="font-bold text-lg hidden sm:block" style={{ color: 'var(--ui-text)' }}>Task Dashboard</h1>
           </div>
           <div className="hidden sm:flex items-center gap-2 sm:gap-4 shrink-0 ml-auto">
-            <button type="button" onClick={handleRefresh} disabled={loading} className="p-2 rounded-full transition disabled:opacity-50 hover:bg-black/5 dark:hover:bg-white/10" style={{ color: 'var(--ui-text)' }}>
+            {!accessToken && !isDemo && tasks.length > 0 && (
+              <button onClick={handleAuth} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 transition flex items-center gap-1">
+                <AlertCircle size={14} /> 再接続
+              </button>
+            )}
+            <button type="button" onClick={handleRefresh} disabled={loading || (!accessToken && !isDemo)} className="p-2 rounded-full transition disabled:opacity-50 hover:bg-black/5 dark:hover:bg-white/10" style={{ color: 'var(--ui-text)' }}>
               <RefreshCw size={20} className={loading ? 'animate-spin' : 'opacity-70 hover:opacity-100'} />
             </button>
           </div>
-          <button type="button" className="xl:hidden p-2 rounded-lg transition relative w-10 h-10 flex flex-col justify-center items-center gap-1.5 hover:bg-black/5 dark:hover:bg-white/10 ml-auto group" style={{ color: 'var(--ui-text)' }} onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+          {!accessToken && !isDemo && tasks.length > 0 && (
+            <button onClick={handleAuth} className="xl:hidden ml-auto text-[10px] font-bold px-2 py-1 rounded bg-amber-100 text-amber-700 flex items-center gap-1">
+              再接続
+            </button>
+          )}
+          <button type="button" className={`xl:hidden p-2 rounded-lg transition relative w-10 h-10 flex flex-col justify-center items-center gap-1.5 hover:bg-black/5 dark:hover:bg-white/10 ${(!accessToken && !isDemo && tasks.length > 0) ? '' : 'ml-auto'} group`} style={{ color: 'var(--ui-text)' }} onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
             <span className={`block w-6 h-0.5 bg-current transition-all duration-300 origin-center ${isMobileMenuOpen ? 'rotate-[45deg] translate-y-[8px]' : 'group-hover:-translate-y-0.5'}`} style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }} />
             <span className={`block w-6 h-0.5 bg-current transition-all duration-200 ${isMobileMenuOpen ? 'opacity-0 scale-x-0' : 'opacity-100'}`} />
             <span className={`block w-6 h-0.5 bg-current transition-all duration-300 origin-center ${isMobileMenuOpen ? '-rotate-[45deg] -translate-y-[8px]' : 'group-hover:translate-y-0.5'}`} style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }} />
@@ -1794,22 +1848,32 @@ export default function App() {
             </div>
 
             {/* Actions */}
-            <div className="p-4 flex gap-3 pb-8">
-              <button
-                onClick={() => { handleRefresh(); setIsMobileMenuOpen(false); }}
-                disabled={loading}
-                className="flex-1 py-2.5 text-sm font-medium rounded-xl border flex items-center justify-center gap-2 transition hover:bg-black/5 disabled:opacity-50"
-                style={{ borderColor: 'var(--ui-border)', color: 'var(--ui-text)' }}
-              >
-                <RefreshCw size={15} className={loading ? 'animate-spin' : ''} /> 更新
-              </button>
-              <button
-                onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
-                className="flex-1 py-2.5 text-sm font-medium rounded-xl border flex items-center justify-center gap-2 transition hover:bg-red-500/10"
-                style={{ borderColor: 'rgba(239,68,68,0.4)', color: '#ef4444' }}
-              >
-                <LogOut size={15} /> 切断
-              </button>
+            <div className="p-4 flex flex-col gap-3 pb-8">
+              {!accessToken && !isDemo && tasks.length > 0 && (
+                <button
+                  onClick={() => { handleAuth(); setIsMobileMenuOpen(false); }}
+                  className="w-full py-2.5 text-sm font-bold rounded-xl border flex items-center justify-center gap-2 transition bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                >
+                  <AlertCircle size={15} /> 再接続 (セッション切れ)
+                </button>
+              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { handleRefresh(); setIsMobileMenuOpen(false); }}
+                  disabled={loading || (!accessToken && !isDemo)}
+                  className="flex-1 py-2.5 text-sm font-medium rounded-xl border flex items-center justify-center gap-2 transition hover:bg-black/5 disabled:opacity-50"
+                  style={{ borderColor: 'var(--ui-border)', color: 'var(--ui-text)' }}
+                >
+                  <RefreshCw size={15} className={loading ? 'animate-spin' : ''} /> 更新
+                </button>
+                <button
+                  onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
+                  className="flex-1 py-2.5 text-sm font-medium rounded-xl border flex items-center justify-center gap-2 transition hover:bg-red-500/10"
+                  style={{ borderColor: 'rgba(239,68,68,0.4)', color: '#ef4444' }}
+                >
+                  <LogOut size={15} /> 切断
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1907,13 +1971,20 @@ export default function App() {
           </div>
 
           {/* 4. Actions (Refresh / Logout) - コンパクト化 */}
-          <div className="flex gap-2 shrink-0">
-            <button onClick={handleRefresh} disabled={loading} className="flex-1 rounded-xl shadow-sm border flex items-center justify-center gap-1.5 py-2.5 hover:bg-black/5 dark:hover:bg-white/5 transition text-xs font-bold disabled:opacity-50" style={{ color: 'var(--ui-text)', borderColor: 'var(--ui-border)', background: 'var(--ui-panel-bg)' }}>
-              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> {t('refresh', uiConfig.language)}
-            </button>
-            <button onClick={handleLogout} className="flex-1 rounded-xl shadow-sm border border-red-200 dark:border-red-900/50 flex items-center justify-center gap-1.5 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/20 transition text-xs font-bold text-red-500" style={{ background: 'var(--ui-panel-bg)' }}>
-              <LogOut size={14} /> {t('logout', uiConfig.language)}
-            </button>
+          <div className="flex flex-col gap-2 shrink-0">
+            {!accessToken && !isDemo && tasks.length > 0 && (
+              <button onClick={handleAuth} className="w-full rounded-xl shadow-sm border border-amber-200 bg-amber-50 text-amber-700 flex items-center justify-center gap-1.5 py-2 hover:bg-amber-100 transition text-xs font-bold">
+                <AlertCircle size={14} /> セッション切れ (再接続)
+              </button>
+            )}
+            <div className="flex gap-2">
+              <button onClick={handleRefresh} disabled={loading || (!accessToken && !isDemo)} className="flex-1 rounded-xl shadow-sm border flex items-center justify-center gap-1.5 py-2.5 hover:bg-black/5 dark:hover:bg-white/5 transition text-xs font-bold disabled:opacity-50" style={{ color: 'var(--ui-text)', borderColor: 'var(--ui-border)', background: 'var(--ui-panel-bg)' }}>
+                <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> {t('refresh', uiConfig.language)}
+              </button>
+              <button onClick={handleLogout} className="flex-1 rounded-xl shadow-sm border border-red-200 dark:border-red-900/50 flex items-center justify-center gap-1.5 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/20 transition text-xs font-bold text-red-500" style={{ background: 'var(--ui-panel-bg)' }}>
+                <LogOut size={14} /> {t('logout', uiConfig.language)}
+              </button>
+            </div>
           </div>
         </aside>
 
@@ -2922,6 +2993,11 @@ function UISettingsView({ uiConfig, setUiConfig, tasks, accessToken, fetchRealTa
   const matchedTasks = tasks.filter(t => searchText && t.title.includes(searchText) && t.status !== 'completed');
 
   const handleReplace = async () => {
+    if (!accessToken && !isDemo) {
+      alert('セッションが切れています。再接続してください。');
+      handleAuth();
+      return;
+    }
     if (!searchText) return;
     const targetTasks = matchedTasks.slice(0, 10);
     if (targetTasks.length === 0) return;
