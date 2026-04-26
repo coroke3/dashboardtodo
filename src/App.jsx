@@ -2883,8 +2883,41 @@ export default function App() {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-    // ▼ NEW（baseFilteredTasks をそのまま使う）
-    const tasksForTopDashboard = baseFilteredTasks;
+    // ▼ 週跨ぎ遅延タスクの所属週（effectiveDate）を再定義
+    const tasksForTopDashboard = baseFilteredTasks.map((t) => {
+      if (!t.due) {
+        return {
+          ...t,
+          effectiveDate: null,
+          isRollover: false,
+          isDelayedCompletion: false,
+        };
+      }
+      const dueD = new Date(t.due);
+      const dueW = getWeekRange(dueD).start.getTime();
+      const nowW = weekStart.getTime();
+
+      let effectiveDate = dueD;
+      let isRollover = false;
+      let isDelayedCompletion = false;
+
+      if (t.status === "completed" && t.completed) {
+        const compD = new Date(t.completed);
+        const compW = getWeekRange(compD).start.getTime();
+        // 期限の週より後に完了した場合は、完了した週の実績として扱う
+        if (compW > dueW) {
+          effectiveDate = compD;
+          isDelayedCompletion = true;
+        }
+      } else {
+        // 未完了で期限の週が今週より前の場合は、今週分に繰り越し
+        if (dueW < nowW) {
+          effectiveDate = new Date(now);
+          isRollover = true;
+        }
+      }
+      return { ...t, effectiveDate, isRollover, isDelayedCompletion };
+    });
 
     let weekTotal = 0,
       weekCompleted = 0;
@@ -2900,19 +2933,20 @@ export default function App() {
     tasksForTopDashboard.forEach((t) => {
       const isCompleted = t.status === "completed";
       if (isCompleted) analyticsCompleted++;
-      const dueDate = t.due ? new Date(t.due) : null;
-      if (dueDate) {
-        if (dueDate >= weekStart && dueDate < weekEnd) {
+
+      const effDate = t.effectiveDate;
+      if (effDate) {
+        if (effDate >= weekStart && effDate < weekEnd) {
           weekTotal++;
           if (isCompleted) weekCompleted++;
           weekTasks.push(t);
         }
-        if (dueDate >= nextWeekStart && dueDate < nextWeekEnd) {
+        if (effDate >= nextWeekStart && effDate < nextWeekEnd) {
           nextWeekTotal++;
           if (isCompleted) nextWeekCompleted++;
           nextWeekTasks.push(t);
         }
-        if (dueDate >= monthStart && dueDate < monthEnd) {
+        if (effDate >= monthStart && effDate < monthEnd) {
           monthTotal++;
           if (isCompleted) monthCompleted++;
           monthTasks.push(t);
@@ -2960,8 +2994,8 @@ export default function App() {
       let wDone = 0;
       const wTasks = [];
       tasksForTopDashboard.forEach((t) => {
-        if (!t.due) return;
-        const d = new Date(t.due);
+        if (!t.effectiveDate) return;
+        const d = t.effectiveDate;
         if (d >= weekStartN && d < weekEndN) {
           wTotal++;
           if (t.status === "completed") wDone++;
@@ -2990,8 +3024,8 @@ export default function App() {
         mc = 0;
       const mTasks = [];
       tasksForTopDashboard.forEach((t) => {
-        if (!t.due) return;
-        const d = new Date(t.due);
+        if (!t.effectiveDate) return;
+        const d = t.effectiveDate;
         if (d >= mStart && d < mEnd) {
           mt++;
           if (t.status === "completed") mc++;
@@ -3019,8 +3053,8 @@ export default function App() {
         yc = 0;
       const yTasks = [];
       tasksForTopDashboard.forEach((t) => {
-        if (!t.due) return;
-        const d = new Date(t.due);
+        if (!t.effectiveDate) return;
+        const d = t.effectiveDate;
         if (d >= yStart && d < yEnd) {
           yt++;
           if (t.status === "completed") yc++;
@@ -5120,9 +5154,10 @@ export default function App() {
               ? nextWeekStats.tasks
               : monthStats.tasks;
           const modalTasks = sourceTasks
-            .map(
-              (snapshot) => tasks.find((x) => x.id === snapshot.id) ?? snapshot
-            )
+            .map((snapshot) => {
+              const original = tasks.find((x) => x.id === snapshot.id) || {};
+              return { ...original, ...snapshot };
+            })
             .sort(
               (a, b) =>
                 (a.due ? new Date(a.due).getTime() : Infinity) -
@@ -5147,9 +5182,16 @@ export default function App() {
 
           const grouped = {};
           modalTasks.forEach((t) => {
-            const dateLabel = t.due
+            let dateLabel = t.due
               ? formatDue(t.due).split(" ")[0]
               : "期限なし";
+
+            if (t.isRollover) {
+              dateLabel = `⚠️ 遅延繰越 (元期限: ${dateLabel})`;
+            } else if (t.isDelayedCompletion) {
+              dateLabel = `⚠️ 遅延完了 (元期限: ${dateLabel})`;
+            }
+
             if (!grouped[dateLabel]) grouped[dateLabel] = [];
             grouped[dateLabel].push(t);
           });
