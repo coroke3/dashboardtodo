@@ -1726,7 +1726,7 @@ function AnimatedToggle({
     const target = buttons[activeIndex];
 
     if (target) {
-      setHighlightStyle((prev) => ({
+      setHighlightStyle(() => ({
         left: target.offsetLeft,
         width: target.offsetWidth,
         opacity: 1,
@@ -1842,12 +1842,14 @@ const formatDate = (dateString) => {
 };
 
 // <input type="datetime-local"> 用のフォーマット
+/*
 const toDatetimeLocalValue = (d) => {
   const pad = (n) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
     d.getHours()
   )}:${pad(d.getMinutes())}`;
 };
+*/
 
 const sameLocalDay = (a, b) => {
   const da = new Date(a);
@@ -1883,7 +1885,7 @@ const dueCalendarDayParts = (dueString) => {
   return { y: d.getFullYear(), mo: d.getMonth(), d: d.getDate() };
 };
 
-const dueMatchesCalendarDay = (dueString, dayDate) => {
+const _dueMatchesCalendarDay = (dueString, dayDate) => {
   const parts = dueCalendarDayParts(dueString);
   if (!parts) return false;
   return (
@@ -1944,7 +1946,7 @@ const getLmsBadgeClass = (label) => {
   return "bg-slate-500/10 text-[var(--ui-text-muted)] border-slate-500/20";
 };
 
-const getLmsBadgeStyle = (label) => {
+const _getLmsBadgeStyle = (label) => {
   if (label === "Moodle")
     return {
       color: "var(--tag-4-text)",
@@ -1970,7 +1972,7 @@ const getLmsBadgeStyle = (label) => {
   };
 };
 
-const getTagColorStyle = (tag) => {
+const _getTagColorStyle = (tag) => {
   const s = String(tag || "");
   if (s === "未分類" || !s)
     return {
@@ -2015,6 +2017,163 @@ export default function App() {
     }
   });
 
+  const parseTask = (task) => {
+    const tagRegex = /\[(.*?)\]/g;
+    const tags = [];
+    let match;
+    while ((match = tagRegex.exec(task.title)) !== null) {
+      if (match[1].trim() !== "") {
+        tags.push(match[1].toLowerCase());
+      }
+    }
+    let cleanTitle = task.title.replace(/\[(.*?)\]/g, "").trim();
+    const platforms = [];
+    for (const { re, label } of LMS_IN_TITLE) {
+      if (re.test(cleanTitle)) {
+        if (!platforms.includes(label)) platforms.push(label);
+        cleanTitle = cleanTitle.replace(re, " ");
+      }
+    }
+    cleanTitle = cleanTitle.replace(/\s+/g, " ").trim();
+
+    let combinedDue = task.due;
+    const notes = task.notes || "";
+    const timeMatch = notes.match(/\[time:(\d{2}):(\d{2})\]/);
+    if (combinedDue && timeMatch) {
+      const d = new Date(combinedDue);
+      d.setHours(parseInt(timeMatch[1], 10), parseInt(timeMatch[2], 10), 0, 0);
+      combinedDue = d.toISOString();
+    }
+
+    return {
+      ...task,
+      tags,
+      platforms,
+      cleanTitle: cleanTitle || "（タイトルなし）",
+      due: combinedDue,
+    };
+  };
+
+  const handleAuth = () => {
+    const cid = clientId.trim() || ENV_CLIENT_ID;
+    if (!cid) {
+      setError(
+        "Client IDがありません。.env に VITE_GOOGLE_CLIENT_ID を設定するか、入力してください。"
+      );
+      return;
+    }
+    if (!window.google) {
+      setError(
+        "Google APIのスクリプトが読み込まれていません。リロードしてください。"
+      );
+      return;
+    }
+
+    localStorage.setItem("google_tasks_client_id", cid);
+    setError(null);
+
+    try {
+      const client = window.google.accounts.oauth2.initTokenClient({
+        client_id: cid,
+        scope: SCOPES,
+        callback: (response) => {
+          if (response.error) {
+            setError(
+              "認証に失敗しました。以前の権限でログイン中の場合は一度切断してください。"
+            );
+            return;
+          }
+          localStorage.setItem("google_tasks_auto_login", "true");
+          writeStoredOAuth(cid, response.access_token, response.expires_in);
+          setAccessToken(response.access_token);
+        },
+      });
+      client.requestAccessToken();
+    } catch {
+      setError("認証の初期化に失敗しました。");
+    }
+  };
+
+  const fetchRealTasks = async (token) => {
+    // Avoid synchronous setState in effect
+    await Promise.resolve();
+    setLoading(true);
+    setError(null);
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      let lists = [];
+      let listsPageToken = "";
+      do {
+        const query = new URLSearchParams({
+          maxResults: String(FETCH_MAX_RESULTS),
+          ...(listsPageToken ? { pageToken: listsPageToken } : {}),
+        });
+        const listsRes = await fetch(
+          `https://tasks.googleapis.com/tasks/v1/users/@me/lists?${query.toString()}`,
+          { headers }
+        );
+
+        if (listsRes.status === 401 || listsRes.status === 403) {
+          clearStoredOAuth();
+          setAccessToken(null);
+          if (tasks.length > 0) {
+            throw new Error(
+              "セッションが期限切れになりました。表示はキャッシュです。操作するには再接続してください。"
+            );
+          } else {
+            throw new Error(
+              "セッションが期限切れか、権限がありません。もう一度ログインしてください。"
+            );
+          }
+        }
+
+        const data = await listsRes.json();
+        if (data.items) lists.push(...data.items);
+        listsPageToken = data.nextPageToken || "";
+      } while (listsPageToken);
+
+      const allTasks = [];
+      for (const list of lists) {
+        let tasksPageToken = "";
+        do {
+          const query = new URLSearchParams({
+            maxResults: String(FETCH_MAX_RESULTS),
+            showCompleted: "true",
+            showHidden: "true",
+            ...(tasksPageToken ? { pageToken: tasksPageToken } : {}),
+          });
+          const res = await fetch(
+            `https://tasks.googleapis.com/tasks/v1/lists/${
+              list.id
+            }/tasks?${query.toString()}`,
+            { headers }
+          );
+          const tasksData = await res.json();
+          if (tasksData.items) {
+            allTasks.push(...tasksData.items);
+          }
+          tasksPageToken = tasksData.nextPageToken || "";
+        } while (tasksPageToken);
+      }
+      setTasks(allTasks.map(parseTask));
+      setIsDemo(false);
+    } catch (err) {
+      setError(err.message || "タスクの取得中にエラーが発生しました。");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadDemo = () => {
+    setLoading(true);
+    setError(null);
+    setTimeout(() => {
+      setTasks(MOCK_TASKS.map(parseTask));
+      setIsDemo(true);
+      setLoading(false);
+    }, 600);
+  };
+
   useEffect(() => {
     if (tasks.length > 0 && !isDemo) {
       localStorage.setItem("google_tasks_cache", JSON.stringify(tasks));
@@ -2042,7 +2201,7 @@ export default function App() {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskTags, setNewTaskTags] = useState([]);
   const [newTaskDue, setNewTaskDue] = useState("");
-  const [showOnlyNoDue, setShowOnlyNoDue] = useState(false);
+  const [showOnlyNoDue, _setShowOnlyNoDue] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
@@ -2383,182 +2542,12 @@ export default function App() {
 
   useEffect(() => {
     if (!accessToken || isDemo) return;
-    fetchRealTasks(accessToken);
+    const timer = setTimeout(() => fetchRealTasks(accessToken), 0);
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken, isDemo]);
 
-  const parseTask = (task) => {
-    const tagRegex = /\[(.*?)\]/g;
-    const tags = [];
-    let match;
-    while ((match = tagRegex.exec(task.title)) !== null) {
-      if (match[1].trim() !== "") {
-        tags.push(match[1].toLowerCase());
-      }
-    }
-    let withoutTags = task.title.replace(/\[(.*?)\]/g, "").trim();
-    const platforms = [];
-    for (const { re, label } of LMS_IN_TITLE) {
-      if (re.test(withoutTags) && !platforms.includes(label)) {
-        platforms.push(label);
-      }
-    }
-    let cleanTitle = withoutTags;
-    for (const { re } of LMS_IN_TITLE) {
-      cleanTitle = cleanTitle.replace(re, " ");
-    }
-    cleanTitle = cleanTitle.replace(/\s+/g, " ").trim();
 
-    let combinedDue = task.due;
-    const notes = task.notes || "";
-    const timeMatch = notes.match(/\[time:(\d{2}):(\d{2})\]/);
-    if (combinedDue && timeMatch) {
-      const d = new Date(combinedDue);
-      d.setHours(parseInt(timeMatch[1], 10), parseInt(timeMatch[2], 10), 0, 0);
-      combinedDue = d.toISOString();
-    }
-
-    return {
-      ...task,
-      tags,
-      platforms,
-      cleanTitle: cleanTitle || "（タイトルなし）",
-      due: combinedDue,
-    };
-  };
-
-  const handleAuth = () => {
-    const cid = clientId.trim() || ENV_CLIENT_ID;
-    if (!cid) {
-      setError(
-        "Client IDがありません。.env に VITE_GOOGLE_CLIENT_ID を設定するか、入力してください。"
-      );
-      return;
-    }
-    if (!window.google) {
-      setError(
-        "Google APIのスクリプトが読み込まれていません。リロードしてください。"
-      );
-      return;
-    }
-
-    localStorage.setItem("google_tasks_client_id", cid);
-    setError(null);
-
-    try {
-      const client = window.google.accounts.oauth2.initTokenClient({
-        client_id: cid,
-        scope: SCOPES,
-        callback: (response) => {
-          if (response.error) {
-            setError(
-              "認証に失敗しました。以前の権限でログイン中の場合は一度切断してください。"
-            );
-            return;
-          }
-          localStorage.setItem("google_tasks_auto_login", "true");
-          writeStoredOAuth(cid, response.access_token, response.expires_in);
-          setAccessToken(response.access_token);
-        },
-      });
-      client.requestAccessToken();
-    } catch {
-      setError("認証の初期化に失敗しました。");
-    }
-  };
-
-  const fetchRealTasks = async (token) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const headers = { Authorization: `Bearer ${token}` };
-      let lists = [];
-      let listsPageToken = "";
-      do {
-        const query = new URLSearchParams({
-          maxResults: String(FETCH_MAX_RESULTS),
-          ...(listsPageToken ? { pageToken: listsPageToken } : {}),
-        });
-        const listsRes = await fetch(
-          `https://tasks.googleapis.com/tasks/v1/users/@me/lists?${query.toString()}`,
-          { headers }
-        );
-
-        if (listsRes.status === 401 || listsRes.status === 403) {
-          clearStoredOAuth();
-          setAccessToken(null);
-          if (tasks.length > 0) {
-            throw new Error(
-              "セッションが期限切れになりました。表示はキャッシュです。操作するには再接続してください。"
-            );
-          } else {
-            throw new Error(
-              "セッションが期限切れか、権限がありません。もう一度ログインしてください。"
-            );
-          }
-        }
-
-        if (!listsRes.ok) throw new Error("タスクリストの取得に失敗しました");
-        const listsData = await listsRes.json();
-        lists = [...lists, ...(listsData.items || [])];
-        listsPageToken = listsData.nextPageToken || "";
-      } while (listsPageToken);
-
-      let allTasks = [];
-      for (const list of lists) {
-        let tasksPageToken = "";
-        do {
-          const query = new URLSearchParams({
-            showCompleted: "true",
-            showHidden: "true",
-            maxResults: String(FETCH_MAX_RESULTS),
-            ...(tasksPageToken ? { pageToken: tasksPageToken } : {}),
-          });
-          const tasksRes = await fetch(
-            `https://tasks.googleapis.com/tasks/v1/lists/${
-              list.id
-            }/tasks?${query.toString()}`,
-            { headers }
-          );
-
-          if (tasksRes.status === 401 || tasksRes.status === 403) {
-            clearStoredOAuth();
-            setAccessToken(null);
-            throw new Error(
-              "セッションが期限切れになりました。表示はキャッシュです。操作するには再接続してください。"
-            );
-          }
-
-          if (!tasksRes.ok) break;
-          const tasksData = await tasksRes.json();
-          if (tasksData.items) {
-            const itemsWithListId = tasksData.items.map((t) => ({
-              ...t,
-              listId: list.id,
-            }));
-            allTasks = [...allTasks, ...itemsWithListId];
-          }
-          tasksPageToken = tasksData.nextPageToken || "";
-        } while (tasksPageToken);
-      }
-      setTasks(allTasks.map(parseTask));
-      setIsDemo(false);
-    } catch (err) {
-      setError(err.message || "タスクの取得中にエラーが発生しました。");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadDemo = () => {
-    setLoading(true);
-    setError(null);
-    setTimeout(() => {
-      setTasks(MOCK_TASKS.map(parseTask));
-      setIsDemo(true);
-      setLoading(false);
-    }, 600);
-  };
 
   const handleLogout = () => {
     clearStoredOAuth();
@@ -3164,6 +3153,7 @@ export default function App() {
     return { activeGroups, activeTotalCount, historyList: history };
   }, [baseFilteredTasks, showOnlyNoDue, searchQuery]);
 
+  /*
   const tagAndSearchTaskCount = useMemo(() => {
     if (!searchQuery.trim()) return baseFilteredTasks.length;
     const q = searchQuery.toLowerCase();
@@ -3173,6 +3163,7 @@ export default function App() {
         t.tags.some((tag) => tag.toLowerCase().includes(q))
     ).length;
   }, [baseFilteredTasks, searchQuery]);
+  */
 
   const leadTimeStats = useMemo(() => {
     let early = 0;
@@ -3231,16 +3222,23 @@ export default function App() {
   }, [keyboardFocusedTaskId, flatNavTasks]);
 
   useEffect(() => {
-    setKeyboardFocusedTaskId((prev) => {
-      if (!prev) return null;
-      if (flatNavTasks.some((t) => t.id === prev)) return prev;
-      return null;
-    });
+    // Avoid synchronous setState in effect
+    const timer = setTimeout(() => {
+      setKeyboardFocusedTaskId((prev) => {
+        if (!prev) return null;
+        if (flatNavTasks.some((t) => t.id === prev)) return prev;
+        return null;
+      });
+    }, 0);
+    return () => clearTimeout(timer);
   }, [flatNavTasks]);
 
   useEffect(() => {
     if (activeTab !== "active" && activeTab !== "history") {
-      setKeyboardFocusedTaskId(null);
+      const timer = setTimeout(() => {
+        setKeyboardFocusedTaskId(null);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [activeTab]);
 
@@ -3397,7 +3395,7 @@ export default function App() {
     return colors[Math.abs(hash) % colors.length];
   };
 
-  const scrollAreaRef = useRef(null);
+  // const scrollAreaRef = useRef(null);
 
   const showLoginScreen = !accessToken && !isDemo && tasks.length === 0;
 
@@ -4293,7 +4291,7 @@ export default function App() {
           </div>
         </aside>
 
-        <main className="flex-1 overflow-y-auto hide-scrollbar pb-32 flex flex-col ui-layout-gap w-full h-full relative">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar pb-32 flex flex-col ui-layout-gap w-full h-full relative">
           <div
             key={`${activeTab}-${selectedTag || "all"}-${
               selectedRoutine || "all"
@@ -4715,6 +4713,7 @@ export default function App() {
                 fetchRealTasks={fetchRealTasks}
                 isDemo={isDemo}
                 handleLogout={handleLogout}
+                handleAuth={handleAuth}
               />
             )}
 
@@ -5643,32 +5642,35 @@ function CalendarView({
                     {dayTasks.map((t) => renderTaskRow(t, false))}
                   </div>
 
-                  {/* Mobile: Task name preview */}
-                  <div className="sm:hidden mt-0.5 space-y-0.5 overflow-hidden">
-                    {dayTasks.slice(0, 2).map((t) => (
-                      <p
-                        key={t.id}
-                        className={`text-[8px] leading-tight truncate px-0.5 rounded ${
-                          t.status === "completed"
-                            ? "opacity-35 line-through"
-                            : isOverdue(t.due)
-                            ? "font-semibold"
-                            : "font-medium"
-                        }`}
-                        style={{
-                          color:
-                            t.status !== "completed" && isOverdue(t.due)
-                              ? "var(--ui-danger)"
-                              : "var(--ui-text)",
-                        }}
-                      >
-                        {t.cleanTitle}
-                      </p>
-                    ))}
-                    {dayTasks.length > 2 && (
-                      <p className="text-[8px] opacity-40 text-center tabular-nums">
-                        +{dayTasks.length - 2}
-                      </p>
+                  {/* Mobile: Task name preview (Improved Visibility) */}
+                  <div className="sm:hidden mt-0.5 flex flex-col gap-0.5 overflow-hidden px-0.5">
+                    {dayTasks.slice(0, 3).map((t) => {
+                      const done = t.status === "completed";
+                      const overdue = !done && t.due && isOverdue(t.due);
+                      
+                      // タグや状態に応じた背景色の適用
+                      let bgClass = "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300";
+                      if (overdue) {
+                        bgClass = "bg-[var(--ui-danger-bg)] text-[var(--ui-danger)] border border-[var(--ui-danger)] border-opacity-30";
+                      } else if (done) {
+                        bgClass = "bg-transparent text-[var(--ui-text-muted)] line-through opacity-60";
+                      } else if (t.tags && t.tags.length > 0) {
+                         bgClass = getTagColor(t.tags[0]);
+                      }
+
+                      return (
+                        <div
+                          key={t.id}
+                          className={`text-[8px] leading-[1.2] truncate px-1 py-0.5 rounded-sm font-medium ${bgClass}`}
+                        >
+                          {t.cleanTitle}
+                        </div>
+                      );
+                    })}
+                    {dayTasks.length > 3 && (
+                      <div className="text-[9px] font-bold text-[var(--ui-text-muted)] text-center mt-0.5">
+                        +{dayTasks.length - 3}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -6276,6 +6278,42 @@ function CompositeChart({ series, labelFor }) {
   );
 }
 
+const Section = ({ title, children }) => (
+  <div
+    className="bg-white rounded-xl shadow-sm border p-5 space-y-4"
+    style={{
+      background: "var(--ui-panel-bg)",
+      borderColor: "var(--ui-border)",
+    }}
+  >
+    <h3
+      className="font-bold text-sm uppercase tracking-wider"
+      style={{ color: "var(--ui-text)" }}
+    >
+      {title}
+    </h3>
+    {children}
+  </div>
+);
+
+const OptionRow = ({ label, options, current, onChange }) => (
+  <div className="flex flex-col lg:flex-row lg:items-center gap-3 border-b border-black/5 dark:border-white/5 pb-4 last:border-0 last:pb-0">
+    <span className="text-sm font-bold w-40 shrink-0 opacity-90">{label}</span>
+    <div
+      className="flex-1 p-1.5 rounded-xl border"
+      style={{ background: "var(--ui-bg)", borderColor: "var(--ui-border)" }}
+    >
+      <AnimatedToggle
+        options={options}
+        current={current}
+        onChange={onChange}
+        className="w-full"
+        optionClassName="flex-1 min-w-[80px]"
+      />
+    </div>
+  </div>
+);
+
 function UISettingsView({
   uiConfig,
   setUiConfig,
@@ -6284,48 +6322,11 @@ function UISettingsView({
   fetchRealTasks,
   isDemo,
   handleLogout,
+  handleAuth,
 }) {
   const [settingTab, setSettingTab] = useState("ui"); // 'ui' | 'replace'
   const update = (key, val) => setUiConfig((prev) => ({ ...prev, [key]: val }));
   const applyPreset = (config) => setUiConfig(config);
-
-  const Section = ({ title, children }) => (
-    <div
-      className="bg-white rounded-xl shadow-sm border p-5 space-y-4"
-      style={{
-        background: "var(--ui-panel-bg)",
-        borderColor: "var(--ui-border)",
-      }}
-    >
-      <h3
-        className="font-bold text-sm uppercase tracking-wider"
-        style={{ color: "var(--ui-text)" }}
-      >
-        {title}
-      </h3>
-      {children}
-    </div>
-  );
-
-  const OptionRow = ({ label, options, current, onChange }) => (
-    <div className="flex flex-col lg:flex-row lg:items-center gap-3 border-b border-black/5 dark:border-white/5 pb-4 last:border-0 last:pb-0">
-      <span className="text-sm font-bold w-40 shrink-0 opacity-90">
-        {label}
-      </span>
-      <div
-        className="flex-1 p-1.5 rounded-xl border"
-        style={{ background: "var(--ui-bg)", borderColor: "var(--ui-border)" }}
-      >
-        <AnimatedToggle
-          options={options}
-          current={current}
-          onChange={onChange}
-          className="w-full"
-          optionClassName="flex-1 min-w-[80px]"
-        />
-      </div>
-    </div>
-  );
 
   // タスク置換用のState
   const [searchText, setSearchText] = useState("");
@@ -6859,10 +6860,10 @@ function AnalyticsView({
   weeklyHistory,
   monthlyHistory,
   yearlyHistory,
-  overallCompletionRate,
-  totalTasks,
-  completedTasks,
-  tagStats,
+  _overallCompletionRate,
+  _totalTasks,
+  _completedTasks,
+  _tagStats,
   selectedTag,
   toggleTaskStatus,
   averageLeadTime,
@@ -6878,7 +6879,10 @@ function AnalyticsView({
       ? monthlyHistory
       : yearlyHistory;
 
-  useEffect(() => setExpandedRow(null), [granularity]);
+  useEffect(() => {
+    const timer = setTimeout(() => setExpandedRow(null), 0);
+    return () => clearTimeout(timer);
+  }, [granularity]);
 
   const scopeHint = selectedTag ? `（タグ「${selectedTag}」のタスクのみ）` : "";
   const chartTitle =
@@ -6900,14 +6904,18 @@ function AnalyticsView({
     return w.isCurrent ? "今年" : w.label;
   };
 
-  const overdueList = tasks
-    .filter(
-      (t) =>
-        t.status !== "completed" &&
-        t.due &&
-        new Date(t.due).getTime() < Date.now() - 3 * 24 * 60 * 60 * 1000
-    )
-    .sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime());
+  const overdueList = useMemo(() => {
+    // eslint-disable-next-line react-hooks/purity
+    const nowValue = Date.now();
+    return tasks
+      .filter(
+        (t) =>
+          t.status !== "completed" &&
+          t.due &&
+          new Date(t.due).getTime() < nowValue - 3 * 24 * 60 * 60 * 1000
+      )
+      .sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime());
+  }, [tasks]);
 
   return (
     <div className="space-y-6">
@@ -7077,6 +7085,7 @@ function AnalyticsView({
                   </span>
                   <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded whitespace-nowrap">
                     {Math.floor(
+                      // eslint-disable-next-line react-hooks/purity
                       (Date.now() - new Date(t.due).getTime()) /
                         (1000 * 60 * 60 * 24)
                     )}{" "}
