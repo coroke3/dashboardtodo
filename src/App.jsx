@@ -208,6 +208,17 @@ const I18N = {
   thisWeek: { ja: "今週", en_mix: "This Wk", en: "This Week" },
   nextWeek: { ja: "来週", en_mix: "Next Wk", en: "Next Week" },
   thisMonth: { ja: "今月", en_mix: "This Mo", en: "This Month" },
+  weekAfterNext: {
+    ja: "再来週",
+    en_mix: "Wk After Next",
+    en: "Week After Next",
+  },
+  nextMonth: { ja: "来月", en_mix: "Next Mo", en: "Next Month" },
+  monthAfterNext: {
+    ja: "再来月",
+    en_mix: "Mo After Next",
+    en: "Month After Next",
+  },
 };
 const t = (key, lang) => I18N[key]?.[lang] || key;
 
@@ -2017,6 +2028,38 @@ export default function App() {
     }
   });
 
+  // ▼ NEW: バックグラウンドでトークン更新を試みる関数
+  const refreshSilentToken = () => {
+    return new Promise((resolve, reject) => {
+      const cid = effectiveClientId();
+      if (!window.google || !cid) {
+        reject(
+          new Error("Google Identity API not loaded or Client ID missing")
+        );
+        return;
+      }
+      try {
+        const client = window.google.accounts.oauth2.initTokenClient({
+          client_id: cid,
+          scope: SCOPES,
+          callback: (response) => {
+            if (response.error) {
+              reject(response.error);
+            } else {
+              writeStoredOAuth(cid, response.access_token, response.expires_in);
+              setAccessToken(response.access_token);
+              resolve(response.access_token);
+            }
+          },
+        });
+        // prompt: 'none' でユーザーに画面を見せずにトークン取得を試みる
+        client.requestAccessToken({ prompt: "none" });
+      } catch (err) {
+        reject(err);
+      }
+    });
+  };
+
   const parseTask = (task) => {
     const tagRegex = /\[(.*?)\]/g;
     const tags = [];
@@ -2088,7 +2131,8 @@ export default function App() {
           setAccessToken(response.access_token);
         },
       });
-      client.requestAccessToken();
+      // consent画面を強制せず、認証済みなら裏で通す設定
+      client.requestAccessToken({ prompt: "" });
     } catch {
       setError("認証の初期化に失敗しました。");
     }
@@ -2114,16 +2158,23 @@ export default function App() {
         );
 
         if (listsRes.status === 401 || listsRes.status === 403) {
-          clearStoredOAuth();
-          setAccessToken(null);
-          if (tasks.length > 0) {
-            throw new Error(
-              "セッションが期限切れになりました。表示はキャッシュです。操作するには再接続してください。"
-            );
-          } else {
-            throw new Error(
-              "セッションが期限切れか、権限がありません。もう一度ログインしてください。"
-            );
+          try {
+            // サイレント更新を試みる
+            await refreshSilentToken();
+            // トークンが更新されると useEffect により再度 fetchRealTasks が走るため、ここでは中断する
+            return;
+          } catch (silentErr) {
+            clearStoredOAuth();
+            setAccessToken(null);
+            if (tasks.length > 0) {
+              throw new Error(
+                "セッションが完全に切れました。表示はキャッシュです。操作するには再接続してください。"
+              );
+            } else {
+              throw new Error(
+                "セッションが期限切れか、権限がありません。もう一度ログインしてください。"
+              );
+            }
           }
         }
 
@@ -2484,7 +2535,17 @@ export default function App() {
   const [keyboardFocusedTaskId, setKeyboardFocusedTaskId] = useState(null);
 
   const showCheckboxes = selectionMode || shiftHeld;
-  const PERIOD_MODAL_ORDER = useMemo(() => ["week", "nextWeek", "month"], []);
+  const PERIOD_MODAL_ORDER = useMemo(
+    () => [
+      "week",
+      "nextWeek",
+      "weekAfterNext",
+      "month",
+      "nextMonth",
+      "monthAfterNext",
+    ],
+    []
+  );
 
   useEffect(() => {
     const onKeyUp = (e) => {
@@ -2518,20 +2579,10 @@ export default function App() {
 
       if (autoLogin === "true") {
         silentAuthTried.current = true;
-        try {
-          const client = window.google.accounts.oauth2.initTokenClient({
-            client_id: cid,
-            scope: SCOPES,
-            callback: (response) => {
-              if (response.error) return;
-              writeStoredOAuth(cid, response.access_token, response.expires_in);
-              setAccessToken(response.access_token);
-            },
-          });
-          client.requestAccessToken({ prompt: "none" });
-        } catch {
+        refreshSilentToken().catch(() => {
+          // 初期サイレントログイン失敗。操作するには手動ログインが必要。
           silentAuthTried.current = false;
-        }
+        });
       }
     };
     document.body.appendChild(script);
@@ -2539,6 +2590,28 @@ export default function App() {
       document.body.removeChild(script);
     };
   }, []);
+
+  // ▼ NEW: トークンの自動更新（期限5分前に発火）
+  useEffect(() => {
+    if (!accessToken) return;
+    const cid = effectiveClientId();
+    const stored = readStoredOAuth(cid);
+    if (!stored) return;
+
+    // 期限の何ミリ秒前か
+    const timeToExpiry = stored.expiresAt - Date.now();
+    const refreshMargin = 5 * 60 * 1000; // 5分前
+    const timeToRefresh = timeToExpiry - refreshMargin;
+
+    if (timeToRefresh > 0) {
+      const timer = setTimeout(() => {
+        refreshSilentToken().catch(() => {
+          // サイレント更新失敗時はそのまま（APIリクエスト時に401で再度リカバリか再接続へ）
+        });
+      }, timeToRefresh);
+      return () => clearTimeout(timer);
+    }
+  }, [accessToken]);
 
   useEffect(() => {
     if (!accessToken || isDemo) return;
@@ -2864,7 +2937,10 @@ export default function App() {
     tagStats,
     weeklyStats,
     nextWeekStats,
+    weekAfterNextStats,
     monthStats,
+    nextMonthStats,
+    monthAfterNextStats,
     weeklyHistory,
     monthlyHistory,
     yearlyHistory,
@@ -2880,8 +2956,23 @@ export default function App() {
     const { start: weekStart, end: weekEnd } = getWeekRange(now);
     const nextWeekStart = addWeeks(weekStart, 1);
     const nextWeekEnd = addWeeks(weekStart, 2);
+    const weekAfterNextStart = addWeeks(weekStart, 2);
+    const weekAfterNextEnd = addWeeks(weekStart, 3);
+
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const nextMonthEnd = new Date(now.getFullYear(), now.getMonth() + 2, 1);
+    const monthAfterNextStart = new Date(
+      now.getFullYear(),
+      now.getMonth() + 2,
+      1
+    );
+    const monthAfterNextEnd = new Date(
+      now.getFullYear(),
+      now.getMonth() + 3,
+      1
+    );
 
     // ▼ 週跨ぎ遅延タスクの所属週（effectiveDate）を再定義
     const tasksForTopDashboard = baseFilteredTasks.map((t) => {
@@ -2925,9 +3016,18 @@ export default function App() {
     let nextWeekTotal = 0,
       nextWeekCompleted = 0;
     const nextWeekTasks = [];
+    let weekAfterNextTotal = 0,
+      weekAfterNextCompleted = 0;
+    const weekAfterNextTasks = [];
     let monthTotal = 0,
       monthCompleted = 0;
     const monthTasks = [];
+    let nextMonthTotal = 0,
+      nextMonthCompleted = 0;
+    const nextMonthTasks = [];
+    let monthAfterNextTotal = 0,
+      monthAfterNextCompleted = 0;
+    const monthAfterNextTasks = [];
 
     let analyticsCompleted = 0;
     tasksForTopDashboard.forEach((t) => {
@@ -2946,10 +3046,25 @@ export default function App() {
           if (isCompleted) nextWeekCompleted++;
           nextWeekTasks.push(t);
         }
+        if (effDate >= weekAfterNextStart && effDate < weekAfterNextEnd) {
+          weekAfterNextTotal++;
+          if (isCompleted) weekAfterNextCompleted++;
+          weekAfterNextTasks.push(t);
+        }
         if (effDate >= monthStart && effDate < monthEnd) {
           monthTotal++;
           if (isCompleted) monthCompleted++;
           monthTasks.push(t);
+        }
+        if (effDate >= nextMonthStart && effDate < nextMonthEnd) {
+          nextMonthTotal++;
+          if (isCompleted) nextMonthCompleted++;
+          nextMonthTasks.push(t);
+        }
+        if (effDate >= monthAfterNextStart && effDate < monthAfterNextEnd) {
+          monthAfterNextTotal++;
+          if (isCompleted) monthAfterNextCompleted++;
+          monthAfterNextTasks.push(t);
         }
       }
     });
@@ -3016,7 +3131,8 @@ export default function App() {
     }
 
     const monthlyHistory = [];
-    for (let i = 11; i >= 0; i--) {
+    // 未来6ヶ月分 (-6) まで追加
+    for (let i = 11; i >= -6; i--) {
       const ref = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const mStart = new Date(ref.getFullYear(), ref.getMonth(), 1);
       const mEnd = new Date(ref.getFullYear(), ref.getMonth() + 1, 1);
@@ -3040,13 +3156,15 @@ export default function App() {
         completed: mc,
         rate: mt === 0 ? 0 : Math.round((mc / mt) * 100),
         isCurrent: i === 0,
+        isFuture: i < 0,
         tasks: mTasks,
       });
     }
 
     const yearlyHistory = [];
     const cy = now.getFullYear();
-    for (let y = cy - 4; y <= cy; y++) {
+    // 未来2年分 (+2) まで追加
+    for (let y = cy - 3; y <= cy + 2; y++) {
       const yStart = new Date(y, 0, 1);
       const yEnd = new Date(y + 1, 0, 1);
       let yt = 0,
@@ -3068,6 +3186,7 @@ export default function App() {
         completed: yc,
         rate: yt === 0 ? 0 : Math.round((yc / yt) * 100),
         isCurrent: y === cy,
+        isFuture: y > cy,
         tasks: yTasks,
       });
     }
@@ -3091,14 +3210,43 @@ export default function App() {
         totalTarget: nextWeekTotal,
         tasks: nextWeekTasks,
       },
+      weekAfterNextStats: {
+        rate:
+          weekAfterNextTotal === 0
+            ? 0
+            : Math.round(
+                (weekAfterNextCompleted / weekAfterNextTotal) * 100
+              ),
+        completed: weekAfterNextCompleted,
+        totalTarget: weekAfterNextTotal,
+        tasks: weekAfterNextTasks,
+      },
       monthStats: {
         rate:
-          monthTotal === 0
-            ? 0
-            : Math.round((monthCompleted / monthTotal) * 100),
+          monthTotal === 0 ? 0 : Math.round((monthCompleted / monthTotal) * 100),
         completed: monthCompleted,
         totalTarget: monthTotal,
         tasks: monthTasks,
+      },
+      nextMonthStats: {
+        rate:
+          nextMonthTotal === 0
+            ? 0
+            : Math.round((nextMonthCompleted / nextMonthTotal) * 100),
+        completed: nextMonthCompleted,
+        totalTarget: nextMonthTotal,
+        tasks: nextMonthTasks,
+      },
+      monthAfterNextStats: {
+        rate:
+          monthAfterNextTotal === 0
+            ? 0
+            : Math.round(
+                (monthAfterNextCompleted / monthAfterNextTotal) * 100
+              ),
+        completed: monthAfterNextCompleted,
+        totalTarget: monthAfterNextTotal,
+        tasks: monthAfterNextTasks,
       },
       weeklyHistory: history,
       monthlyHistory,
@@ -4354,9 +4502,9 @@ export default function App() {
               </div>
             )}
 
-            <div className="-mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto hide-scrollbar pb-2 pt-1">
-              <div className="flex sm:grid sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 gap-3 w-max sm:w-full snap-x snap-mandatory pr-4 sm:pr-0">
-                <div className="snap-center shrink-0 w-[85vw] sm:w-auto col-span-2 lg:col-span-1 2xl:col-span-2 ui-gradient-card ui-panel rounded-xl relative overflow-hidden shadow-sm flex flex-col justify-between min-h-[120px]">
+            <div className="-mx-4 pl-4 sm:mx-0 sm:pl-0 overflow-x-auto hide-scrollbar pb-4 pt-1 max-w-full">
+              <div className="flex gap-3 w-max snap-x snap-mandatory after:content-[''] after:w-4 after:shrink-0 pr-4 sm:pr-0">
+                <div className="snap-center shrink-0 w-[85vw] sm:w-[320px] lg:w-[400px] ui-gradient-card ui-panel rounded-xl relative overflow-hidden shadow-sm flex flex-col justify-between min-h-[120px]">
                   <div className="relative z-10 text-white">
                     <p className="text-sm font-bold mb-1 flex items-center gap-1.5">
                       {uiConfig.iconStyle !== "text" && (
@@ -4397,7 +4545,7 @@ export default function App() {
                     <div className="absolute right-0 bottom-0 w-32 h-32 bg-white rounded-full blur-3xl opacity-20 mix-blend-overlay" />
                   )}
                 </div>
-                <div className="snap-center shrink-0 w-[85vw] sm:w-auto col-span-1">
+                <div className="snap-center shrink-0 w-[85vw] sm:w-[220px] lg:w-[260px]">
                   <PeriodCard
                     label={t("thisWeek", uiConfig.language)}
                     icon={
@@ -4411,7 +4559,7 @@ export default function App() {
                     }}
                   />
                 </div>
-                <div className="snap-center shrink-0 w-[85vw] sm:w-auto col-span-1">
+                <div className="snap-center shrink-0 w-[85vw] sm:w-[220px] lg:w-[260px]">
                   <PeriodCard
                     label={t("nextWeek", uiConfig.language)}
                     icon={
@@ -4425,7 +4573,7 @@ export default function App() {
                     }}
                   />
                 </div>
-                <div className="snap-center shrink-0 w-[85vw] sm:w-auto col-span-2 lg:col-span-1">
+                <div className="snap-center shrink-0 w-[85vw] sm:w-[220px] lg:w-[260px]">
                   <PeriodCard
                     label={t("thisMonth", uiConfig.language)}
                     icon={
@@ -4655,6 +4803,12 @@ export default function App() {
                 tagStats={tagStats}
                 selectedTag={selectedTag}
                 toggleTaskStatus={toggleTaskStatus}
+                uiConfig={uiConfig}
+                setPeriodModalPeriod={setPeriodModalPeriod}
+                setPeriodModalTiltDeg={setPeriodModalTiltDeg}
+                weekAfterNextStats={weekAfterNextStats}
+                nextMonthStats={nextMonthStats}
+                monthAfterNextStats={monthAfterNextStats}
                 {...leadTimeStats}
               />
             )}
@@ -5145,14 +5299,23 @@ export default function App() {
           const periodTitleMap = {
             week: "今週のタスク",
             nextWeek: "来週のタスク",
+            weekAfterNext: "再来週のタスク",
             month: "今月のタスク",
+            nextMonth: "来月のタスク",
+            monthAfterNext: "再来月のタスク",
           };
           const sourceTasks =
             periodModalPeriod === "week"
               ? weeklyStats.tasks
               : periodModalPeriod === "nextWeek"
               ? nextWeekStats.tasks
-              : monthStats.tasks;
+              : periodModalPeriod === "weekAfterNext"
+              ? weekAfterNextStats.tasks
+              : periodModalPeriod === "month"
+              ? monthStats.tasks
+              : periodModalPeriod === "nextMonth"
+              ? nextMonthStats.tasks
+              : monthAfterNextStats.tasks;
           const modalTasks = sourceTasks
             .map((snapshot) => {
               const original = tasks.find((x) => x.id === snapshot.id) || {};
@@ -6911,6 +7074,12 @@ function AnalyticsView({
   averageLeadTime,
   onTimeTasks,
   lateTasks,
+  uiConfig,
+  setPeriodModalPeriod,
+  setPeriodModalTiltDeg,
+  weekAfterNextStats,
+  nextMonthStats,
+  monthAfterNextStats,
 }) {
   const [granularity, setGranularity] = useState("week");
   const [expandedRow, setExpandedRow] = useState(null);
@@ -6961,6 +7130,49 @@ function AnalyticsView({
 
   return (
     <div className="space-y-6">
+      {/* Analytics専用 追加進捗カード (再来週・来月・再来月) */}
+      <div className="-mx-4 pl-4 sm:mx-0 sm:pl-0 overflow-x-auto hide-scrollbar max-w-full">
+        <div className="flex gap-3 w-max snap-x snap-mandatory after:content-[''] after:w-4 after:shrink-0 pr-4 sm:pr-0 pb-2">
+          <div className="snap-center shrink-0 w-[85vw] sm:w-[220px] lg:w-[260px]">
+            <PeriodCard
+              label={t("weekAfterNext", uiConfig.language)}
+              icon={uiConfig.iconStyle !== "text" && <Calendar size={14} />}
+              stats={weekAfterNextStats}
+              accent="text-[var(--ui-accent-dark)] opacity-70"
+              onClick={() => {
+                setPeriodModalTiltDeg(0);
+                setPeriodModalPeriod("weekAfterNext");
+              }}
+            />
+          </div>
+          <div className="snap-center shrink-0 w-[85vw] sm:w-[220px] lg:w-[260px]">
+            <PeriodCard
+              label={t("nextMonth", uiConfig.language)}
+              icon={uiConfig.iconStyle !== "text" && <Calendar size={14} />}
+              stats={nextMonthStats}
+              accent="text-[var(--ui-accent-dark)] opacity-70"
+              onClick={() => {
+                setPeriodModalTiltDeg(0);
+                setPeriodModalPeriod("nextMonth");
+              }}
+            />
+          </div>
+          <div className="snap-center shrink-0 w-[85vw] sm:w-[220px] lg:w-[260px]">
+            <PeriodCard
+              label={t("monthAfterNext", uiConfig.language)}
+              icon={uiConfig.iconStyle !== "text" && <Calendar size={14} />}
+              stats={monthAfterNextStats}
+              accent="text-[var(--ui-accent-dark)] opacity-70"
+              onClick={() => {
+                setPeriodModalTiltDeg(0);
+                setPeriodModalPeriod("monthAfterNext");
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-6">
       {/* 複合グラフ（タスク数 ＆ 達成率） */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
@@ -7489,5 +7701,6 @@ function AnalyticsView({
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 }
