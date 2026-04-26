@@ -6687,6 +6687,20 @@ function UISettingsView({
                           preset.config.texture === uiConfig.texture &&
                           preset.config.radius === uiConfig.radius;
 
+                        const previewFontMap = {
+                          sans: '"Noto Sans JP", sans-serif',
+                          mono: '"JetBrains Mono", monospace',
+                          serif: '"Noto Serif JP", serif',
+                          rounded: '"M PLUS Rounded 1c", sans-serif',
+                          shippori: '"Shippori Mincho B1", serif',
+                          zenOld: '"Zen Old Mincho", serif',
+                          zenKakuNew: '"Zen Kaku Gothic New", sans-serif',
+                          zenKakuAntique: '"Zen Kaku Gothic Antique", sans-serif',
+                          bizUD: '"BIZ UDPGothic", sans-serif',
+                          lineSeed: '"LINE Seed JP", sans-serif',
+                        };
+                        const previewFont = previewFontMap[preset.config.font] || previewFontMap.sans;
+
                         return (
                           <button
                             key={preset.id}
@@ -6701,16 +6715,19 @@ function UISettingsView({
                               boxShadow: isActive
                                 ? `0 10px 40px -8px ${previewAccent}80, 0 0 0 2px ${previewAccent}`
                                 : "0 4px 20px -5px rgba(0,0,0,0.12)",
-                              border: "1px solid var(--ui-border)",
-                              background: "var(--ui-panel-bg)",
+                              border: `1px solid ${isDarkP ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'}`,
+                              background: previewBg,
+                              color: previewText,
+                              fontFamily: previewFont,
                             }}
                           >
                             {/* ── Mini preview ── */}
                             <div
-                              className="w-full relative overflow-hidden shrink-0"
+                              className="w-full relative overflow-hidden shrink-0 border-b"
                               style={{
                                 height: 72,
                                 background: previewBg,
+                                borderColor: isDarkP ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
                                 borderRadius: `${previewRadiusPx} ${previewRadiusPx} 0 0`,
                               }}
                             >
@@ -6779,7 +6796,7 @@ function UISettingsView({
                             <div className="p-3 flex flex-col gap-2 w-full">
                               <span
                                 className="font-bold text-sm leading-tight"
-                                style={{ color: "var(--ui-text)" }}
+                                style={{ color: previewText }}
                               >
                                 {preset.name}
                               </span>
@@ -6794,20 +6811,20 @@ function UISettingsView({
                                   {preset.config.accent}
                                 </span>
                                 <span
-                                  className="text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-black/5 dark:bg-white/10"
-                                  style={{ color: "var(--ui-text-muted)" }}
+                                  className="text-[9px] px-1.5 py-0.5 rounded-full font-medium"
+                                  style={{ background: isDarkP ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)", color: previewText }}
                                 >
                                   r:{preset.config.radius}
                                 </span>
                                 <span
-                                  className="text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-black/5 dark:bg-white/10"
-                                  style={{ color: "var(--ui-text-muted)" }}
+                                  className="text-[9px] px-1.5 py-0.5 rounded-full font-medium"
+                                  style={{ background: isDarkP ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)", color: previewText }}
                                 >
                                   {preset.config.texture}
                                 </span>
                                 <span
-                                  className="text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-black/5 dark:bg-white/10"
-                                  style={{ color: "var(--ui-text-muted)" }}
+                                  className="text-[9px] px-1.5 py-0.5 rounded-full font-medium"
+                                  style={{ background: isDarkP ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)", color: previewText }}
                                 >
                                   {preset.config.animation}
                                 </span>
@@ -6835,6 +6852,16 @@ function UISettingsView({
           </Section>
 
           <Section title="🛠️ カスタム詳細設定">
+            <OptionRow
+              label="言語 (Language)"
+              current={uiConfig.language}
+              onChange={(v) => update("language", v)}
+              options={[
+                { value: "ja", label: "日本語" },
+                { value: "en_mix", label: "Eng Mix" },
+                { value: "en", label: "English" },
+              ]}
+            />
             <OptionRow
               label="ベーステーマ"
               current={uiConfig.bgTheme}
@@ -6882,6 +6909,28 @@ function UISettingsView({
               ]}
             />
             <OptionRow
+              label="フォントの太さ"
+              current={uiConfig.weight}
+              onChange={(v) => update("weight", v)}
+              options={[
+                { value: "light", label: "Light" },
+                { value: "normal", label: "Normal" },
+                { value: "medium", label: "Medium" },
+                { value: "bold", label: "Bold" },
+                { value: "black", label: "Black" },
+              ]}
+            />
+            <OptionRow
+              label="UIの余白 (Density)"
+              current={uiConfig.density}
+              onChange={(v) => update("density", v)}
+              options={[
+                { value: "compact", label: "狭い" },
+                { value: "normal", label: "普通" },
+                { value: "loose", label: "広い" },
+              ]}
+            />
+            <OptionRow
               label="角丸"
               current={uiConfig.radius}
               onChange={(v) => update("radius", v)}
@@ -6924,6 +6973,34 @@ function UISettingsView({
                 { value: "simple", label: "Simple" },
                 { value: "paper", label: "Paper" },
                 { value: "neon", label: "Neon" },
+              ]}
+            />
+            <OptionRow
+              label="強調グラデーション"
+              current={uiConfig.useGradient}
+              onChange={(v) => update("useGradient", v)}
+              options={[
+                { value: true, label: "ON" },
+                { value: false, label: "OFF" },
+              ]}
+            />
+            <OptionRow
+              label="アイコンスタイル"
+              current={uiConfig.iconStyle}
+              onChange={(v) => update("iconStyle", v)}
+              options={[
+                { value: "lucide", label: "Lucide" },
+                { value: "text", label: "Text" },
+              ]}
+            />
+            <OptionRow
+              label="アイコンの太さ"
+              current={uiConfig.iconWeight || "normal"}
+              onChange={(v) => update("iconWeight", v)}
+              options={[
+                { value: "light", label: "細い" },
+                { value: "normal", label: "普通" },
+                { value: "bold", label: "太い" },
               ]}
             />
             <OptionRow
