@@ -1669,7 +1669,7 @@ export default function App() {
           --tag-6-border: ${isDark ? 'rgba(34, 211, 238, 0.3)' : 'rgba(8, 145, 178, 0.2)'};
         }
 
-        html, body { overflow: hidden; width: 100vw; height: 100%; }
+        html, body { overflow: hidden; overflow-x: clip; width: 100%; max-width: 100%; height: 100%; }
 
         * { transition-duration: var(--ui-transition) !important; transition-timing-function: cubic-bezier(0.23, 1, 0.32, 1) !important; }
         svg.lucide { stroke-width: var(--ui-icon-weight) !important; }
@@ -3390,5 +3390,4 @@ function AnalyticsView({ tasks, weeklyHistory, monthlyHistory, yearlyHistory, ov
     </div>
   );
 }
-
 
