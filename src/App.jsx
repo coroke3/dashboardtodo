@@ -2044,7 +2044,12 @@ export default function App() {
           scope: SCOPES,
           callback: (response) => {
             if (response.error) {
-              reject(response.error);
+              if (response.error === "popup_blocked_by_browser") {
+                console.warn(
+                  "[GSI] Silent refresh was blocked by the browser. Third-party cookies might be disabled or popups are blocked."
+                );
+              }
+              reject(response);
             } else {
               writeStoredOAuth(cid, response.access_token, response.expires_in);
               setAccessToken(response.access_token);
@@ -2055,6 +2060,7 @@ export default function App() {
         // prompt: 'none' でユーザーに画面を見せずにトークン取得を試みる
         client.requestAccessToken({ prompt: "none" });
       } catch (err) {
+        console.error("[GSI] Failed to request silent access token:", err);
         reject(err);
       }
     });
@@ -4202,9 +4208,9 @@ export default function App() {
         </div>
       )}
 
-      <div className="flex-1 flex overflow-hidden w-full max-w-[100rem] mx-auto px-4 sm:px-6 xl:px-8 pt-4 sm:pt-6 ui-layout-gap">
+      <div className="flex-1 flex overflow-hidden w-full max-w-[100rem] mx-auto ui-layout-gap min-w-0">
         {/* --- 左サイドバー (統合版) --- */}
-        <aside className="hidden xl:flex flex-col w-[260px] 2xl:w-[280px] shrink-0 ui-layout-gap overflow-y-auto hide-scrollbar pb-6 relative">
+        <aside className="hidden xl:flex flex-col w-[260px] 2xl:w-[280px] shrink-0 ui-layout-gap overflow-y-auto hide-scrollbar pb-6 pt-6 pl-8 relative">
           {/* 1. Menu */}
           <div className="bg-white rounded-xl shadow-sm border ui-panel shrink-0">
             <h2 className="text-sm font-bold opacity-80 mb-3 flex items-center gap-2 uppercase tracking-wide">
@@ -4473,12 +4479,12 @@ export default function App() {
           </div>
         </aside>
 
-        <main className="flex-1 overflow-y-auto hide-scrollbar pb-32 flex flex-col ui-layout-gap w-full h-full relative">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar pb-32 pt-4 sm:pt-6 px-4 sm:px-6 xl:pr-8 flex flex-col ui-layout-gap w-full h-full relative min-w-0">
           <div
             key={`${activeTab}-${selectedTag || "all"}-${
               selectedRoutine || "all"
             }`}
-            className={`page-transition-${uiConfig.animation} w-full flex flex-col ui-layout-gap`}
+            className={`page-transition-${uiConfig.animation} w-full flex flex-col ui-layout-gap min-w-0`}
           >
             {(activeTab === "active" || activeTab === "history") && (
               <div className="xl:hidden w-full relative">
@@ -4502,10 +4508,9 @@ export default function App() {
               </div>
             )}
 
-            <div className="-mx-4 sm:mx-0 overflow-x-auto hide-scrollbar pb-4 pt-2">
-              <div className="flex gap-3 w-max snap-x snap-mandatory">
-                {/* モバイル用：左側の初期余白 */}
-                <div className="w-1 shrink-0 sm:hidden" />
+            {["active", "history", "analytics"].includes(activeTab) && (
+              <div className="-mx-4 sm:mx-0 px-4 sm:px-0 w-[calc(100%+2rem)] sm:w-full overflow-x-auto hide-scrollbar pb-4 pt-1">
+                <div className="flex gap-3 w-max snap-x snap-mandatory after:content-[''] after:w-4 after:shrink-0 sm:after:hidden">
 
                 <div className="snap-center shrink-0 w-[85vw] sm:w-[320px] lg:w-[400px] ui-gradient-card ui-panel rounded-xl relative overflow-hidden shadow-sm flex flex-col justify-between min-h-[120px]">
                   <div className="relative z-10 text-white">
@@ -4625,10 +4630,9 @@ export default function App() {
                   </>
                 )}
 
-                {/* モバイル用：右側のスクロール限界余白 */}
-                <div className="w-1 shrink-0 sm:hidden" />
               </div>
             </div>
+            )}
 
             {activeTab === "active" && (
               <>
@@ -7246,12 +7250,10 @@ function AnalyticsView({
   }, [tasks]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0">
       {/* Analytics専用 追加進捗カード (再来週・来月・再来月) */}
-      <div className="-mx-4 sm:mx-0 overflow-x-auto hide-scrollbar pb-2 pt-2">
-        <div className="flex gap-3 w-max snap-x snap-mandatory">
-          <div className="w-1 shrink-0 sm:hidden" />
-
+      <div className="-mx-4 sm:mx-0 px-4 sm:px-0 w-[calc(100%+2rem)] sm:w-full overflow-x-auto hide-scrollbar pb-2 pt-1">
+        <div className="flex gap-3 w-max snap-x snap-mandatory after:content-[''] after:w-4 after:shrink-0 sm:after:hidden">
           <div className="snap-center shrink-0 w-[85vw] sm:w-[220px] lg:w-[260px]">
             <PeriodCard
               label={t("weekAfterNext", uiConfig.language)}
@@ -7288,12 +7290,10 @@ function AnalyticsView({
               }}
             />
           </div>
-
-          <div className="w-1 shrink-0 sm:hidden" />
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-6 min-w-0">
       {/* 複合グラフ（タスク数 ＆ 達成率） */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
