@@ -4202,7 +4202,7 @@ export default function App() {
         </div>
       )}
 
-      <div className="flex-1 flex overflow-hidden w-full max-w-[100rem] mx-auto px-4 sm:px-6 xl:px-8 pt-6 ui-layout-gap">
+      <div className="flex-1 flex overflow-hidden w-full max-w-[100rem] mx-auto px-4 sm:px-6 xl:px-8 pt-4 sm:pt-6 ui-layout-gap">
         {/* --- 左サイドバー (統合版) --- */}
         <aside className="hidden xl:flex flex-col w-[260px] 2xl:w-[280px] shrink-0 ui-layout-gap overflow-y-auto hide-scrollbar pb-6 relative">
           {/* 1. Menu */}
@@ -4473,7 +4473,7 @@ export default function App() {
           </div>
         </aside>
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar pb-32 flex flex-col ui-layout-gap w-full h-full relative">
+        <main className="flex-1 overflow-y-auto hide-scrollbar pb-32 flex flex-col ui-layout-gap w-full h-full relative">
           <div
             key={`${activeTab}-${selectedTag || "all"}-${
               selectedRoutine || "all"
@@ -4502,8 +4502,11 @@ export default function App() {
               </div>
             )}
 
-            <div className="-mx-4 pl-4 sm:mx-0 sm:pl-0 overflow-x-auto hide-scrollbar pb-4 pt-1 max-w-full">
-              <div className="flex gap-3 w-max snap-x snap-mandatory after:content-[''] after:w-4 after:shrink-0 pr-4 sm:pr-0">
+            <div className="-mx-4 sm:mx-0 overflow-x-auto hide-scrollbar pb-4 pt-2">
+              <div className="flex gap-3 w-max snap-x snap-mandatory">
+                {/* モバイル用：左側の初期余白 */}
+                <div className="w-1 shrink-0 sm:hidden" />
+
                 <div className="snap-center shrink-0 w-[85vw] sm:w-[320px] lg:w-[400px] ui-gradient-card ui-panel rounded-xl relative overflow-hidden shadow-sm flex flex-col justify-between min-h-[120px]">
                   <div className="relative z-10 text-white">
                     <p className="text-sm font-bold mb-1 flex items-center gap-1.5">
@@ -4587,6 +4590,43 @@ export default function App() {
                     }}
                   />
                 </div>
+
+                {/* 分析タブの時のみ「来月・再来月」を表示 */}
+                {activeTab === "analytics" && (
+                  <>
+                    <div className="snap-center shrink-0 w-[85vw] sm:w-[220px] lg:w-[260px]">
+                      <PeriodCard
+                        label={t("nextMonth", uiConfig.language)}
+                        icon={
+                          uiConfig.iconStyle !== "text" && <Calendar size={14} />
+                        }
+                        stats={nextMonthStats}
+                        accent="text-[var(--ui-accent-dark)] opacity-70"
+                        onClick={() => {
+                          setPeriodModalTiltDeg(0);
+                          setPeriodModalPeriod("nextMonth");
+                        }}
+                      />
+                    </div>
+                    <div className="snap-center shrink-0 w-[85vw] sm:w-[220px] lg:w-[260px]">
+                      <PeriodCard
+                        label={t("monthAfterNext", uiConfig.language)}
+                        icon={
+                          uiConfig.iconStyle !== "text" && <Calendar size={14} />
+                        }
+                        stats={monthAfterNextStats}
+                        accent="text-[var(--ui-accent-dark)] opacity-70"
+                        onClick={() => {
+                          setPeriodModalTiltDeg(0);
+                          setPeriodModalPeriod("monthAfterNext");
+                        }}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* モバイル用：右側のスクロール限界余白 */}
+                <div className="w-1 shrink-0 sm:hidden" />
               </div>
             </div>
 
@@ -7208,8 +7248,10 @@ function AnalyticsView({
   return (
     <div className="space-y-6">
       {/* Analytics専用 追加進捗カード (再来週・来月・再来月) */}
-      <div className="-mx-4 pl-4 sm:mx-0 sm:pl-0 overflow-x-auto hide-scrollbar max-w-full">
-        <div className="flex gap-3 w-max snap-x snap-mandatory after:content-[''] after:w-4 after:shrink-0 pr-4 sm:pr-0 pb-2">
+      <div className="-mx-4 sm:mx-0 overflow-x-auto hide-scrollbar pb-2 pt-2">
+        <div className="flex gap-3 w-max snap-x snap-mandatory">
+          <div className="w-1 shrink-0 sm:hidden" />
+
           <div className="snap-center shrink-0 w-[85vw] sm:w-[220px] lg:w-[260px]">
             <PeriodCard
               label={t("weekAfterNext", uiConfig.language)}
@@ -7246,6 +7288,8 @@ function AnalyticsView({
               }}
             />
           </div>
+
+          <div className="w-1 shrink-0 sm:hidden" />
         </div>
       </div>
 
