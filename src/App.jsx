@@ -1,41 +1,143 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
-  CheckCircle2, Circle, AlertCircle, Play, Tag, LogOut,
-  RefreshCw, LayoutDashboard, ListTodo, Calendar,
-  Plus, X, History, Target, TrendingUp, BarChart3, CalendarOff,
-  ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Trash2, Copy,
-  Search, Layers, PieChart, Settings, Flame, Clock, Inbox, CheckSquare,
-  ChevronRight as ChevronRightIcon, ChevronDown as ChevronDownIcon, Sparkles, RotateCcw,
-} from 'lucide-react';
+  CheckCircle2,
+  Circle,
+  AlertCircle,
+  Play,
+  Tag,
+  LogOut,
+  RefreshCw,
+  LayoutDashboard,
+  ListTodo,
+  Calendar,
+  Plus,
+  X,
+  History,
+  Target,
+  TrendingUp,
+  BarChart3,
+  CalendarOff,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  ChevronDown,
+  Trash2,
+  Copy,
+  Search,
+  Layers,
+  PieChart,
+  Settings,
+  Flame,
+  Clock,
+  Inbox,
+  CheckSquare,
+  ChevronRight as ChevronRightIcon,
+  ChevronDown as ChevronDownIcon,
+  Sparkles,
+  RotateCcw,
+} from "lucide-react";
 
 const today = new Date();
-const threeDaysAgo = new Date(today); threeDaysAgo.setDate(today.getDate() - 3);
-const tenDaysAgo = new Date(today); tenDaysAgo.setDate(today.getDate() - 10);
-const twentyDaysAgo = new Date(today); twentyDaysAgo.setDate(today.getDate() - 20);
-const thirtyFiveDaysAgo = new Date(today); thirtyFiveDaysAgo.setDate(today.getDate() - 35);
+const threeDaysAgo = new Date(today);
+threeDaysAgo.setDate(today.getDate() - 3);
+const tenDaysAgo = new Date(today);
+tenDaysAgo.setDate(today.getDate() - 10);
+const twentyDaysAgo = new Date(today);
+twentyDaysAgo.setDate(today.getDate() - 20);
+const thirtyFiveDaysAgo = new Date(today);
+thirtyFiveDaysAgo.setDate(today.getDate() - 35);
 
 const iso = (d) => d.toISOString();
 
 const MOCK_TASKS = [
-  { id: "1", listId: "demo", title: "[univ][rpt] ソフトウェア工学 中間レポート作成", status: "needsAction", due: iso(new Date(today.getTime() + 5 * 86400000)) },
-  { id: "2", listId: "demo", title: "[private] スーパーで夕食の買い出し", status: "needsAction", due: iso(new Date(today.getTime() + 86400000)) },
-  { id: "3", listId: "demo", title: "[univ][lit] HCI関連の論文を3本読む", status: "completed", due: iso(threeDaysAgo), completed: iso(threeDaysAgo) },
-  { id: "4", listId: "demo", title: "部屋の掃除とゴミ出し", status: "needsAction" },
-  { id: "5", listId: "demo", title: "[rpt] アルバイトのシフト希望提出", status: "needsAction", due: iso(new Date(today.getTime() + 2 * 86400000)) },
-  { id: "6", listId: "demo", title: "[univ][private] 友人との勉強会", status: "needsAction" },
-  { id: "7", listId: "demo", title: "[lit] 新刊の技術書を読む", status: "completed", due: iso(tenDaysAgo), completed: iso(tenDaysAgo) },
-  { id: "8", listId: "demo", title: "[univ] 授業の履修登録", status: "completed", due: iso(today), completed: iso(today) },
-  { id: "9", listId: "demo", title: "[rpt] 先月の月次レポート提出", status: "completed", due: iso(twentyDaysAgo), completed: iso(twentyDaysAgo) },
-  { id: "10", listId: "demo", title: "[univ] 数学演習", status: "completed", due: iso(thirtyFiveDaysAgo), completed: iso(thirtyFiveDaysAgo) },
-  { id: "11", listId: "demo", title: "[univ] moodle で課題 Canvas 確認", status: "needsAction", due: iso(new Date(today.getTime() + 3 * 86400000)) },
+  {
+    id: "1",
+    listId: "demo",
+    title: "[univ][rpt] ソフトウェア工学 中間レポート作成",
+    status: "needsAction",
+    due: iso(new Date(today.getTime() + 5 * 86400000)),
+  },
+  {
+    id: "2",
+    listId: "demo",
+    title: "[private] スーパーで夕食の買い出し",
+    status: "needsAction",
+    due: iso(new Date(today.getTime() + 86400000)),
+  },
+  {
+    id: "3",
+    listId: "demo",
+    title: "[univ][lit] HCI関連の論文を3本読む",
+    status: "completed",
+    due: iso(threeDaysAgo),
+    completed: iso(threeDaysAgo),
+  },
+  {
+    id: "4",
+    listId: "demo",
+    title: "部屋の掃除とゴミ出し",
+    status: "needsAction",
+  },
+  {
+    id: "5",
+    listId: "demo",
+    title: "[rpt] アルバイトのシフト希望提出",
+    status: "needsAction",
+    due: iso(new Date(today.getTime() + 2 * 86400000)),
+  },
+  {
+    id: "6",
+    listId: "demo",
+    title: "[univ][private] 友人との勉強会",
+    status: "needsAction",
+  },
+  {
+    id: "7",
+    listId: "demo",
+    title: "[lit] 新刊の技術書を読む",
+    status: "completed",
+    due: iso(tenDaysAgo),
+    completed: iso(tenDaysAgo),
+  },
+  {
+    id: "8",
+    listId: "demo",
+    title: "[univ] 授業の履修登録",
+    status: "completed",
+    due: iso(today),
+    completed: iso(today),
+  },
+  {
+    id: "9",
+    listId: "demo",
+    title: "[rpt] 先月の月次レポート提出",
+    status: "completed",
+    due: iso(twentyDaysAgo),
+    completed: iso(twentyDaysAgo),
+  },
+  {
+    id: "10",
+    listId: "demo",
+    title: "[univ] 数学演習",
+    status: "completed",
+    due: iso(thirtyFiveDaysAgo),
+    completed: iso(thirtyFiveDaysAgo),
+  },
+  {
+    id: "11",
+    listId: "demo",
+    title: "[univ] moodle で課題 Canvas 確認",
+    status: "needsAction",
+    due: iso(new Date(today.getTime() + 3 * 86400000)),
+  },
 ];
 
-const SCOPES = 'https://www.googleapis.com/auth/tasks';
+const SCOPES = "https://www.googleapis.com/auth/tasks";
 const FETCH_MAX_RESULTS = 999;
 
-const ENV_CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '').trim();
+const ENV_CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "").trim();
 
-const GOOGLE_TASKS_OAUTH_STORAGE_KEY = 'google_tasks_oauth_v1';
+const GOOGLE_TASKS_OAUTH_STORAGE_KEY = "google_tasks_oauth_v1";
 const OAUTH_EXPIRY_SKEW_MS = 60_000;
 
 const readStoredOAuth = (clientId) => {
@@ -44,9 +146,13 @@ const readStoredOAuth = (clientId) => {
     const raw = localStorage.getItem(GOOGLE_TASKS_OAUTH_STORAGE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
-    if (!data || typeof data !== 'object') return null;
+    if (!data || typeof data !== "object") return null;
     if (data.clientId !== clientId) return null;
-    if (typeof data.accessToken !== 'string' || typeof data.expiresAt !== 'number') return null;
+    if (
+      typeof data.accessToken !== "string" ||
+      typeof data.expiresAt !== "number"
+    )
+      return null;
     return data;
   } catch {
     return null;
@@ -54,7 +160,8 @@ const readStoredOAuth = (clientId) => {
 };
 
 const writeStoredOAuth = (clientId, accessToken, expiresInSec) => {
-  const sec = typeof expiresInSec === 'number' && expiresInSec > 0 ? expiresInSec : 3600;
+  const sec =
+    typeof expiresInSec === "number" && expiresInSec > 0 ? expiresInSec : 3600;
   const expiresAt = Date.now() + sec * 1000 - OAUTH_EXPIRY_SKEW_MS;
   localStorage.setItem(
     GOOGLE_TASKS_OAUTH_STORAGE_KEY,
@@ -67,147 +174,1572 @@ const clearStoredOAuth = () => {
 };
 
 const effectiveClientId = () =>
-  (localStorage.getItem('google_tasks_client_id') || ENV_CLIENT_ID || '').trim();
+  (
+    localStorage.getItem("google_tasks_client_id") ||
+    ENV_CLIENT_ID ||
+    ""
+  ).trim();
 
 // === 翻訳辞書 (3段階の言語/演出モード) ===
 const I18N = {
-  active: { ja: 'アクティブ', en_mix: 'Active', en: 'Active Tasks' },
-  history: { ja: '履歴', en_mix: 'History', en: 'History' },
-  calendar: { ja: 'カレンダー', en_mix: 'Calendar', en: 'Calendar' },
-  analytics: { ja: '分析ダッシュボード', en_mix: 'Analytics', en: 'Analytics' },
-  routines: { ja: 'ルーチン検出', en_mix: 'Routines', en: 'Routines' },
-  tags: { ja: 'タグ管理', en_mix: 'Tags', en: 'Tags' },
-  replace: { ja: 'タスク一括置換', en_mix: 'Replace', en: 'Batch Replace' },
-  settings: { ja: 'UI設定', en_mix: 'UI Settings', en: 'Settings' },
-  organize: { ja: '整理', en_mix: 'Organize', en: 'Organize' },
-  settingsUi: { ja: 'デザイン', en_mix: 'Design', en: 'Design' },
-  settingsReplace: { ja: '一括置換', en_mix: 'Replace', en: 'Replace' },
-  settingsSystem: { ja: 'システム', en_mix: 'System', en: 'System' },
-  search: { ja: '検索...', en_mix: 'Search...', en: 'Search...' },
-  refresh: { ja: '更新', en_mix: 'Refresh', en: 'Refresh' },
-  logout: { ja: '切断', en_mix: 'Logout', en: 'Logout' },
-  all: { ja: 'すべて', en_mix: 'All', en: 'All' },
-  weeklyProgress: { ja: '今週の達成率', en_mix: 'Weekly Progress', en: 'Weekly Progress' },
-  completed: { ja: '完了', en_mix: 'Done', en: 'Completed' },
-  total: { ja: '全体', en_mix: 'Total', en: 'Total' },
-  thisWeek: { ja: '今週', en_mix: 'This Wk', en: 'This Week' },
-  nextWeek: { ja: '来週', en_mix: 'Next Wk', en: 'Next Week' },
-  thisMonth: { ja: '今月', en_mix: 'This Mo', en: 'This Month' },
+  active: { ja: "アクティブ", en_mix: "Active", en: "Active Tasks" },
+  history: { ja: "履歴", en_mix: "History", en: "History" },
+  calendar: { ja: "カレンダー", en_mix: "Calendar", en: "Calendar" },
+  analytics: { ja: "分析ダッシュボード", en_mix: "Analytics", en: "Analytics" },
+  routines: { ja: "ルーチン検出", en_mix: "Routines", en: "Routines" },
+  tags: { ja: "タグ管理", en_mix: "Tags", en: "Tags" },
+  replace: { ja: "タスク一括置換", en_mix: "Replace", en: "Batch Replace" },
+  settings: { ja: "UI設定", en_mix: "UI Settings", en: "Settings" },
+  organize: { ja: "整理", en_mix: "Organize", en: "Organize" },
+  settingsUi: { ja: "デザイン", en_mix: "Design", en: "Design" },
+  settingsReplace: { ja: "一括置換", en_mix: "Replace", en: "Replace" },
+  settingsSystem: { ja: "システム", en_mix: "System", en: "System" },
+  search: { ja: "検索...", en_mix: "Search...", en: "Search..." },
+  refresh: { ja: "更新", en_mix: "Refresh", en: "Refresh" },
+  logout: { ja: "切断", en_mix: "Logout", en: "Logout" },
+  all: { ja: "すべて", en_mix: "All", en: "All" },
+  weeklyProgress: {
+    ja: "今週の達成率",
+    en_mix: "Weekly Progress",
+    en: "Weekly Progress",
+  },
+  completed: { ja: "完了", en_mix: "Done", en: "Completed" },
+  total: { ja: "全体", en_mix: "Total", en: "Total" },
+  thisWeek: { ja: "今週", en_mix: "This Wk", en: "This Week" },
+  nextWeek: { ja: "来週", en_mix: "Next Wk", en: "Next Week" },
+  thisMonth: { ja: "今月", en_mix: "This Mo", en: "This Month" },
 };
 const t = (key, lang) => I18N[key]?.[lang] || key;
 
 const THEME_PRESETS = [
   // ─── ブランド・OS (Brand / OS) ───────────────────────────────────────
-  { id: '101', category: 'ブランド・OS', name: 'Cupertino (iOS風)', config: { bgTheme: 'light', radius: 'lg', font: 'sans', weight: 'normal', accent: 'blue', texture: 'glass', density: 'normal', animation: 'spring', mouseEffect: 'none', shadow: 'sm', border: 'none', iconStyle: 'lucide', language: 'en_mix', useGradient: false } },
-  { id: '102', category: 'ブランド・OS', name: 'Material You', config: { bgTheme: 'paper', radius: 'xl', font: 'rounded', weight: 'medium', accent: 'emerald', texture: 'flat', density: 'loose', animation: 'blur', mouseEffect: 'none', shadow: 'none', border: 'none', iconStyle: 'lucide', language: 'en', useGradient: false } },
-  { id: '103', category: 'ブランド・OS', name: 'Fluent (Windows風)', config: { bgTheme: 'white', radius: 'sm', font: 'sans', weight: 'normal', accent: 'blue', texture: 'glass', density: 'normal', animation: 'fade', mouseEffect: 'glow', shadow: 'md', border: 'thin', iconStyle: 'lucide', language: 'ja', useGradient: false } },
-  { id: '104', category: 'ブランド・OS', name: 'ChatGPT Dark', config: { bgTheme: 'dark', radius: 'md', font: 'sans', weight: 'normal', accent: 'emerald', texture: 'flat', density: 'normal', animation: 'fade', mouseEffect: 'none', shadow: 'none', border: 'none', iconStyle: 'lucide', language: 'en_mix', useGradient: false } },
-  { id: '105', category: 'ブランド・OS', name: 'Gemini Spark', config: { bgTheme: 'white', radius: 'xl', font: 'sans', weight: 'medium', accent: 'violet', texture: 'glass', density: 'loose', animation: 'spring', mouseEffect: 'glow', shadow: 'md', border: 'thin', iconStyle: 'lucide', language: 'ja', useGradient: true } },
-  { id: '106', category: 'ブランド・OS', name: 'Google Workspace', config: { bgTheme: 'white', radius: 'md', font: 'sans', weight: 'medium', accent: 'blue', texture: 'flat', density: 'normal', animation: 'slide', mouseEffect: 'none', shadow: 'md', border: 'thin', iconStyle: 'lucide', language: 'ja', useGradient: false } },
-  { id: '107', category: 'ブランド・OS', name: 'Tama Art Info Design', config: { bgTheme: 'white', radius: 'none', font: 'zenKakuAntique', weight: 'black', accent: 'amber', texture: 'simple', density: 'loose', animation: 'slide', mouseEffect: 'glow', shadow: 'none', border: 'thick', iconStyle: 'text', language: 'en', useGradient: false } },
-  { id: '108', category: 'ブランド・OS', name: 'VisionOS', config: { bgTheme: 'gray', radius: 'xl', font: 'sans', weight: 'normal', accent: 'slate', texture: 'glass', density: 'loose', animation: 'blur', mouseEffect: 'glow', shadow: 'lg', border: 'thin', iconStyle: 'lucide', language: 'en_mix', useGradient: true } },
-  { id: '109', category: 'ブランド・OS', name: 'Ubuntu', config: { bgTheme: 'dark', radius: 'md', font: 'sans', weight: 'normal', accent: 'amber', texture: 'flat', density: 'normal', animation: 'fade', mouseEffect: 'none', shadow: 'sm', border: 'thin', iconStyle: 'lucide', language: 'en', useGradient: false } },
-  { id: '110', category: 'ブランド・OS', name: 'Nintendo Switch', config: { bgTheme: 'white', radius: 'xl', font: 'rounded', weight: 'bold', accent: 'rose', texture: 'flat', density: 'compact', animation: 'spring', mouseEffect: 'none', shadow: 'none', border: 'none', iconStyle: 'lucide', language: 'ja', useGradient: false } },
+  {
+    id: "101",
+    category: "ブランド・OS",
+    name: "Cupertino (iOS風)",
+    config: {
+      bgTheme: "light",
+      radius: "lg",
+      font: "sans",
+      weight: "normal",
+      accent: "blue",
+      texture: "glass",
+      density: "normal",
+      animation: "spring",
+      mouseEffect: "none",
+      shadow: "sm",
+      border: "none",
+      iconStyle: "lucide",
+      language: "en_mix",
+      useGradient: false,
+    },
+  },
+  {
+    id: "102",
+    category: "ブランド・OS",
+    name: "Material You",
+    config: {
+      bgTheme: "paper",
+      radius: "xl",
+      font: "rounded",
+      weight: "medium",
+      accent: "emerald",
+      texture: "flat",
+      density: "loose",
+      animation: "blur",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "none",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: false,
+    },
+  },
+  {
+    id: "103",
+    category: "ブランド・OS",
+    name: "Fluent (Windows風)",
+    config: {
+      bgTheme: "white",
+      radius: "sm",
+      font: "sans",
+      weight: "normal",
+      accent: "blue",
+      texture: "glass",
+      density: "normal",
+      animation: "fade",
+      mouseEffect: "glow",
+      shadow: "md",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "ja",
+      useGradient: false,
+    },
+  },
+  {
+    id: "104",
+    category: "ブランド・OS",
+    name: "ChatGPT Dark",
+    config: {
+      bgTheme: "dark",
+      radius: "md",
+      font: "sans",
+      weight: "normal",
+      accent: "emerald",
+      texture: "flat",
+      density: "normal",
+      animation: "fade",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "none",
+      iconStyle: "lucide",
+      language: "en_mix",
+      useGradient: false,
+    },
+  },
+  {
+    id: "105",
+    category: "ブランド・OS",
+    name: "Gemini Spark",
+    config: {
+      bgTheme: "white",
+      radius: "xl",
+      font: "sans",
+      weight: "medium",
+      accent: "violet",
+      texture: "glass",
+      density: "loose",
+      animation: "spring",
+      mouseEffect: "glow",
+      shadow: "md",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "ja",
+      useGradient: true,
+    },
+  },
+  {
+    id: "106",
+    category: "ブランド・OS",
+    name: "Google Workspace",
+    config: {
+      bgTheme: "white",
+      radius: "md",
+      font: "sans",
+      weight: "medium",
+      accent: "blue",
+      texture: "flat",
+      density: "normal",
+      animation: "slide",
+      mouseEffect: "none",
+      shadow: "md",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "ja",
+      useGradient: false,
+    },
+  },
+  {
+    id: "107",
+    category: "ブランド・OS",
+    name: "Tama Art Info Design",
+    config: {
+      bgTheme: "white",
+      radius: "none",
+      font: "zenKakuAntique",
+      weight: "black",
+      accent: "amber",
+      texture: "simple",
+      density: "loose",
+      animation: "slide",
+      mouseEffect: "glow",
+      shadow: "none",
+      border: "thick",
+      iconStyle: "text",
+      language: "en",
+      useGradient: false,
+    },
+  },
+  {
+    id: "108",
+    category: "ブランド・OS",
+    name: "VisionOS",
+    config: {
+      bgTheme: "gray",
+      radius: "xl",
+      font: "sans",
+      weight: "normal",
+      accent: "slate",
+      texture: "glass",
+      density: "loose",
+      animation: "blur",
+      mouseEffect: "glow",
+      shadow: "lg",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en_mix",
+      useGradient: true,
+    },
+  },
+  {
+    id: "109",
+    category: "ブランド・OS",
+    name: "Ubuntu",
+    config: {
+      bgTheme: "dark",
+      radius: "md",
+      font: "sans",
+      weight: "normal",
+      accent: "amber",
+      texture: "flat",
+      density: "normal",
+      animation: "fade",
+      mouseEffect: "none",
+      shadow: "sm",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: false,
+    },
+  },
+  {
+    id: "110",
+    category: "ブランド・OS",
+    name: "Nintendo Switch",
+    config: {
+      bgTheme: "white",
+      radius: "xl",
+      font: "rounded",
+      weight: "bold",
+      accent: "rose",
+      texture: "flat",
+      density: "compact",
+      animation: "spring",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "none",
+      iconStyle: "lucide",
+      language: "ja",
+      useGradient: false,
+    },
+  },
 
   // ─── モノクロ・ミニマル (Monochrome / Minimal) ────────────────────────
-  { id: '11', category: 'モノクロ・ミニマル', name: 'Studio Noir', config: { bgTheme: 'pitchBlack', radius: 'none', font: 'sans', weight: 'light', accent: 'white', texture: 'flat', density: 'normal', animation: 'fade', mouseEffect: 'glow', shadow: 'none', border: 'thin', iconStyle: 'lucide', language: 'en', useGradient: false } },
-  { id: '12', category: 'モノクロ・ミニマル', name: 'Pure White', config: { bgTheme: 'white', radius: 'none', font: 'sans', weight: 'normal', accent: 'black', texture: 'flat', density: 'loose', animation: 'slide', mouseEffect: 'none', shadow: 'none', border: 'thin', iconStyle: 'lucide', language: 'en_mix', useGradient: false } },
-  { id: '13', category: 'モノクロ・ミニマル', name: 'Notion Style', config: { bgTheme: 'white', radius: 'sm', font: 'sans', weight: 'normal', accent: 'zinc', texture: 'flat', density: 'loose', animation: 'fade', mouseEffect: 'none', shadow: 'none', border: 'thin', iconStyle: 'lucide', language: 'en_mix', useGradient: false } },
-  { id: '14', category: 'モノクロ・ミニマル', name: 'Linear', config: { bgTheme: 'dark', radius: 'md', font: 'sans', weight: 'medium', accent: 'violet', texture: 'glass', density: 'normal', animation: 'spring', mouseEffect: 'glow', shadow: 'lg', border: 'thin', iconStyle: 'lucide', language: 'en', useGradient: true } },
-  { id: '15', category: 'モノクロ・ミニマル', name: 'Bauhaus', config: { bgTheme: 'paper', radius: 'none', font: 'sans', weight: 'black', accent: 'rose', texture: 'simple', density: 'loose', animation: 'off', mouseEffect: 'none', shadow: 'none', border: 'thick', iconStyle: 'text', language: 'en', useGradient: false } },
-  { id: '16', category: 'モノクロ・ミニマル', name: 'Braun Design', config: { bgTheme: 'gray', radius: 'sm', font: 'sans', weight: 'medium', accent: 'zinc', texture: 'flat', density: 'normal', animation: 'fade', mouseEffect: 'none', shadow: 'sm', border: 'thin', iconStyle: 'lucide', language: 'en', useGradient: false } },
-  { id: '17', category: 'モノクロ・ミニマル', name: 'Wireframe', config: { bgTheme: 'white', radius: 'none', font: 'mono', weight: 'normal', accent: 'black', texture: 'simple', density: 'compact', animation: 'off', mouseEffect: 'none', shadow: 'none', border: 'thick', iconStyle: 'lucide', language: 'en', useGradient: false } },
-  { id: '18', category: 'モノクロ・ミニマル', name: 'Architect', config: { bgTheme: 'white', radius: 'none', font: 'serif', weight: 'normal', accent: 'slate', texture: 'flat', density: 'loose', animation: 'fade', mouseEffect: 'none', shadow: 'none', border: 'thin', iconStyle: 'text', language: 'en_mix', useGradient: false } },
-  { id: '19', category: 'モノクロ・ミニマル', name: 'Zen Minimal', config: { bgTheme: 'paper', radius: 'md', font: 'zenOld', weight: 'light', accent: 'zinc', texture: 'paper', density: 'loose', animation: 'fade', mouseEffect: 'none', shadow: 'none', border: 'thin', iconStyle: 'lucide', language: 'ja', useGradient: false } },
-  { id: '20', category: 'モノクロ・ミニマル', name: 'Ghost', config: { bgTheme: 'pitchBlack', radius: 'lg', font: 'sans', weight: 'light', accent: 'slate', texture: 'glass', density: 'loose', animation: 'blur', mouseEffect: 'glow', shadow: 'lg', border: 'thin', iconStyle: 'lucide', language: 'en', useGradient: false } },
+  {
+    id: "11",
+    category: "モノクロ・ミニマル",
+    name: "Studio Noir",
+    config: {
+      bgTheme: "pitchBlack",
+      radius: "none",
+      font: "sans",
+      weight: "light",
+      accent: "white",
+      texture: "flat",
+      density: "normal",
+      animation: "fade",
+      mouseEffect: "glow",
+      shadow: "none",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: false,
+    },
+  },
+  {
+    id: "12",
+    category: "モノクロ・ミニマル",
+    name: "Pure White",
+    config: {
+      bgTheme: "white",
+      radius: "none",
+      font: "sans",
+      weight: "normal",
+      accent: "black",
+      texture: "flat",
+      density: "loose",
+      animation: "slide",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en_mix",
+      useGradient: false,
+    },
+  },
+  {
+    id: "13",
+    category: "モノクロ・ミニマル",
+    name: "Notion Style",
+    config: {
+      bgTheme: "white",
+      radius: "sm",
+      font: "sans",
+      weight: "normal",
+      accent: "zinc",
+      texture: "flat",
+      density: "loose",
+      animation: "fade",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en_mix",
+      useGradient: false,
+    },
+  },
+  {
+    id: "14",
+    category: "モノクロ・ミニマル",
+    name: "Linear",
+    config: {
+      bgTheme: "dark",
+      radius: "md",
+      font: "sans",
+      weight: "medium",
+      accent: "violet",
+      texture: "glass",
+      density: "normal",
+      animation: "spring",
+      mouseEffect: "glow",
+      shadow: "lg",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: true,
+    },
+  },
+  {
+    id: "15",
+    category: "モノクロ・ミニマル",
+    name: "Bauhaus",
+    config: {
+      bgTheme: "paper",
+      radius: "none",
+      font: "sans",
+      weight: "black",
+      accent: "rose",
+      texture: "simple",
+      density: "loose",
+      animation: "off",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "thick",
+      iconStyle: "text",
+      language: "en",
+      useGradient: false,
+    },
+  },
+  {
+    id: "16",
+    category: "モノクロ・ミニマル",
+    name: "Braun Design",
+    config: {
+      bgTheme: "gray",
+      radius: "sm",
+      font: "sans",
+      weight: "medium",
+      accent: "zinc",
+      texture: "flat",
+      density: "normal",
+      animation: "fade",
+      mouseEffect: "none",
+      shadow: "sm",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: false,
+    },
+  },
+  {
+    id: "17",
+    category: "モノクロ・ミニマル",
+    name: "Wireframe",
+    config: {
+      bgTheme: "white",
+      radius: "none",
+      font: "mono",
+      weight: "normal",
+      accent: "black",
+      texture: "simple",
+      density: "compact",
+      animation: "off",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "thick",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: false,
+    },
+  },
+  {
+    id: "18",
+    category: "モノクロ・ミニマル",
+    name: "Architect",
+    config: {
+      bgTheme: "white",
+      radius: "none",
+      font: "serif",
+      weight: "normal",
+      accent: "slate",
+      texture: "flat",
+      density: "loose",
+      animation: "fade",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "thin",
+      iconStyle: "text",
+      language: "en_mix",
+      useGradient: false,
+    },
+  },
+  {
+    id: "19",
+    category: "モノクロ・ミニマル",
+    name: "Zen Minimal",
+    config: {
+      bgTheme: "paper",
+      radius: "md",
+      font: "zenOld",
+      weight: "light",
+      accent: "zinc",
+      texture: "paper",
+      density: "loose",
+      animation: "fade",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "ja",
+      useGradient: false,
+    },
+  },
+  {
+    id: "20",
+    category: "モノクロ・ミニマル",
+    name: "Ghost",
+    config: {
+      bgTheme: "pitchBlack",
+      radius: "lg",
+      font: "sans",
+      weight: "light",
+      accent: "slate",
+      texture: "glass",
+      density: "loose",
+      animation: "blur",
+      mouseEffect: "glow",
+      shadow: "lg",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: false,
+    },
+  },
 
   // ─── 視認性・高コントラスト (Accessibility / High Contrast) ─────────
-  { id: '21', category: '視認性・高コントラスト', name: 'UD Focus Light', config: { bgTheme: 'light', radius: 'md', font: 'bizUD', weight: 'bold', accent: 'blue', texture: 'flat', density: 'normal', animation: 'fade', mouseEffect: 'none', shadow: 'sm', border: 'thin', iconStyle: 'lucide', language: 'ja', useGradient: false } },
-  { id: '22', category: '視認性・高コントラスト', name: 'UD Focus Dark', config: { bgTheme: 'pitchBlack', radius: 'md', font: 'bizUD', weight: 'bold', accent: 'amber', texture: 'flat', density: 'normal', animation: 'fade', mouseEffect: 'none', shadow: 'none', border: 'thin', iconStyle: 'lucide', language: 'ja', useGradient: false } },
-  { id: '23', category: '視認性・高コントラスト', name: 'HC Black & Yellow', config: { bgTheme: 'pitchBlack', radius: 'none', font: 'bizUD', weight: 'black', accent: 'amber', texture: 'simple', density: 'loose', animation: 'off', mouseEffect: 'none', shadow: 'none', border: 'thick', iconStyle: 'lucide', language: 'ja', useGradient: false } },
-  { id: '24', category: '視認性・高コントラスト', name: 'HC White & Black', config: { bgTheme: 'white', radius: 'none', font: 'bizUD', weight: 'black', accent: 'black', texture: 'simple', density: 'loose', animation: 'off', mouseEffect: 'none', shadow: 'none', border: 'thick', iconStyle: 'text', language: 'ja', useGradient: false } },
-  { id: '25', category: '視認性・高コントラスト', name: 'Dyslexia Friendly', config: { bgTheme: 'cream', radius: 'md', font: 'rounded', weight: 'medium', accent: 'teal', texture: 'flat', density: 'loose', animation: 'slide', mouseEffect: 'none', shadow: 'sm', border: 'thin', iconStyle: 'lucide', language: 'en_mix', useGradient: false } },
-  { id: '26', category: '視認性・高コントラスト', name: 'Terminal HC', config: { bgTheme: 'pitchBlack', radius: 'none', font: 'mono', weight: 'bold', accent: 'emerald', texture: 'neon', density: 'compact', animation: 'off', mouseEffect: 'none', shadow: 'none', border: 'thick', iconStyle: 'text', language: 'en', useGradient: false } },
-  { id: '27', category: '視認性・高コントラスト', name: 'Reader Mode', config: { bgTheme: 'paper', radius: 'md', font: 'serif', weight: 'medium', accent: 'black', texture: 'paper', density: 'loose', animation: 'fade', mouseEffect: 'none', shadow: 'none', border: 'thin', iconStyle: 'text', language: 'ja', useGradient: false } },
-  { id: '28', category: '視認性・高コントラスト', name: 'Night Vision', config: { bgTheme: 'pitchBlack', radius: 'md', font: 'mono', weight: 'bold', accent: 'rose', texture: 'flat', density: 'normal', animation: 'off', mouseEffect: 'none', shadow: 'none', border: 'thin', iconStyle: 'lucide', language: 'en', useGradient: false } },
-  { id: '29', category: '視認性・高コントラスト', name: 'Colorblind Safe', config: { bgTheme: 'white', radius: 'lg', font: 'sans', weight: 'bold', accent: 'blue', texture: 'flat', density: 'loose', animation: 'slide', mouseEffect: 'none', shadow: 'md', border: 'thin', iconStyle: 'lucide', language: 'en_mix', useGradient: false } },
-  { id: '30', category: '視認性・高コントラスト', name: 'Contrast Blue', config: { bgTheme: 'navy', radius: 'lg', font: 'bizUD', weight: 'bold', accent: 'cyan', texture: 'flat', density: 'normal', animation: 'fade', mouseEffect: 'none', shadow: 'none', border: 'thin', iconStyle: 'lucide', language: 'ja', useGradient: false } },
+  {
+    id: "21",
+    category: "視認性・高コントラスト",
+    name: "UD Focus Light",
+    config: {
+      bgTheme: "light",
+      radius: "md",
+      font: "bizUD",
+      weight: "bold",
+      accent: "blue",
+      texture: "flat",
+      density: "normal",
+      animation: "fade",
+      mouseEffect: "none",
+      shadow: "sm",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "ja",
+      useGradient: false,
+    },
+  },
+  {
+    id: "22",
+    category: "視認性・高コントラスト",
+    name: "UD Focus Dark",
+    config: {
+      bgTheme: "pitchBlack",
+      radius: "md",
+      font: "bizUD",
+      weight: "bold",
+      accent: "amber",
+      texture: "flat",
+      density: "normal",
+      animation: "fade",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "ja",
+      useGradient: false,
+    },
+  },
+  {
+    id: "23",
+    category: "視認性・高コントラスト",
+    name: "HC Black & Yellow",
+    config: {
+      bgTheme: "pitchBlack",
+      radius: "none",
+      font: "bizUD",
+      weight: "black",
+      accent: "amber",
+      texture: "simple",
+      density: "loose",
+      animation: "off",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "thick",
+      iconStyle: "lucide",
+      language: "ja",
+      useGradient: false,
+    },
+  },
+  {
+    id: "24",
+    category: "視認性・高コントラスト",
+    name: "HC White & Black",
+    config: {
+      bgTheme: "white",
+      radius: "none",
+      font: "bizUD",
+      weight: "black",
+      accent: "black",
+      texture: "simple",
+      density: "loose",
+      animation: "off",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "thick",
+      iconStyle: "text",
+      language: "ja",
+      useGradient: false,
+    },
+  },
+  {
+    id: "25",
+    category: "視認性・高コントラスト",
+    name: "Dyslexia Friendly",
+    config: {
+      bgTheme: "cream",
+      radius: "md",
+      font: "rounded",
+      weight: "medium",
+      accent: "teal",
+      texture: "flat",
+      density: "loose",
+      animation: "slide",
+      mouseEffect: "none",
+      shadow: "sm",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en_mix",
+      useGradient: false,
+    },
+  },
+  {
+    id: "26",
+    category: "視認性・高コントラスト",
+    name: "Terminal HC",
+    config: {
+      bgTheme: "pitchBlack",
+      radius: "none",
+      font: "mono",
+      weight: "bold",
+      accent: "emerald",
+      texture: "neon",
+      density: "compact",
+      animation: "off",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "thick",
+      iconStyle: "text",
+      language: "en",
+      useGradient: false,
+    },
+  },
+  {
+    id: "27",
+    category: "視認性・高コントラスト",
+    name: "Reader Mode",
+    config: {
+      bgTheme: "paper",
+      radius: "md",
+      font: "serif",
+      weight: "medium",
+      accent: "black",
+      texture: "paper",
+      density: "loose",
+      animation: "fade",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "thin",
+      iconStyle: "text",
+      language: "ja",
+      useGradient: false,
+    },
+  },
+  {
+    id: "28",
+    category: "視認性・高コントラスト",
+    name: "Night Vision",
+    config: {
+      bgTheme: "pitchBlack",
+      radius: "md",
+      font: "mono",
+      weight: "bold",
+      accent: "rose",
+      texture: "flat",
+      density: "normal",
+      animation: "off",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: false,
+    },
+  },
+  {
+    id: "29",
+    category: "視認性・高コントラスト",
+    name: "Colorblind Safe",
+    config: {
+      bgTheme: "white",
+      radius: "lg",
+      font: "sans",
+      weight: "bold",
+      accent: "blue",
+      texture: "flat",
+      density: "loose",
+      animation: "slide",
+      mouseEffect: "none",
+      shadow: "md",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en_mix",
+      useGradient: false,
+    },
+  },
+  {
+    id: "30",
+    category: "視認性・高コントラスト",
+    name: "Contrast Blue",
+    config: {
+      bgTheme: "navy",
+      radius: "lg",
+      font: "bizUD",
+      weight: "bold",
+      accent: "cyan",
+      texture: "flat",
+      density: "normal",
+      animation: "fade",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "ja",
+      useGradient: false,
+    },
+  },
 
   // ─── ライト・温かみ (Light / Warm) ────────────────────────────────────
-  { id: '31', category: 'ライト・温かみ', name: 'Editorial Serif', config: { bgTheme: 'paper', radius: 'none', font: 'shippori', weight: 'medium', accent: 'black', texture: 'paper', density: 'loose', animation: 'fade', mouseEffect: 'none', shadow: 'none', border: 'thin', iconStyle: 'text', language: 'ja', useGradient: false } },
-  { id: '32', category: 'ライト・温かみ', name: 'Rose Water', config: { bgTheme: 'light', radius: 'lg', font: 'shippori', weight: 'medium', accent: 'rose', texture: 'glass', density: 'loose', animation: 'blur', mouseEffect: 'glow', shadow: 'sm', border: 'none', iconStyle: 'lucide', language: 'ja', useGradient: true } },
-  { id: '33', category: 'ライト・温かみ', name: 'Creamy Latte', config: { bgTheme: 'cream', radius: 'lg', font: 'rounded', weight: 'medium', accent: 'amber', texture: 'paper', density: 'loose', animation: 'blur', mouseEffect: 'none', shadow: 'sm', border: 'none', iconStyle: 'lucide', language: 'ja', useGradient: false } },
-  { id: '34', category: 'ライト・温かみ', name: 'Sakura', config: { bgTheme: 'light', radius: 'xl', font: 'shippori', weight: 'medium', accent: 'rose', texture: 'glass', density: 'loose', animation: 'spring', mouseEffect: 'glow', shadow: 'sm', border: 'none', iconStyle: 'lucide', language: 'ja', useGradient: true } },
-  { id: '35', category: 'ライト・温かみ', name: 'Apricot', config: { bgTheme: 'cream', radius: 'md', font: 'sans', weight: 'medium', accent: 'amber', texture: 'flat', density: 'normal', animation: 'slide', mouseEffect: 'none', shadow: 'sm', border: 'thin', iconStyle: 'lucide', language: 'en_mix', useGradient: false } },
-  { id: '36', category: 'ライト・温かみ', name: 'Cotton', config: { bgTheme: 'white', radius: 'lg', font: 'rounded', weight: 'normal', accent: 'slate', texture: 'flat', density: 'normal', animation: 'fade', mouseEffect: 'none', shadow: 'sm', border: 'none', iconStyle: 'lucide', language: 'en_mix', useGradient: false } },
-  { id: '37', category: 'ライト・温かみ', name: 'Peach Puff', config: { bgTheme: 'paper', radius: 'md', font: 'rounded', weight: 'bold', accent: 'rose', texture: 'paper', density: 'loose', animation: 'spring', mouseEffect: 'none', shadow: 'none', border: 'thin', iconStyle: 'lucide', language: 'ja', useGradient: false } },
-  { id: '38', category: 'ライト・温かみ', name: 'Honeycomb', config: { bgTheme: 'cream', radius: 'lg', font: 'lineSeed', weight: 'bold', accent: 'amber', texture: 'flat', density: 'normal', animation: 'slide', mouseEffect: 'glow', shadow: 'md', border: 'none', iconStyle: 'lucide', language: 'en_mix', useGradient: true } },
-  { id: '39', category: 'ライト・温かみ', name: 'Sunlight', config: { bgTheme: 'light', radius: 'md', font: 'sans', weight: 'medium', accent: 'amber', texture: 'glass', density: 'normal', animation: 'blur', mouseEffect: 'none', shadow: 'md', border: 'none', iconStyle: 'lucide', language: 'ja', useGradient: true } },
-  { id: '40', category: 'ライト・温かみ', name: 'Cashmere', config: { bgTheme: 'paper', radius: 'sm', font: 'serif', weight: 'light', accent: 'bronze', texture: 'paper', density: 'loose', animation: 'fade', mouseEffect: 'none', shadow: 'sm', border: 'thin', iconStyle: 'text', language: 'en_mix', useGradient: false } },
+  {
+    id: "31",
+    category: "ライト・温かみ",
+    name: "Editorial Serif",
+    config: {
+      bgTheme: "paper",
+      radius: "none",
+      font: "shippori",
+      weight: "medium",
+      accent: "black",
+      texture: "paper",
+      density: "loose",
+      animation: "fade",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "thin",
+      iconStyle: "text",
+      language: "ja",
+      useGradient: false,
+    },
+  },
+  {
+    id: "32",
+    category: "ライト・温かみ",
+    name: "Rose Water",
+    config: {
+      bgTheme: "light",
+      radius: "lg",
+      font: "shippori",
+      weight: "medium",
+      accent: "rose",
+      texture: "glass",
+      density: "loose",
+      animation: "blur",
+      mouseEffect: "glow",
+      shadow: "sm",
+      border: "none",
+      iconStyle: "lucide",
+      language: "ja",
+      useGradient: true,
+    },
+  },
+  {
+    id: "33",
+    category: "ライト・温かみ",
+    name: "Creamy Latte",
+    config: {
+      bgTheme: "cream",
+      radius: "lg",
+      font: "rounded",
+      weight: "medium",
+      accent: "amber",
+      texture: "paper",
+      density: "loose",
+      animation: "blur",
+      mouseEffect: "none",
+      shadow: "sm",
+      border: "none",
+      iconStyle: "lucide",
+      language: "ja",
+      useGradient: false,
+    },
+  },
+  {
+    id: "34",
+    category: "ライト・温かみ",
+    name: "Sakura",
+    config: {
+      bgTheme: "light",
+      radius: "xl",
+      font: "shippori",
+      weight: "medium",
+      accent: "rose",
+      texture: "glass",
+      density: "loose",
+      animation: "spring",
+      mouseEffect: "glow",
+      shadow: "sm",
+      border: "none",
+      iconStyle: "lucide",
+      language: "ja",
+      useGradient: true,
+    },
+  },
+  {
+    id: "35",
+    category: "ライト・温かみ",
+    name: "Apricot",
+    config: {
+      bgTheme: "cream",
+      radius: "md",
+      font: "sans",
+      weight: "medium",
+      accent: "amber",
+      texture: "flat",
+      density: "normal",
+      animation: "slide",
+      mouseEffect: "none",
+      shadow: "sm",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en_mix",
+      useGradient: false,
+    },
+  },
+  {
+    id: "36",
+    category: "ライト・温かみ",
+    name: "Cotton",
+    config: {
+      bgTheme: "white",
+      radius: "lg",
+      font: "rounded",
+      weight: "normal",
+      accent: "slate",
+      texture: "flat",
+      density: "normal",
+      animation: "fade",
+      mouseEffect: "none",
+      shadow: "sm",
+      border: "none",
+      iconStyle: "lucide",
+      language: "en_mix",
+      useGradient: false,
+    },
+  },
+  {
+    id: "37",
+    category: "ライト・温かみ",
+    name: "Peach Puff",
+    config: {
+      bgTheme: "paper",
+      radius: "md",
+      font: "rounded",
+      weight: "bold",
+      accent: "rose",
+      texture: "paper",
+      density: "loose",
+      animation: "spring",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "ja",
+      useGradient: false,
+    },
+  },
+  {
+    id: "38",
+    category: "ライト・温かみ",
+    name: "Honeycomb",
+    config: {
+      bgTheme: "cream",
+      radius: "lg",
+      font: "lineSeed",
+      weight: "bold",
+      accent: "amber",
+      texture: "flat",
+      density: "normal",
+      animation: "slide",
+      mouseEffect: "glow",
+      shadow: "md",
+      border: "none",
+      iconStyle: "lucide",
+      language: "en_mix",
+      useGradient: true,
+    },
+  },
+  {
+    id: "39",
+    category: "ライト・温かみ",
+    name: "Sunlight",
+    config: {
+      bgTheme: "light",
+      radius: "md",
+      font: "sans",
+      weight: "medium",
+      accent: "amber",
+      texture: "glass",
+      density: "normal",
+      animation: "blur",
+      mouseEffect: "none",
+      shadow: "md",
+      border: "none",
+      iconStyle: "lucide",
+      language: "ja",
+      useGradient: true,
+    },
+  },
+  {
+    id: "40",
+    category: "ライト・温かみ",
+    name: "Cashmere",
+    config: {
+      bgTheme: "paper",
+      radius: "sm",
+      font: "serif",
+      weight: "light",
+      accent: "bronze",
+      texture: "paper",
+      density: "loose",
+      animation: "fade",
+      mouseEffect: "none",
+      shadow: "sm",
+      border: "thin",
+      iconStyle: "text",
+      language: "en_mix",
+      useGradient: false,
+    },
+  },
 
   // ─── ダーク・サイバー (Dark / Cyber) ────────────────────────────────────
-  { id: '41', category: 'ダーク・サイバー', name: 'Cyber Neon', config: { bgTheme: 'navy', radius: 'sm', font: 'mono', weight: 'bold', accent: 'cyan', texture: 'neon', density: 'normal', animation: 'spring', mouseEffect: 'glow', shadow: 'lg', border: 'thin', iconStyle: 'lucide', language: 'en', useGradient: true } },
-  { id: '42', category: 'ダーク・サイバー', name: 'Dracula', config: { bgTheme: 'pitchBlack', radius: 'md', font: 'mono', weight: 'normal', accent: 'violet', texture: 'flat', density: 'normal', animation: 'fade', mouseEffect: 'glow', shadow: 'md', border: 'thin', iconStyle: 'lucide', language: 'en', useGradient: false } },
-  { id: '43', category: 'ダーク・サイバー', name: 'Tokyo Night', config: { bgTheme: 'navy', radius: 'lg', font: 'sans', weight: 'medium', accent: 'cyan', texture: 'glass', density: 'normal', animation: 'blur', mouseEffect: 'glow', shadow: 'lg', border: 'thin', iconStyle: 'lucide', language: 'en_mix', useGradient: true } },
-  { id: '44', category: 'ダーク・サイバー', name: 'Nord', config: { bgTheme: 'dark', radius: 'md', font: 'sans', weight: 'normal', accent: 'cyan', texture: 'flat', density: 'loose', animation: 'fade', mouseEffect: 'none', shadow: 'none', border: 'none', iconStyle: 'lucide', language: 'en', useGradient: false } },
-  { id: '45', category: 'ダーク・サイバー', name: 'Synthwave', config: { bgTheme: 'navy', radius: 'none', font: 'mono', weight: 'black', accent: 'fuchsia', texture: 'neon', density: 'compact', animation: 'slide', mouseEffect: 'glow', shadow: 'lg', border: 'thick', iconStyle: 'lucide', language: 'en', useGradient: true } },
-  { id: '46', category: 'ダーク・サイバー', name: 'Hacker', config: { bgTheme: 'pitchBlack', radius: 'none', font: 'mono', weight: 'normal', accent: 'emerald', texture: 'neon', density: 'compact', animation: 'off', mouseEffect: 'glow', shadow: 'none', border: 'thin', iconStyle: 'text', language: 'en', useGradient: false } },
-  { id: '47', category: 'ダーク・サイバー', name: 'Outrun', config: { bgTheme: 'pitchBlack', radius: 'md', font: 'mono', weight: 'bold', accent: 'rose', texture: 'neon', density: 'normal', animation: 'spring', mouseEffect: 'glow', shadow: 'lg', border: 'thick', iconStyle: 'lucide', language: 'en', useGradient: true } },
-  { id: '48', category: 'ダーク・サイバー', name: 'Deep Space', config: { bgTheme: 'pitchBlack', radius: 'xl', font: 'sans', weight: 'medium', accent: 'violet', texture: 'glass', density: 'loose', animation: 'blur', mouseEffect: 'glow', shadow: 'lg', border: 'thin', iconStyle: 'lucide', language: 'en_mix', useGradient: true } },
-  { id: '49', category: 'ダーク・サイバー', name: 'System Failure', config: { bgTheme: 'dark', radius: 'none', font: 'mono', weight: 'black', accent: 'rose', texture: 'neon', density: 'compact', animation: 'slide', mouseEffect: 'none', shadow: 'lg', border: 'thick', iconStyle: 'text', language: 'en', useGradient: false } },
-  { id: '50', category: 'ダーク・サイバー', name: 'Cyberpunk 2077', config: { bgTheme: 'dark', radius: 'none', font: 'lineSeed', weight: 'black', accent: 'amber', texture: 'flat', density: 'compact', animation: 'spring', mouseEffect: 'glow', shadow: 'none', border: 'thick', iconStyle: 'lucide', language: 'en', useGradient: false } },
+  {
+    id: "41",
+    category: "ダーク・サイバー",
+    name: "Cyber Neon",
+    config: {
+      bgTheme: "navy",
+      radius: "sm",
+      font: "mono",
+      weight: "bold",
+      accent: "cyan",
+      texture: "neon",
+      density: "normal",
+      animation: "spring",
+      mouseEffect: "glow",
+      shadow: "lg",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: true,
+    },
+  },
+  {
+    id: "42",
+    category: "ダーク・サイバー",
+    name: "Dracula",
+    config: {
+      bgTheme: "pitchBlack",
+      radius: "md",
+      font: "mono",
+      weight: "normal",
+      accent: "violet",
+      texture: "flat",
+      density: "normal",
+      animation: "fade",
+      mouseEffect: "glow",
+      shadow: "md",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: false,
+    },
+  },
+  {
+    id: "43",
+    category: "ダーク・サイバー",
+    name: "Tokyo Night",
+    config: {
+      bgTheme: "navy",
+      radius: "lg",
+      font: "sans",
+      weight: "medium",
+      accent: "cyan",
+      texture: "glass",
+      density: "normal",
+      animation: "blur",
+      mouseEffect: "glow",
+      shadow: "lg",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en_mix",
+      useGradient: true,
+    },
+  },
+  {
+    id: "44",
+    category: "ダーク・サイバー",
+    name: "Nord",
+    config: {
+      bgTheme: "dark",
+      radius: "md",
+      font: "sans",
+      weight: "normal",
+      accent: "cyan",
+      texture: "flat",
+      density: "loose",
+      animation: "fade",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "none",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: false,
+    },
+  },
+  {
+    id: "45",
+    category: "ダーク・サイバー",
+    name: "Synthwave",
+    config: {
+      bgTheme: "navy",
+      radius: "none",
+      font: "mono",
+      weight: "black",
+      accent: "fuchsia",
+      texture: "neon",
+      density: "compact",
+      animation: "slide",
+      mouseEffect: "glow",
+      shadow: "lg",
+      border: "thick",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: true,
+    },
+  },
+  {
+    id: "46",
+    category: "ダーク・サイバー",
+    name: "Hacker",
+    config: {
+      bgTheme: "pitchBlack",
+      radius: "none",
+      font: "mono",
+      weight: "normal",
+      accent: "emerald",
+      texture: "neon",
+      density: "compact",
+      animation: "off",
+      mouseEffect: "glow",
+      shadow: "none",
+      border: "thin",
+      iconStyle: "text",
+      language: "en",
+      useGradient: false,
+    },
+  },
+  {
+    id: "47",
+    category: "ダーク・サイバー",
+    name: "Outrun",
+    config: {
+      bgTheme: "pitchBlack",
+      radius: "md",
+      font: "mono",
+      weight: "bold",
+      accent: "rose",
+      texture: "neon",
+      density: "normal",
+      animation: "spring",
+      mouseEffect: "glow",
+      shadow: "lg",
+      border: "thick",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: true,
+    },
+  },
+  {
+    id: "48",
+    category: "ダーク・サイバー",
+    name: "Deep Space",
+    config: {
+      bgTheme: "pitchBlack",
+      radius: "xl",
+      font: "sans",
+      weight: "medium",
+      accent: "violet",
+      texture: "glass",
+      density: "loose",
+      animation: "blur",
+      mouseEffect: "glow",
+      shadow: "lg",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en_mix",
+      useGradient: true,
+    },
+  },
+  {
+    id: "49",
+    category: "ダーク・サイバー",
+    name: "System Failure",
+    config: {
+      bgTheme: "dark",
+      radius: "none",
+      font: "mono",
+      weight: "black",
+      accent: "rose",
+      texture: "neon",
+      density: "compact",
+      animation: "slide",
+      mouseEffect: "none",
+      shadow: "lg",
+      border: "thick",
+      iconStyle: "text",
+      language: "en",
+      useGradient: false,
+    },
+  },
+  {
+    id: "50",
+    category: "ダーク・サイバー",
+    name: "Cyberpunk 2077",
+    config: {
+      bgTheme: "dark",
+      radius: "none",
+      font: "lineSeed",
+      weight: "black",
+      accent: "amber",
+      texture: "flat",
+      density: "compact",
+      animation: "spring",
+      mouseEffect: "glow",
+      shadow: "none",
+      border: "thick",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: false,
+    },
+  },
 
   // ─── エレガント・リッチ (Elegant / Rich) ──────────────────────────────
-  { id: '51', category: 'エレガント・リッチ', name: 'Glass Morphism', config: { bgTheme: 'dark', radius: 'lg', font: 'sans', weight: 'medium', accent: 'violet', texture: 'glass', density: 'loose', animation: 'blur', mouseEffect: 'glow', shadow: 'lg', border: 'thin', iconStyle: 'lucide', language: 'en_mix', useGradient: true } },
-  { id: '52', category: 'エレガント・リッチ', name: 'Aurora Borealis', config: { bgTheme: 'navy', radius: 'xl', font: 'sans', weight: 'medium', accent: 'emerald', texture: 'glass', density: 'loose', animation: 'blur', mouseEffect: 'glow', shadow: 'lg', border: 'thin', iconStyle: 'lucide', language: 'en', useGradient: true } },
-  { id: '53', category: 'エレガント・リッチ', name: 'Midnight Gold', config: { bgTheme: 'pitchBlack', radius: 'lg', font: 'shippori', weight: 'bold', accent: 'gold', texture: 'neon', density: 'loose', animation: 'fade', mouseEffect: 'glow', shadow: 'lg', border: 'thin', iconStyle: 'text', language: 'ja', useGradient: true } },
-  { id: '54', category: 'エレガント・リッチ', name: 'Royal Purple', config: { bgTheme: 'dark', radius: 'xl', font: 'serif', weight: 'medium', accent: 'violet', texture: 'glass', density: 'loose', animation: 'fade', mouseEffect: 'glow', shadow: 'lg', border: 'thin', iconStyle: 'lucide', language: 'en_mix', useGradient: true } },
-  { id: '55', category: 'エレガント・リッチ', name: 'Pearl', config: { bgTheme: 'white', radius: 'xl', font: 'sans', weight: 'normal', accent: 'slate', texture: 'glass', density: 'loose', animation: 'blur', mouseEffect: 'glow', shadow: 'md', border: 'thin', iconStyle: 'lucide', language: 'en', useGradient: true } },
-  { id: '56', category: 'エレガント・リッチ', name: 'Velvet', config: { bgTheme: 'dark', radius: 'lg', font: 'serif', weight: 'medium', accent: 'rose', texture: 'paper', density: 'loose', animation: 'fade', mouseEffect: 'none', shadow: 'lg', border: 'none', iconStyle: 'text', language: 'ja', useGradient: false } },
-  { id: '57', category: 'エレガント・リッチ', name: 'Platinum', config: { bgTheme: 'gray', radius: 'lg', font: 'sans', weight: 'light', accent: 'slate', texture: 'glass', density: 'normal', animation: 'fade', mouseEffect: 'glow', shadow: 'md', border: 'thin', iconStyle: 'lucide', language: 'en_mix', useGradient: true } },
-  { id: '58', category: 'エレガント・リッチ', name: 'Champagne', config: { bgTheme: 'cream', radius: 'xl', font: 'shippori', weight: 'medium', accent: 'gold', texture: 'glass', density: 'loose', animation: 'blur', mouseEffect: 'glow', shadow: 'md', border: 'thin', iconStyle: 'lucide', language: 'ja', useGradient: true } },
-  { id: '59', category: 'エレガント・リッチ', name: 'Ruby', config: { bgTheme: 'pitchBlack', radius: 'md', font: 'serif', weight: 'bold', accent: 'rose', texture: 'glass', density: 'normal', animation: 'fade', mouseEffect: 'glow', shadow: 'lg', border: 'thin', iconStyle: 'text', language: 'en_mix', useGradient: true } },
-  { id: '60', category: 'エレガント・リッチ', name: 'Sapphire', config: { bgTheme: 'navy', radius: 'md', font: 'sans', weight: 'medium', accent: 'cyan', texture: 'glass', density: 'normal', animation: 'blur', mouseEffect: 'glow', shadow: 'lg', border: 'thin', iconStyle: 'lucide', language: 'en', useGradient: true } },
+  {
+    id: "51",
+    category: "エレガント・リッチ",
+    name: "Glass Morphism",
+    config: {
+      bgTheme: "dark",
+      radius: "lg",
+      font: "sans",
+      weight: "medium",
+      accent: "violet",
+      texture: "glass",
+      density: "loose",
+      animation: "blur",
+      mouseEffect: "glow",
+      shadow: "lg",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en_mix",
+      useGradient: true,
+    },
+  },
+  {
+    id: "52",
+    category: "エレガント・リッチ",
+    name: "Aurora Borealis",
+    config: {
+      bgTheme: "navy",
+      radius: "xl",
+      font: "sans",
+      weight: "medium",
+      accent: "emerald",
+      texture: "glass",
+      density: "loose",
+      animation: "blur",
+      mouseEffect: "glow",
+      shadow: "lg",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: true,
+    },
+  },
+  {
+    id: "53",
+    category: "エレガント・リッチ",
+    name: "Midnight Gold",
+    config: {
+      bgTheme: "pitchBlack",
+      radius: "lg",
+      font: "shippori",
+      weight: "bold",
+      accent: "gold",
+      texture: "neon",
+      density: "loose",
+      animation: "fade",
+      mouseEffect: "glow",
+      shadow: "lg",
+      border: "thin",
+      iconStyle: "text",
+      language: "ja",
+      useGradient: true,
+    },
+  },
+  {
+    id: "54",
+    category: "エレガント・リッチ",
+    name: "Royal Purple",
+    config: {
+      bgTheme: "dark",
+      radius: "xl",
+      font: "serif",
+      weight: "medium",
+      accent: "violet",
+      texture: "glass",
+      density: "loose",
+      animation: "fade",
+      mouseEffect: "glow",
+      shadow: "lg",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en_mix",
+      useGradient: true,
+    },
+  },
+  {
+    id: "55",
+    category: "エレガント・リッチ",
+    name: "Pearl",
+    config: {
+      bgTheme: "white",
+      radius: "xl",
+      font: "sans",
+      weight: "normal",
+      accent: "slate",
+      texture: "glass",
+      density: "loose",
+      animation: "blur",
+      mouseEffect: "glow",
+      shadow: "md",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: true,
+    },
+  },
+  {
+    id: "56",
+    category: "エレガント・リッチ",
+    name: "Velvet",
+    config: {
+      bgTheme: "dark",
+      radius: "lg",
+      font: "serif",
+      weight: "medium",
+      accent: "rose",
+      texture: "paper",
+      density: "loose",
+      animation: "fade",
+      mouseEffect: "none",
+      shadow: "lg",
+      border: "none",
+      iconStyle: "text",
+      language: "ja",
+      useGradient: false,
+    },
+  },
+  {
+    id: "57",
+    category: "エレガント・リッチ",
+    name: "Platinum",
+    config: {
+      bgTheme: "gray",
+      radius: "lg",
+      font: "sans",
+      weight: "light",
+      accent: "slate",
+      texture: "glass",
+      density: "normal",
+      animation: "fade",
+      mouseEffect: "glow",
+      shadow: "md",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en_mix",
+      useGradient: true,
+    },
+  },
+  {
+    id: "58",
+    category: "エレガント・リッチ",
+    name: "Champagne",
+    config: {
+      bgTheme: "cream",
+      radius: "xl",
+      font: "shippori",
+      weight: "medium",
+      accent: "gold",
+      texture: "glass",
+      density: "loose",
+      animation: "blur",
+      mouseEffect: "glow",
+      shadow: "md",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "ja",
+      useGradient: true,
+    },
+  },
+  {
+    id: "59",
+    category: "エレガント・リッチ",
+    name: "Ruby",
+    config: {
+      bgTheme: "pitchBlack",
+      radius: "md",
+      font: "serif",
+      weight: "bold",
+      accent: "rose",
+      texture: "glass",
+      density: "normal",
+      animation: "fade",
+      mouseEffect: "glow",
+      shadow: "lg",
+      border: "thin",
+      iconStyle: "text",
+      language: "en_mix",
+      useGradient: true,
+    },
+  },
+  {
+    id: "60",
+    category: "エレガント・リッチ",
+    name: "Sapphire",
+    config: {
+      bgTheme: "navy",
+      radius: "md",
+      font: "sans",
+      weight: "medium",
+      accent: "cyan",
+      texture: "glass",
+      density: "normal",
+      animation: "blur",
+      mouseEffect: "glow",
+      shadow: "lg",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: true,
+    },
+  },
 
   // ─── テック・開発者系 (Tech / Developer) ────────────────────────────────
-  { id: '61', category: 'テック・開発者系', name: 'GitHub Light', config: { bgTheme: 'white', radius: 'sm', font: 'sans', weight: 'normal', accent: 'emerald', texture: 'flat', density: 'compact', animation: 'fade', mouseEffect: 'none', shadow: 'sm', border: 'thin', iconStyle: 'lucide', language: 'en', useGradient: false } },
-  { id: '62', category: 'テック・開発者系', name: 'VSCode Dark', config: { bgTheme: 'dark', radius: 'none', font: 'mono', weight: 'normal', accent: 'blue', texture: 'flat', density: 'compact', animation: 'fade', mouseEffect: 'none', shadow: 'none', border: 'none', iconStyle: 'lucide', language: 'en', useGradient: false } },
-  { id: '63', category: 'テック・開発者系', name: 'Vercel', config: { bgTheme: 'pitchBlack', radius: 'sm', font: 'sans', weight: 'medium', accent: 'white', texture: 'flat', density: 'normal', animation: 'fade', mouseEffect: 'none', shadow: 'none', border: 'thin', iconStyle: 'lucide', language: 'en', useGradient: false } },
-  { id: '64', category: 'テック・開発者系', name: 'Terminal', config: { bgTheme: 'pitchBlack', radius: 'none', font: 'mono', weight: 'normal', accent: 'emerald', texture: 'neon', density: 'compact', animation: 'off', mouseEffect: 'glow', shadow: 'none', border: 'thin', iconStyle: 'lucide', language: 'en', useGradient: false } },
-  { id: '65', category: 'テック・開発者系', name: 'Monokai', config: { bgTheme: 'dark', radius: 'md', font: 'mono', weight: 'normal', accent: 'amber', texture: 'flat', density: 'compact', animation: 'fade', mouseEffect: 'none', shadow: 'sm', border: 'thin', iconStyle: 'lucide', language: 'en', useGradient: false } },
-  { id: '66', category: 'テック・開発者系', name: 'Solarized Dark', config: { bgTheme: 'dark', radius: 'sm', font: 'mono', weight: 'normal', accent: 'cyan', texture: 'flat', density: 'compact', animation: 'fade', mouseEffect: 'none', shadow: 'none', border: 'thin', iconStyle: 'lucide', language: 'en', useGradient: false } },
-  { id: '67', category: 'テック・開発者系', name: 'Solarized Light', config: { bgTheme: 'cream', radius: 'sm', font: 'mono', weight: 'normal', accent: 'cyan', texture: 'flat', density: 'compact', animation: 'fade', mouseEffect: 'none', shadow: 'none', border: 'thin', iconStyle: 'lucide', language: 'en', useGradient: false } },
-  { id: '68', category: 'テック・開発者系', name: 'Gruvbox', config: { bgTheme: 'dark', radius: 'sm', font: 'mono', weight: 'medium', accent: 'amber', texture: 'flat', density: 'compact', animation: 'slide', mouseEffect: 'none', shadow: 'sm', border: 'thin', iconStyle: 'lucide', language: 'en', useGradient: false } },
-  { id: '69', category: 'テック・開発者系', name: 'React Blue', config: { bgTheme: 'dark', radius: 'lg', font: 'sans', weight: 'medium', accent: 'cyan', texture: 'glass', density: 'normal', animation: 'blur', mouseEffect: 'glow', shadow: 'md', border: 'thin', iconStyle: 'lucide', language: 'en', useGradient: false } },
-  { id: '70', category: 'テック・開発者系', name: 'StackOverflow', config: { bgTheme: 'white', radius: 'sm', font: 'sans', weight: 'normal', accent: 'amber', texture: 'flat', density: 'compact', animation: 'fade', mouseEffect: 'none', shadow: 'sm', border: 'thin', iconStyle: 'lucide', language: 'en', useGradient: false } },
+  {
+    id: "61",
+    category: "テック・開発者系",
+    name: "GitHub Light",
+    config: {
+      bgTheme: "white",
+      radius: "sm",
+      font: "sans",
+      weight: "normal",
+      accent: "emerald",
+      texture: "flat",
+      density: "compact",
+      animation: "fade",
+      mouseEffect: "none",
+      shadow: "sm",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: false,
+    },
+  },
+  {
+    id: "62",
+    category: "テック・開発者系",
+    name: "VSCode Dark",
+    config: {
+      bgTheme: "dark",
+      radius: "none",
+      font: "mono",
+      weight: "normal",
+      accent: "blue",
+      texture: "flat",
+      density: "compact",
+      animation: "fade",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "none",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: false,
+    },
+  },
+  {
+    id: "63",
+    category: "テック・開発者系",
+    name: "Vercel",
+    config: {
+      bgTheme: "pitchBlack",
+      radius: "sm",
+      font: "sans",
+      weight: "medium",
+      accent: "white",
+      texture: "flat",
+      density: "normal",
+      animation: "fade",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: false,
+    },
+  },
+  {
+    id: "64",
+    category: "テック・開発者系",
+    name: "Terminal",
+    config: {
+      bgTheme: "pitchBlack",
+      radius: "none",
+      font: "mono",
+      weight: "normal",
+      accent: "emerald",
+      texture: "neon",
+      density: "compact",
+      animation: "off",
+      mouseEffect: "glow",
+      shadow: "none",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: false,
+    },
+  },
+  {
+    id: "65",
+    category: "テック・開発者系",
+    name: "Monokai",
+    config: {
+      bgTheme: "dark",
+      radius: "md",
+      font: "mono",
+      weight: "normal",
+      accent: "amber",
+      texture: "flat",
+      density: "compact",
+      animation: "fade",
+      mouseEffect: "none",
+      shadow: "sm",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: false,
+    },
+  },
+  {
+    id: "66",
+    category: "テック・開発者系",
+    name: "Solarized Dark",
+    config: {
+      bgTheme: "dark",
+      radius: "sm",
+      font: "mono",
+      weight: "normal",
+      accent: "cyan",
+      texture: "flat",
+      density: "compact",
+      animation: "fade",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: false,
+    },
+  },
+  {
+    id: "67",
+    category: "テック・開発者系",
+    name: "Solarized Light",
+    config: {
+      bgTheme: "cream",
+      radius: "sm",
+      font: "mono",
+      weight: "normal",
+      accent: "cyan",
+      texture: "flat",
+      density: "compact",
+      animation: "fade",
+      mouseEffect: "none",
+      shadow: "none",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: false,
+    },
+  },
+  {
+    id: "68",
+    category: "テック・開発者系",
+    name: "Gruvbox",
+    config: {
+      bgTheme: "dark",
+      radius: "sm",
+      font: "mono",
+      weight: "medium",
+      accent: "amber",
+      texture: "flat",
+      density: "compact",
+      animation: "slide",
+      mouseEffect: "none",
+      shadow: "sm",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: false,
+    },
+  },
+  {
+    id: "69",
+    category: "テック・開発者系",
+    name: "React Blue",
+    config: {
+      bgTheme: "dark",
+      radius: "lg",
+      font: "sans",
+      weight: "medium",
+      accent: "cyan",
+      texture: "glass",
+      density: "normal",
+      animation: "blur",
+      mouseEffect: "glow",
+      shadow: "md",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: false,
+    },
+  },
+  {
+    id: "70",
+    category: "テック・開発者系",
+    name: "StackOverflow",
+    config: {
+      bgTheme: "white",
+      radius: "sm",
+      font: "sans",
+      weight: "normal",
+      accent: "amber",
+      texture: "flat",
+      density: "compact",
+      animation: "fade",
+      mouseEffect: "none",
+      shadow: "sm",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en",
+      useGradient: false,
+    },
+  },
 ];
 
 // === 選択要素のスライドアニメーション用コンポーネント ===
-function AnimatedToggle({ options, current, onChange, className = "", optionClassName = "", isTextIcon = false }) {
+function AnimatedToggle({
+  options,
+  current,
+  onChange,
+  className = "",
+  optionClassName = "",
+  isTextIcon = false,
+}) {
   const containerRef = useRef(null);
-  const [highlightStyle, setHighlightStyle] = useState({ left: 0, width: 0, opacity: 0, ready: false });
+  const [highlightStyle, setHighlightStyle] = useState({
+    left: 0,
+    width: 0,
+    opacity: 0,
+    ready: false,
+  });
 
   useEffect(() => {
     if (!containerRef.current) return;
-    const activeIndex = options.findIndex(o => o.value === current);
+    const activeIndex = options.findIndex((o) => o.value === current);
     if (activeIndex === -1) return;
 
     // 背景ハイライト要素を避けて、実際のボタン要素だけを取得する
-    const buttons = Array.from(containerRef.current.querySelectorAll(':scope > button'));
+    const buttons = Array.from(
+      containerRef.current.querySelectorAll(":scope > button")
+    );
     const target = buttons[activeIndex];
 
     if (target) {
-      setHighlightStyle(prev => ({
+      setHighlightStyle((prev) => ({
         left: target.offsetLeft,
         width: target.offsetWidth,
         opacity: 1,
-        ready: true // 初回セット後にアニメーションを有効にする
+        ready: true, // 初回セット後にアニメーションを有効にする
       }));
     }
   }, [current, options]);
 
   return (
-    <div ref={containerRef} className={`relative flex flex-wrap gap-1 p-1 ${className}`}>
+    <div
+      ref={containerRef}
+      className={`relative flex flex-wrap gap-1 p-1 ${className}`}
+    >
       {/* 背景ハイライト要素 */}
       <div
         className="absolute top-1 bottom-1 rounded-md pointer-events-none ui-highlight-bg"
@@ -215,7 +1747,9 @@ function AnimatedToggle({ options, current, onChange, className = "", optionClas
           left: highlightStyle.left,
           width: highlightStyle.width,
           opacity: highlightStyle.opacity,
-          transition: highlightStyle.ready ? 'all var(--ui-transition) cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none'
+          transition: highlightStyle.ready
+            ? "all var(--ui-transition) cubic-bezier(0.2, 0.8, 0.2, 1)"
+            : "none",
         }}
       />
       {options.map(({ value, label, textIcon, icon: Icon }) => {
@@ -225,10 +1759,17 @@ function AnimatedToggle({ options, current, onChange, className = "", optionClas
             key={value}
             type="button"
             onClick={() => onChange(value)}
-            className={`relative z-10 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-colors duration-300 ${optionClassName} ${isActive ? 'text-[var(--ui-accent)] font-bold' : 'text-[var(--ui-text-muted)] hover:bg-slate-500/10 font-medium'
-              }`}
+            className={`relative z-10 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-colors duration-300 ${optionClassName} ${
+              isActive
+                ? "text-[var(--ui-accent)] font-bold"
+                : "text-[var(--ui-text-muted)] hover:bg-slate-500/10 font-medium"
+            }`}
           >
-            {isTextIcon && textIcon ? <span className="font-mono font-bold">[{textIcon}]</span> : Icon && <Icon size={14} />}
+            {isTextIcon && textIcon ? (
+              <span className="font-mono font-bold">[{textIcon}]</span>
+            ) : (
+              Icon && <Icon size={14} />
+            )}
             {label}
           </button>
         );
@@ -260,17 +1801,20 @@ const addWeeks = (date, weeks) => {
 const formatWeekLabel = (start) => {
   const end = new Date(start);
   end.setDate(start.getDate() + 6);
-  return `${start.getMonth() + 1}/${start.getDate()}〜${end.getMonth() + 1}/${end.getDate()}`;
+  return `${start.getMonth() + 1}/${start.getDate()}〜${
+    end.getMonth() + 1
+  }/${end.getDate()}`;
 };
 
-const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
+const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
 const formatDue = (dueString) => {
   if (!dueString) return null;
   const d = new Date(dueString);
 
   // UTCでの時刻が00:00:00の場合は「日付のみ指定（時間は未指定）」とみなす
-  const isDateOnly = d.getUTCHours() === 0 && d.getUTCMinutes() === 0 && d.getUTCSeconds() === 0;
+  const isDateOnly =
+    d.getUTCHours() === 0 && d.getUTCMinutes() === 0 && d.getUTCSeconds() === 0;
 
   const mm = d.getMonth() + 1;
   const dd = d.getDate();
@@ -279,8 +1823,8 @@ const formatDue = (dueString) => {
   if (!isDateOnly) {
     const hh = d.getHours();
     const mi = d.getMinutes();
-    const hstr = String(hh).padStart(2, '0');
-    const mstr = String(mi).padStart(2, '0');
+    const hstr = String(hh).padStart(2, "0");
+    const mstr = String(mi).padStart(2, "0");
     return `${mm}/${dd}(${w}) ${hstr}:${mstr}`;
   }
   return `${mm}/${dd}(${w})`;
@@ -299,14 +1843,20 @@ const formatDate = (dateString) => {
 
 // <input type="datetime-local"> 用のフォーマット
 const toDatetimeLocalValue = (d) => {
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+    d.getHours()
+  )}:${pad(d.getMinutes())}`;
 };
 
 const sameLocalDay = (a, b) => {
   const da = new Date(a);
   const db = new Date(b);
-  return da.getFullYear() === db.getFullYear() && da.getMonth() === db.getMonth() && da.getDate() === db.getDate();
+  return (
+    da.getFullYear() === db.getFullYear() &&
+    da.getMonth() === db.getMonth() &&
+    da.getDate() === db.getDate()
+  );
 };
 
 /**
@@ -336,19 +1886,23 @@ const dueCalendarDayParts = (dueString) => {
 const dueMatchesCalendarDay = (dueString, dayDate) => {
   const parts = dueCalendarDayParts(dueString);
   if (!parts) return false;
-  return parts.y === dayDate.getFullYear() && parts.mo === dayDate.getMonth() && parts.d === dayDate.getDate();
+  return (
+    parts.y === dayDate.getFullYear() &&
+    parts.mo === dayDate.getMonth() &&
+    parts.d === dayDate.getDate()
+  );
 };
 
-const CAL_WEEK_LABELS = ['月', '火', '水', '木', '金', '土', '日'];
+const CAL_WEEK_LABELS = ["月", "火", "水", "木", "金", "土", "日"];
 
 const ACTIVE_SECTION_TITLES = [
-  '期限切れ',
-  '今日',
-  '明日',
-  'それ以外の今週',
-  '来週', // 追加
-  'それ以降',
-  '期限なし',
+  "期限切れ",
+  "今日",
+  "明日",
+  "それ以外の今週",
+  "来週", // 追加
+  "それ以降",
+  "期限なし",
 ];
 
 /** アクティブ並び: 0期限切れ 1今日 2明日 3それ以外の今週 4来週 5それ以降 6期限なし */
@@ -375,55 +1929,86 @@ const getActiveSortKey = (task, now, weekStart, weekEnd) => {
 
 /** タイトル内の LMS 名（単語境界・大文字小文字無視）を検出用 */
 const LMS_IN_TITLE = [
-  { re: /\bmoodle\b/i, label: 'Moodle' },
-  { re: /\bcanvas\b/i, label: 'Canvas' },
-  { re: /\bclassroom\b/i, label: 'Classroom' },
+  { re: /\bmoodle\b/i, label: "Moodle" },
+  { re: /\bcanvas\b/i, label: "Canvas" },
+  { re: /\bclassroom\b/i, label: "Classroom" },
 ];
 
 const getLmsBadgeClass = (label) => {
-  if (label === 'Moodle') return 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20';
-  if (label === 'Canvas') return 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20';
-  if (label === 'Classroom') return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
-  return 'bg-slate-500/10 text-[var(--ui-text-muted)] border-slate-500/20';
+  if (label === "Moodle")
+    return "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20";
+  if (label === "Canvas")
+    return "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20";
+  if (label === "Classroom")
+    return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20";
+  return "bg-slate-500/10 text-[var(--ui-text-muted)] border-slate-500/20";
 };
 
 const getLmsBadgeStyle = (label) => {
-  if (label === 'Moodle') return { color: 'var(--tag-4-text)', backgroundColor: 'var(--tag-4-bg)', borderColor: 'var(--tag-4-border)' };
-  if (label === 'Canvas') return { color: 'var(--tag-1-text)', backgroundColor: 'var(--tag-1-bg)', borderColor: 'var(--tag-1-border)' };
-  if (label === 'Classroom') return { color: 'var(--tag-2-text)', backgroundColor: 'var(--tag-2-bg)', borderColor: 'var(--tag-2-border)' };
-  return { color: 'var(--ui-text-muted)', backgroundColor: 'var(--ui-hover)', borderColor: 'var(--ui-border)' };
+  if (label === "Moodle")
+    return {
+      color: "var(--tag-4-text)",
+      backgroundColor: "var(--tag-4-bg)",
+      borderColor: "var(--tag-4-border)",
+    };
+  if (label === "Canvas")
+    return {
+      color: "var(--tag-1-text)",
+      backgroundColor: "var(--tag-1-bg)",
+      borderColor: "var(--tag-1-border)",
+    };
+  if (label === "Classroom")
+    return {
+      color: "var(--tag-2-text)",
+      backgroundColor: "var(--tag-2-bg)",
+      borderColor: "var(--tag-2-border)",
+    };
+  return {
+    color: "var(--ui-text-muted)",
+    backgroundColor: "var(--ui-hover)",
+    borderColor: "var(--ui-border)",
+  };
 };
 
 const getTagColorStyle = (tag) => {
-  const s = String(tag || '');
-  if (s === '未分類' || !s) return { color: 'var(--ui-text-muted)', backgroundColor: 'var(--ui-hover)', borderColor: 'var(--ui-border)' };
+  const s = String(tag || "");
+  if (s === "未分類" || !s)
+    return {
+      color: "var(--ui-text-muted)",
+      backgroundColor: "var(--ui-hover)",
+      borderColor: "var(--ui-border)",
+    };
   let hash = 0;
-  for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
+  for (let i = 0; i < s.length; i++)
+    hash = s.charCodeAt(i) + ((hash << 5) - hash);
   const idx = (Math.abs(hash) % 6) + 1;
   return {
     color: `var(--tag-${idx}-text)`,
     backgroundColor: `var(--tag-${idx}-bg)`,
-    borderColor: `var(--tag-${idx}-border)`
+    borderColor: `var(--tag-${idx}-border)`,
   };
 };
 
 export default function App() {
   const [clientId, setClientId] = useState(
-    () => localStorage.getItem('google_tasks_client_id') || ENV_CLIENT_ID || ''
+    () => localStorage.getItem("google_tasks_client_id") || ENV_CLIENT_ID || ""
   );
-  const [clientIdOverrideOpen, setClientIdOverrideOpen] = useState(!ENV_CLIENT_ID);
+  const [clientIdOverrideOpen, setClientIdOverrideOpen] = useState(
+    !ENV_CLIENT_ID
+  );
   const [accessToken, setAccessToken] = useState(() => {
     const cid = effectiveClientId();
     if (!cid) return null;
     const stored = readStoredOAuth(cid);
-    if (stored && stored.expiresAt > Date.now() + 30_000) return stored.accessToken;
+    if (stored && stored.expiresAt > Date.now() + 30_000)
+      return stored.accessToken;
     return null;
   });
   const silentAuthTried = useRef(false);
   const [isDemo, setIsDemo] = useState(false);
   const [tasks, setTasks] = useState(() => {
     try {
-      const cached = localStorage.getItem('google_tasks_cache');
+      const cached = localStorage.getItem("google_tasks_cache");
       return cached ? JSON.parse(cached) : [];
     } catch {
       return [];
@@ -432,80 +2017,261 @@ export default function App() {
 
   useEffect(() => {
     if (tasks.length > 0 && !isDemo) {
-      localStorage.setItem('google_tasks_cache', JSON.stringify(tasks));
+      localStorage.setItem("google_tasks_cache", JSON.stringify(tasks));
     }
   }, [tasks, isDemo]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedTag, setSelectedTag] = useState(null);
   const [activeTab, setActiveTab] = useState(() => {
-    const v = localStorage.getItem('task_dashboard_tab') || 'active';
-    const valid = ['active', 'history', 'calendar', 'analytics', 'organize', 'settings'];
-    return valid.includes(v) ? v : 'active';
+    const v = localStorage.getItem("task_dashboard_tab") || "active";
+    const valid = [
+      "active",
+      "history",
+      "calendar",
+      "analytics",
+      "organize",
+      "settings",
+    ];
+    return valid.includes(v) ? v : "active";
   });
   useEffect(() => {
-    localStorage.setItem('task_dashboard_tab', activeTab);
+    localStorage.setItem("task_dashboard_tab", activeTab);
   }, [activeTab]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskTags, setNewTaskTags] = useState([]);
-  const [newTaskDue, setNewTaskDue] = useState('');
+  const [newTaskDue, setNewTaskDue] = useState("");
   const [showOnlyNoDue, setShowOnlyNoDue] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
-  const [organizeSubTab, setOrganizeSubTab] = useState('tags'); // 'tags' | 'routines'
+  const [organizeSubTab, setOrganizeSubTab] = useState("tags"); // 'tags' | 'routines'
 
   const [selectedRoutine, setSelectedRoutine] = useState(null);
-  const [sidebarFilterTab, setSidebarFilterTab] = useState('tags'); // 追加: タグとルーチンの切り替え用
+  const [sidebarFilterTab, setSidebarFilterTab] = useState("tags"); // 追加: タグとルーチンの切り替え用
 
   // Sidebar highlight & Mouse effects
   const sidebarNavRef = useRef(null);
-  const [navHighlightStyle, setNavHighlightStyle] = useState({ top: 0, height: 0, opacity: 0, ready: false });
+  const [navHighlightStyle, setNavHighlightStyle] = useState({
+    top: 0,
+    height: 0,
+    opacity: 0,
+    ready: false,
+  });
 
   const [uiConfig, setUiConfig] = useState(() => {
     // shadow と border を初期値に追加
-    const fallback = { bgTheme: 'light', radius: 'md', font: 'sans', weight: 'normal', accent: 'blue', texture: 'flat', density: 'normal', animation: 'spring', mouseEffect: 'glow', shadow: 'md', border: 'thin', iconStyle: 'lucide', language: 'en_mix', useGradient: false };
+    const fallback = {
+      bgTheme: "light",
+      radius: "md",
+      font: "sans",
+      weight: "normal",
+      accent: "blue",
+      texture: "flat",
+      density: "normal",
+      animation: "spring",
+      mouseEffect: "glow",
+      shadow: "md",
+      border: "thin",
+      iconStyle: "lucide",
+      language: "en_mix",
+      useGradient: false,
+    };
     try {
-      const s = localStorage.getItem('task_dashboard_ui_v7');
+      const s = localStorage.getItem("task_dashboard_ui_v7");
       const parsed = s ? JSON.parse(s) : null;
-      return (parsed && typeof parsed === 'object') ? { ...fallback, ...parsed } : fallback;
-    } catch { return fallback; }
+      return parsed && typeof parsed === "object"
+        ? { ...fallback, ...parsed }
+        : fallback;
+    } catch {
+      return fallback;
+    }
   });
 
   useEffect(() => {
-    localStorage.setItem('task_dashboard_ui_v7', JSON.stringify(uiConfig));
+    localStorage.setItem("task_dashboard_ui_v7", JSON.stringify(uiConfig));
   }, [uiConfig]);
 
   const palette = {
-    blue: { main: '#2563eb', dark: '#1d4ed8', light: '#eff6ff', border: '#bfdbfe', contrast: '#ffffff' },
-    indigo: { main: '#4f46e5', dark: '#4338ca', light: '#eef2ff', border: '#c7d2fe', contrast: '#ffffff' },
-    emerald: { main: '#059669', dark: '#047857', light: '#ecfdf5', border: '#a7f3d0', contrast: '#ffffff' },
-    teal: { main: '#0d9488', dark: '#0f766e', light: '#f0fdfa', border: '#99f6e4', contrast: '#ffffff' },
-    cyan: { main: '#0891b2', dark: '#0e7490', light: '#ecfeff', border: '#a5f3fc', contrast: '#ffffff' },
-    rose: { main: '#e11d48', dark: '#be123c', light: '#fff1f2', border: '#fecdd3', contrast: '#ffffff' },
-    fuchsia: { main: '#c026d3', dark: '#a21caf', light: '#fdf4ff', border: '#f5d0fe', contrast: '#ffffff' },
-    amber: { main: '#d97706', dark: '#b45309', light: '#fffbeb', border: '#fde68a', contrast: '#ffffff' },
-    violet: { main: '#7c3aed', dark: '#6d28d9', light: '#f5f3ff', border: '#ddd6fe', contrast: '#ffffff' },
-    slate: { main: '#64748b', dark: '#475569', light: '#f8fafc', border: '#e2e8f0', contrast: '#ffffff' },
-    zinc: { main: '#52525b', dark: '#3f3f46', light: '#fafafa', border: '#e4e4e7', contrast: '#ffffff' },
-    white: { main: '#ffffff', dark: '#f1f5f9', light: '#ffffff', border: '#e5e5e5', contrast: '#0f172a' },
-    black: { main: '#09090b', dark: '#000000', light: '#27272a', border: '#3f3f46', contrast: '#ffffff' },
-    gold: { main: '#d4af37', dark: '#b5952f', light: '#fbf8ef', border: '#eaddb0', contrast: '#ffffff' },
-    bronze: { main: '#cd7f32', dark: '#a36528', light: '#fcf4ed', border: '#e8cdb5', contrast: '#ffffff' },
-    sand: { main: '#e7e5e4', dark: '#d6d3d1', light: '#fafaf9', border: '#f5f5f4', contrast: '#1c1917' }
+    blue: {
+      main: "#2563eb",
+      dark: "#1d4ed8",
+      light: "#eff6ff",
+      border: "#bfdbfe",
+      contrast: "#ffffff",
+    },
+    indigo: {
+      main: "#4f46e5",
+      dark: "#4338ca",
+      light: "#eef2ff",
+      border: "#c7d2fe",
+      contrast: "#ffffff",
+    },
+    emerald: {
+      main: "#059669",
+      dark: "#047857",
+      light: "#ecfdf5",
+      border: "#a7f3d0",
+      contrast: "#ffffff",
+    },
+    teal: {
+      main: "#0d9488",
+      dark: "#0f766e",
+      light: "#f0fdfa",
+      border: "#99f6e4",
+      contrast: "#ffffff",
+    },
+    cyan: {
+      main: "#0891b2",
+      dark: "#0e7490",
+      light: "#ecfeff",
+      border: "#a5f3fc",
+      contrast: "#ffffff",
+    },
+    rose: {
+      main: "#e11d48",
+      dark: "#be123c",
+      light: "#fff1f2",
+      border: "#fecdd3",
+      contrast: "#ffffff",
+    },
+    fuchsia: {
+      main: "#c026d3",
+      dark: "#a21caf",
+      light: "#fdf4ff",
+      border: "#f5d0fe",
+      contrast: "#ffffff",
+    },
+    amber: {
+      main: "#d97706",
+      dark: "#b45309",
+      light: "#fffbeb",
+      border: "#fde68a",
+      contrast: "#ffffff",
+    },
+    violet: {
+      main: "#7c3aed",
+      dark: "#6d28d9",
+      light: "#f5f3ff",
+      border: "#ddd6fe",
+      contrast: "#ffffff",
+    },
+    slate: {
+      main: "#64748b",
+      dark: "#475569",
+      light: "#f8fafc",
+      border: "#e2e8f0",
+      contrast: "#ffffff",
+    },
+    zinc: {
+      main: "#52525b",
+      dark: "#3f3f46",
+      light: "#fafafa",
+      border: "#e4e4e7",
+      contrast: "#ffffff",
+    },
+    white: {
+      main: "#ffffff",
+      dark: "#f1f5f9",
+      light: "#ffffff",
+      border: "#e5e5e5",
+      contrast: "#0f172a",
+    },
+    black: {
+      main: "#09090b",
+      dark: "#000000",
+      light: "#27272a",
+      border: "#3f3f46",
+      contrast: "#ffffff",
+    },
+    gold: {
+      main: "#d4af37",
+      dark: "#b5952f",
+      light: "#fbf8ef",
+      border: "#eaddb0",
+      contrast: "#ffffff",
+    },
+    bronze: {
+      main: "#cd7f32",
+      dark: "#a36528",
+      light: "#fcf4ed",
+      border: "#e8cdb5",
+      contrast: "#ffffff",
+    },
+    sand: {
+      main: "#e7e5e4",
+      dark: "#d6d3d1",
+      light: "#fafaf9",
+      border: "#f5f5f4",
+      contrast: "#1c1917",
+    },
   };
 
   const bgThemes = {
-    white: { bg: '#f4f4f5', text: '#09090b', textMuted: '#71717a', panel: '#ffffff', border: '#e4e4e7' },
-    light: { bg: '#f8fafc', text: '#0f172a', textMuted: '#64748b', panel: '#ffffff', border: '#e2e8f0' },
-    paper: { bg: '#eae7de', text: '#262626', textMuted: '#737373', panel: '#f5f4ef', border: '#d4d2c8' },
-    gray: { bg: '#d1d5db', text: '#111827', textMuted: '#4b5563', panel: '#f3f4f6', border: '#9ca3af' },
-    dark: { bg: '#0f172a', text: '#f8fafc', textMuted: '#94a3b8', panel: '#1e293b', border: '#334155' },
-    navy: { bg: '#020617', text: '#e2e8f0', textMuted: '#64748b', panel: '#0f172a', border: '#1e293b' },
-    pitchBlack: { bg: '#000000', text: '#fafafa', textMuted: '#a1a1aa', panel: '#09090b', border: '#27272a' },
-    cream: { bg: '#fefce8', text: '#451a03', textMuted: '#a16207', panel: '#fef9c3', border: '#fde047' },
-    sepia: { bg: '#f3e8d2', text: '#433422', textMuted: '#854d0e', panel: '#faedd6', border: '#e6d5b8' }
+    white: {
+      bg: "#f4f4f5",
+      text: "#09090b",
+      textMuted: "#71717a",
+      panel: "#ffffff",
+      border: "#e4e4e7",
+    },
+    light: {
+      bg: "#f8fafc",
+      text: "#0f172a",
+      textMuted: "#64748b",
+      panel: "#ffffff",
+      border: "#e2e8f0",
+    },
+    paper: {
+      bg: "#eae7de",
+      text: "#262626",
+      textMuted: "#737373",
+      panel: "#f5f4ef",
+      border: "#d4d2c8",
+    },
+    gray: {
+      bg: "#d1d5db",
+      text: "#111827",
+      textMuted: "#4b5563",
+      panel: "#f3f4f6",
+      border: "#9ca3af",
+    },
+    dark: {
+      bg: "#0f172a",
+      text: "#f8fafc",
+      textMuted: "#94a3b8",
+      panel: "#1e293b",
+      border: "#334155",
+    },
+    navy: {
+      bg: "#020617",
+      text: "#e2e8f0",
+      textMuted: "#64748b",
+      panel: "#0f172a",
+      border: "#1e293b",
+    },
+    pitchBlack: {
+      bg: "#000000",
+      text: "#fafafa",
+      textMuted: "#a1a1aa",
+      panel: "#09090b",
+      border: "#27272a",
+    },
+    cream: {
+      bg: "#fefce8",
+      text: "#451a03",
+      textMuted: "#a16207",
+      panel: "#fef9c3",
+      border: "#fde047",
+    },
+    sepia: {
+      bg: "#f3e8d2",
+      text: "#433422",
+      textMuted: "#854d0e",
+      panel: "#faedd6",
+      border: "#e6d5b8",
+    },
   };
 
   const uiColors = palette[uiConfig.accent] || palette.blue;
@@ -521,7 +2287,7 @@ export default function App() {
     zenKakuNew: '"Zen Kaku Gothic New", sans-serif',
     zenKakuAntique: '"Zen Kaku Gothic Antique", sans-serif',
     bizUD: '"BIZ UDPGothic", sans-serif',
-    lineSeed: '"LINE Seed JP", sans-serif'
+    lineSeed: '"LINE Seed JP", sans-serif',
   };
 
   const weightSettings = {
@@ -531,20 +2297,27 @@ export default function App() {
     bold: { base: 700, medium: 800, bold: 900, black: 900 },
     black: { base: 900, medium: 900, bold: 900, black: 900 },
   };
-  const currentWeight = weightSettings[uiConfig.weight] || weightSettings.normal;
+  const currentWeight =
+    weightSettings[uiConfig.weight] || weightSettings.normal;
 
-  const radiusMap = { none: '0px', sm: '4px', md: '8px', lg: '16px', xl: '24px' };
+  const radiusMap = {
+    none: "0px",
+    sm: "4px",
+    md: "8px",
+    lg: "16px",
+    xl: "24px",
+  };
 
   // 余白設定（モバイルでの破綻を防ぎつつ、美しいバランスを保つ）
   const densityValues = {
-    compact: { gap: '0.75rem', p: '1rem' },
-    normal: { gap: '1.25rem', p: '1.5rem' },
-    loose: { gap: '2rem', p: '2rem' }
+    compact: { gap: "0.75rem", p: "1rem" },
+    normal: { gap: "1.25rem", p: "1.5rem" },
+    loose: { gap: "2rem", p: "2rem" },
   };
 
   const [shiftHeld, setShiftHeld] = useState(false);
   const [taskFormExpanded, setTaskFormExpanded] = useState(false);
-  const [calendarMode, setCalendarMode] = useState('month');
+  const [calendarMode, setCalendarMode] = useState("month");
   const [calendarCursor, setCalendarCursor] = useState(() => new Date());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [periodModalPeriod, setPeriodModalPeriod] = useState(null);
@@ -552,24 +2325,24 @@ export default function App() {
   const [keyboardFocusedTaskId, setKeyboardFocusedTaskId] = useState(null);
 
   const showCheckboxes = selectionMode || shiftHeld;
-  const PERIOD_MODAL_ORDER = useMemo(() => ['week', 'nextWeek', 'month'], []);
+  const PERIOD_MODAL_ORDER = useMemo(() => ["week", "nextWeek", "month"], []);
 
   useEffect(() => {
     const onKeyUp = (e) => {
-      if (e.key === 'Shift') setShiftHeld(false);
+      if (e.key === "Shift") setShiftHeld(false);
     };
     const onBlur = () => setShiftHeld(false);
-    window.addEventListener('keyup', onKeyUp);
-    window.addEventListener('blur', onBlur);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", onBlur);
     return () => {
-      window.removeEventListener('keyup', onKeyUp);
-      window.removeEventListener('blur', onBlur);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", onBlur);
     };
   }, []);
 
   useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
     script.async = true;
     script.defer = true;
     script.onload = () => {
@@ -577,14 +2350,14 @@ export default function App() {
       const cid = effectiveClientId();
       if (!cid) return;
       const stored = readStoredOAuth(cid);
-      const autoLogin = localStorage.getItem('google_tasks_auto_login');
+      const autoLogin = localStorage.getItem("google_tasks_auto_login");
 
       if (stored && stored.expiresAt > Date.now() + 30_000) {
         setAccessToken(stored.accessToken);
         return;
       }
 
-      if (autoLogin === 'true') {
+      if (autoLogin === "true") {
         silentAuthTried.current = true;
         try {
           const client = window.google.accounts.oauth2.initTokenClient({
@@ -596,14 +2369,16 @@ export default function App() {
               setAccessToken(response.access_token);
             },
           });
-          client.requestAccessToken({ prompt: 'none' });
+          client.requestAccessToken({ prompt: "none" });
         } catch {
           silentAuthTried.current = false;
         }
       }
     };
     document.body.appendChild(script);
-    return () => { document.body.removeChild(script); };
+    return () => {
+      document.body.removeChild(script);
+    };
   }, []);
 
   useEffect(() => {
@@ -617,11 +2392,11 @@ export default function App() {
     const tags = [];
     let match;
     while ((match = tagRegex.exec(task.title)) !== null) {
-      if (match[1].trim() !== '') {
+      if (match[1].trim() !== "") {
         tags.push(match[1].toLowerCase());
       }
     }
-    let withoutTags = task.title.replace(/\[(.*?)\]/g, '').trim();
+    let withoutTags = task.title.replace(/\[(.*?)\]/g, "").trim();
     const platforms = [];
     for (const { re, label } of LMS_IN_TITLE) {
       if (re.test(withoutTags) && !platforms.includes(label)) {
@@ -630,12 +2405,12 @@ export default function App() {
     }
     let cleanTitle = withoutTags;
     for (const { re } of LMS_IN_TITLE) {
-      cleanTitle = cleanTitle.replace(re, ' ');
+      cleanTitle = cleanTitle.replace(re, " ");
     }
-    cleanTitle = cleanTitle.replace(/\s+/g, ' ').trim();
+    cleanTitle = cleanTitle.replace(/\s+/g, " ").trim();
 
     let combinedDue = task.due;
-    const notes = task.notes || '';
+    const notes = task.notes || "";
     const timeMatch = notes.match(/\[time:(\d{2}):(\d{2})\]/);
     if (combinedDue && timeMatch) {
       const d = new Date(combinedDue);
@@ -643,21 +2418,31 @@ export default function App() {
       combinedDue = d.toISOString();
     }
 
-    return { ...task, tags, platforms, cleanTitle: cleanTitle || '（タイトルなし）', due: combinedDue };
+    return {
+      ...task,
+      tags,
+      platforms,
+      cleanTitle: cleanTitle || "（タイトルなし）",
+      due: combinedDue,
+    };
   };
 
   const handleAuth = () => {
     const cid = clientId.trim() || ENV_CLIENT_ID;
     if (!cid) {
-      setError("Client IDがありません。.env に VITE_GOOGLE_CLIENT_ID を設定するか、入力してください。");
+      setError(
+        "Client IDがありません。.env に VITE_GOOGLE_CLIENT_ID を設定するか、入力してください。"
+      );
       return;
     }
     if (!window.google) {
-      setError("Google APIのスクリプトが読み込まれていません。リロードしてください。");
+      setError(
+        "Google APIのスクリプトが読み込まれていません。リロードしてください。"
+      );
       return;
     }
 
-    localStorage.setItem('google_tasks_client_id', cid);
+    localStorage.setItem("google_tasks_client_id", cid);
     setError(null);
 
     try {
@@ -666,10 +2451,12 @@ export default function App() {
         scope: SCOPES,
         callback: (response) => {
           if (response.error) {
-            setError("認証に失敗しました。以前の権限でログイン中の場合は一度切断してください。");
+            setError(
+              "認証に失敗しました。以前の権限でログイン中の場合は一度切断してください。"
+            );
             return;
           }
-          localStorage.setItem('google_tasks_auto_login', 'true');
+          localStorage.setItem("google_tasks_auto_login", "true");
           writeStoredOAuth(cid, response.access_token, response.expires_in);
           setAccessToken(response.access_token);
         },
@@ -686,55 +2473,72 @@ export default function App() {
     try {
       const headers = { Authorization: `Bearer ${token}` };
       let lists = [];
-      let listsPageToken = '';
+      let listsPageToken = "";
       do {
         const query = new URLSearchParams({
           maxResults: String(FETCH_MAX_RESULTS),
           ...(listsPageToken ? { pageToken: listsPageToken } : {}),
         });
-        const listsRes = await fetch(`https://tasks.googleapis.com/tasks/v1/users/@me/lists?${query.toString()}`, { headers });
+        const listsRes = await fetch(
+          `https://tasks.googleapis.com/tasks/v1/users/@me/lists?${query.toString()}`,
+          { headers }
+        );
 
         if (listsRes.status === 401 || listsRes.status === 403) {
           clearStoredOAuth();
           setAccessToken(null);
           if (tasks.length > 0) {
-            throw new Error('セッションが期限切れになりました。表示はキャッシュです。操作するには再接続してください。');
+            throw new Error(
+              "セッションが期限切れになりました。表示はキャッシュです。操作するには再接続してください。"
+            );
           } else {
-            throw new Error('セッションが期限切れか、権限がありません。もう一度ログインしてください。');
+            throw new Error(
+              "セッションが期限切れか、権限がありません。もう一度ログインしてください。"
+            );
           }
         }
 
-        if (!listsRes.ok) throw new Error('タスクリストの取得に失敗しました');
+        if (!listsRes.ok) throw new Error("タスクリストの取得に失敗しました");
         const listsData = await listsRes.json();
         lists = [...lists, ...(listsData.items || [])];
-        listsPageToken = listsData.nextPageToken || '';
+        listsPageToken = listsData.nextPageToken || "";
       } while (listsPageToken);
 
       let allTasks = [];
       for (const list of lists) {
-        let tasksPageToken = '';
+        let tasksPageToken = "";
         do {
           const query = new URLSearchParams({
-            showCompleted: 'true',
-            showHidden: 'true',
+            showCompleted: "true",
+            showHidden: "true",
             maxResults: String(FETCH_MAX_RESULTS),
             ...(tasksPageToken ? { pageToken: tasksPageToken } : {}),
           });
-          const tasksRes = await fetch(`https://tasks.googleapis.com/tasks/v1/lists/${list.id}/tasks?${query.toString()}`, { headers });
+          const tasksRes = await fetch(
+            `https://tasks.googleapis.com/tasks/v1/lists/${
+              list.id
+            }/tasks?${query.toString()}`,
+            { headers }
+          );
 
           if (tasksRes.status === 401 || tasksRes.status === 403) {
             clearStoredOAuth();
             setAccessToken(null);
-            throw new Error('セッションが期限切れになりました。表示はキャッシュです。操作するには再接続してください。');
+            throw new Error(
+              "セッションが期限切れになりました。表示はキャッシュです。操作するには再接続してください。"
+            );
           }
 
           if (!tasksRes.ok) break;
           const tasksData = await tasksRes.json();
           if (tasksData.items) {
-            const itemsWithListId = tasksData.items.map(t => ({ ...t, listId: list.id }));
+            const itemsWithListId = tasksData.items.map((t) => ({
+              ...t,
+              listId: list.id,
+            }));
             allTasks = [...allTasks, ...itemsWithListId];
           }
-          tasksPageToken = tasksData.nextPageToken || '';
+          tasksPageToken = tasksData.nextPageToken || "";
         } while (tasksPageToken);
       }
       setTasks(allTasks.map(parseTask));
@@ -758,8 +2562,8 @@ export default function App() {
 
   const handleLogout = () => {
     clearStoredOAuth();
-    localStorage.removeItem('google_tasks_auto_login');
-    localStorage.removeItem('google_tasks_cache');
+    localStorage.removeItem("google_tasks_auto_login");
+    localStorage.removeItem("google_tasks_cache");
     setAccessToken(null);
     setTasks([]);
     setIsDemo(false);
@@ -782,11 +2586,12 @@ export default function App() {
 
   const handleDeleteSelected = async () => {
     if (!accessToken && !isDemo) {
-      alert('セッションが切れています。再接続してください。');
+      alert("セッションが切れています。再接続してください。");
       handleAuth();
       return;
     }
-    if (!window.confirm(`${selectedTasks.size}件のタスクを削除しますか？`)) return;
+    if (!window.confirm(`${selectedTasks.size}件のタスクを削除しますか？`))
+      return;
     setLoading(true);
     const tasksToDelete = tasks.filter((t) => selectedTasks.has(t.id));
 
@@ -797,14 +2602,17 @@ export default function App() {
       try {
         await Promise.all(
           tasksToDelete.map((task) =>
-            fetch(`https://tasks.googleapis.com/tasks/v1/lists/${task.listId}/tasks/${task.id}`, {
-              method: 'DELETE',
-              headers: { Authorization: `Bearer ${accessToken}` },
-            })
+            fetch(
+              `https://tasks.googleapis.com/tasks/v1/lists/${task.listId}/tasks/${task.id}`,
+              {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${accessToken}` },
+              }
+            )
           )
         );
       } catch {
-        alert('一部のタスクの削除に失敗しました');
+        alert("一部のタスクの削除に失敗しました");
         fetchRealTasks(accessToken);
       }
     }
@@ -817,7 +2625,8 @@ export default function App() {
   };
 
   const copyAiPrompt = () => {
-    const prompt = "以下の要件でタスクリストを生成して。形式は「[タグ] タスク名, 日付(YYYY-MM-DD)」として、各タスクは改行で区切って出力してください。";
+    const prompt =
+      "以下の要件でタスクリストを生成して。形式は「[タグ] タスク名, 日付(YYYY-MM-DD)」として、各タスクは改行で区切って出力してください。";
     navigator.clipboard.writeText(prompt);
     alert("AIアシスタント用のプロンプトをコピーしました。");
   };
@@ -827,17 +2636,19 @@ export default function App() {
     if (!newTaskTitle.trim()) return;
 
     if (!accessToken && !isDemo) {
-      alert('セッションが切れています。再接続してください。');
+      alert("セッションが切れています。再接続してください。");
       handleAuth();
       return;
     }
 
     setLoading(true);
-    const lines = newTaskTitle.split('\n').filter((l) => l.trim() !== '');
+    const lines = newTaskTitle.split("\n").filter((l) => l.trim() !== "");
     const newTasks = [];
 
     // GUIで設定された期限とタグ
-    const guiDueIso = newTaskDue ? new Date(newTaskDue).toISOString() : undefined;
+    const guiDueIso = newTaskDue
+      ? new Date(newTaskDue).toISOString()
+      : undefined;
 
     for (const line of lines) {
       let text = line.trim();
@@ -863,24 +2674,26 @@ export default function App() {
       tags = [...new Set(tags)]; // 重複排除
 
       // API制約上、title内にタグを埋め込んで保存する
-      const cleanTitleForApi = text.replace(/\[.*?\]/g, '').trim();
-      const prefix = tags.map((t) => `[${t}]`).join('');
-      const fullTitle = prefix ? `${prefix} ${cleanTitleForApi}` : cleanTitleForApi;
+      const cleanTitleForApi = text.replace(/\[.*?\]/g, "").trim();
+      const prefix = tags.map((t) => `[${t}]`).join("");
+      const fullTitle = prefix
+        ? `${prefix} ${cleanTitleForApi}`
+        : cleanTitleForApi;
 
-      let notes = '';
+      let notes = "";
       if (dueIso) {
         const d = new Date(dueIso);
-        const hh = String(d.getHours()).padStart(2, '0');
-        const mm = String(d.getMinutes()).padStart(2, '0');
+        const hh = String(d.getHours()).padStart(2, "0");
+        const mm = String(d.getMinutes()).padStart(2, "0");
         notes = `[time:${hh}:${mm}]`;
       }
 
       if (isDemo) {
         newTasks.push({
           id: `demo-${Date.now()}-${Math.random()}`,
-          listId: 'demo',
+          listId: "demo",
           title: fullTitle,
-          status: 'needsAction',
+          status: "needsAction",
           due: dueIso,
           notes,
           updated: new Date().toISOString(),
@@ -889,14 +2702,20 @@ export default function App() {
         const body = { title: fullTitle, notes };
         if (dueIso) body.due = dueIso;
         try {
-          const res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/@default/tasks', {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-          });
+          const res = await fetch(
+            "https://tasks.googleapis.com/tasks/v1/lists/@default/tasks",
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(body),
+            }
+          );
           if (res.ok) {
             const data = await res.json();
-            newTasks.push({ ...data, listId: '@default' });
+            newTasks.push({ ...data, listId: "@default" });
           }
         } catch {
           /* 行ごとの失敗はスキップ */
@@ -905,40 +2724,49 @@ export default function App() {
     }
 
     setTasks((prev) => [...newTasks.map(parseTask), ...prev]);
-    setNewTaskTitle('');
+    setNewTaskTitle("");
     setNewTaskTags([]);
-    setNewTaskDue('');
+    setNewTaskDue("");
     setTaskFormExpanded(false);
     if (!isDemo && newTasks.length === 0 && lines.length > 0) {
-      alert('タスクの追加に失敗しました');
+      alert("タスクの追加に失敗しました");
     }
     setLoading(false);
   };
 
   const toggleTaskStatus = async (task) => {
     if (!accessToken && !isDemo) {
-      alert('セッションが切れています。再接続してください。');
+      alert("セッションが切れています。再接続してください。");
       handleAuth();
       return;
     }
-    const newStatus = task.status === 'completed' ? 'needsAction' : 'completed';
+    const newStatus = task.status === "completed" ? "needsAction" : "completed";
     const now = new Date().toISOString();
-    setTasks(prev => prev.map(t => t.id === task.id ? {
-      ...t,
-      status: newStatus,
-      completed: newStatus === 'completed' ? now : null
-    } : t));
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === task.id
+          ? {
+              ...t,
+              status: newStatus,
+              completed: newStatus === "completed" ? now : null,
+            }
+          : t
+      )
+    );
 
     if (!isDemo) {
       try {
-        await fetch(`https://tasks.googleapis.com/tasks/v1/lists/${task.listId}/tasks/${task.id}`, {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ status: newStatus })
-        });
+        await fetch(
+          `https://tasks.googleapis.com/tasks/v1/lists/${task.listId}/tasks/${task.id}`,
+          {
+            method: "PATCH",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ status: newStatus }),
+          }
+        );
       } catch {
         alert("ステータスの更新に失敗しました");
         fetchRealTasks(accessToken);
@@ -950,7 +2778,10 @@ export default function App() {
   const routineGroups = useMemo(() => {
     let filteredForRoutine = tasks;
     if (selectedTag) {
-      filteredForRoutine = selectedTag === '未分類' ? tasks.filter(t => t.tags.length === 0) : tasks.filter(t => t.tags.includes(selectedTag));
+      filteredForRoutine =
+        selectedTag === "未分類"
+          ? tasks.filter((t) => t.tags.length === 0)
+          : tasks.filter((t) => t.tags.includes(selectedTag));
     }
 
     const wordCounts = {};
@@ -964,30 +2795,41 @@ export default function App() {
     });
 
     const threshold = 3;
-    const routineKeywords = Object.keys(wordCounts).filter(w => wordCounts[w] >= threshold);
+    const routineKeywords = Object.keys(wordCounts).filter(
+      (w) => wordCounts[w] >= threshold
+    );
 
     const tempGroups = {};
     filteredForRoutine.forEach((t) => {
       const words = t.cleanTitle.split(/[\s,，、・\-()（）[\]［］{}｛｝]+/);
-      const taskKeywords = [...new Set(words.filter(w => routineKeywords.includes(w)))];
+      const taskKeywords = [
+        ...new Set(words.filter((w) => routineKeywords.includes(w))),
+      ];
 
       taskKeywords.forEach((kw) => {
         if (!tempGroups[kw]) {
-          tempGroups[kw] = { title: [kw], count: 0, completedCount: 0, tasks: [], taskIds: new Set() };
+          tempGroups[kw] = {
+            title: [kw],
+            count: 0,
+            completedCount: 0,
+            tasks: [],
+            taskIds: new Set(),
+          };
         }
         tempGroups[kw].count += 1;
         tempGroups[kw].tasks.push(t);
         tempGroups[kw].taskIds.add(t.id);
-        if (t.status === 'completed') tempGroups[kw].completedCount += 1;
+        if (t.status === "completed") tempGroups[kw].completedCount += 1;
       });
     });
 
     const mergedGroups = [];
-    Object.values(tempGroups).forEach(group => {
+    Object.values(tempGroups).forEach((group) => {
       if (group.count < threshold) return;
-      const existing = mergedGroups.find(mg =>
-        mg.taskIds.size === group.taskIds.size &&
-        [...mg.taskIds].every(id => group.taskIds.has(id))
+      const existing = mergedGroups.find(
+        (mg) =>
+          mg.taskIds.size === group.taskIds.size &&
+          [...mg.taskIds].every((id) => group.taskIds.has(id))
       );
       if (existing) {
         existing.title.push(...group.title);
@@ -997,10 +2839,10 @@ export default function App() {
     });
 
     return mergedGroups
-      .map(g => ({
+      .map((g) => ({
         ...g,
-        titleLabel: g.title.join(' / '),
-        activeCount: g.count - g.completedCount
+        titleLabel: g.title.join(" / "),
+        activeCount: g.count - g.completedCount,
       }))
       .sort((a, b) => b.activeCount - a.activeCount || b.count - a.count);
   }, [tasks, selectedTag]);
@@ -1008,7 +2850,7 @@ export default function App() {
   // ▼ 追加: routineGroups確定後にIDセットを算出
   const selectedRoutineTaskIds = useMemo(() => {
     if (!selectedRoutine) return null;
-    const rg = routineGroups.find(g => g.titleLabel === selectedRoutine);
+    const rg = routineGroups.find((g) => g.titleLabel === selectedRoutine);
     return rg ? rg.taskIds : new Set();
   }, [selectedRoutine, routineGroups]);
 
@@ -1016,18 +2858,31 @@ export default function App() {
   const baseFilteredTasks = useMemo(() => {
     let f = tasks;
     if (selectedTag) {
-      f = selectedTag === '未分類'
-        ? f.filter(t => t.tags.length === 0)
-        : f.filter(t => t.tags.includes(selectedTag));
+      f =
+        selectedTag === "未分類"
+          ? f.filter((t) => t.tags.length === 0)
+          : f.filter((t) => t.tags.includes(selectedTag));
     }
     if (selectedRoutineTaskIds) {
-      f = f.filter(t => selectedRoutineTaskIds.has(t.id));
+      f = f.filter((t) => selectedRoutineTaskIds.has(t.id));
     }
     return f;
   }, [tasks, selectedTag, selectedRoutineTaskIds]);
 
   // === 集計 ===
-  const { stats, tagStats, weeklyStats, nextWeekStats, monthStats, weeklyHistory, monthlyHistory, yearlyHistory, overallCompletionRate, analyticsTotalTasks, analyticsCompletedTasks } = useMemo(() => {
+  const {
+    stats,
+    tagStats,
+    weeklyStats,
+    nextWeekStats,
+    monthStats,
+    weeklyHistory,
+    monthlyHistory,
+    yearlyHistory,
+    overallCompletionRate,
+    analyticsTotalTasks,
+    analyticsCompletedTasks,
+  } = useMemo(() => {
     const tagData = {};
     const total = tasks.length;
     let completed = 0;
@@ -1042,16 +2897,19 @@ export default function App() {
     // ▼ NEW（baseFilteredTasks をそのまま使う）
     const tasksForTopDashboard = baseFilteredTasks;
 
-    let weekTotal = 0, weekCompleted = 0;
+    let weekTotal = 0,
+      weekCompleted = 0;
     const weekTasks = [];
-    let nextWeekTotal = 0, nextWeekCompleted = 0;
+    let nextWeekTotal = 0,
+      nextWeekCompleted = 0;
     const nextWeekTasks = [];
-    let monthTotal = 0, monthCompleted = 0;
+    let monthTotal = 0,
+      monthCompleted = 0;
     const monthTasks = [];
 
     let analyticsCompleted = 0;
-    tasksForTopDashboard.forEach(t => {
-      const isCompleted = t.status === 'completed';
+    tasksForTopDashboard.forEach((t) => {
+      const isCompleted = t.status === "completed";
       if (isCompleted) analyticsCompleted++;
       const dueDate = t.due ? new Date(t.due) : null;
       if (dueDate) {
@@ -1073,28 +2931,36 @@ export default function App() {
       }
     });
     const analyticsTotal = tasksForTopDashboard.length;
-    const overall = analyticsTotal === 0 ? 0 : Math.round((analyticsCompleted / analyticsTotal) * 100);
+    const overall =
+      analyticsTotal === 0
+        ? 0
+        : Math.round((analyticsCompleted / analyticsTotal) * 100);
 
     const initTagData = (tag) => {
       if (!tagData[tag]) tagData[tag] = { total: 0, completed: 0 };
     };
 
-    tasks.forEach(t => {
-      const isCompleted = t.status === 'completed';
+    tasks.forEach((t) => {
+      const isCompleted = t.status === "completed";
       if (isCompleted) completed++;
 
-      const tags = t.tags.length === 0 ? ['未分類'] : t.tags;
-      tags.forEach(tag => {
+      const tags = t.tags.length === 0 ? ["未分類"] : t.tags;
+      tags.forEach((tag) => {
         initTagData(tag);
         tagData[tag].total++;
         if (isCompleted) tagData[tag].completed++;
       });
     });
 
-    const tagStatsList = Object.entries(tagData).map(([tag, data]) => {
-      const rate = data.total === 0 ? 0 : Math.round((data.completed / data.total) * 100);
-      return { tag, ...data, rate, active: data.total - data.completed };
-    }).sort((a, b) => b.total - a.total);
+    const tagStatsList = Object.entries(tagData)
+      .map(([tag, data]) => {
+        const rate =
+          data.total === 0
+            ? 0
+            : Math.round((data.completed / data.total) * 100);
+        return { tag, ...data, rate, active: data.total - data.completed };
+      })
+      .sort((a, b) => b.total - a.total);
 
     // 過去7週 + 今週 + 来週 = 9週分
     const history = [];
@@ -1104,12 +2970,12 @@ export default function App() {
       let wTotal = 0;
       let wDone = 0;
       const wTasks = [];
-      tasksForTopDashboard.forEach(t => {
+      tasksForTopDashboard.forEach((t) => {
         if (!t.due) return;
         const d = new Date(t.due);
         if (d >= weekStartN && d < weekEndN) {
           wTotal++;
-          if (t.status === 'completed') wDone++;
+          if (t.status === "completed") wDone++;
           wTasks.push(t);
         }
       });
@@ -1131,14 +2997,15 @@ export default function App() {
       const ref = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const mStart = new Date(ref.getFullYear(), ref.getMonth(), 1);
       const mEnd = new Date(ref.getFullYear(), ref.getMonth() + 1, 1);
-      let mt = 0, mc = 0;
+      let mt = 0,
+        mc = 0;
       const mTasks = [];
-      tasksForTopDashboard.forEach(t => {
+      tasksForTopDashboard.forEach((t) => {
         if (!t.due) return;
         const d = new Date(t.due);
         if (d >= mStart && d < mEnd) {
           mt++;
-          if (t.status === 'completed') mc++;
+          if (t.status === "completed") mc++;
           mTasks.push(t);
         }
       });
@@ -1159,14 +3026,15 @@ export default function App() {
     for (let y = cy - 4; y <= cy; y++) {
       const yStart = new Date(y, 0, 1);
       const yEnd = new Date(y + 1, 0, 1);
-      let yt = 0, yc = 0;
+      let yt = 0,
+        yc = 0;
       const yTasks = [];
-      tasksForTopDashboard.forEach(t => {
+      tasksForTopDashboard.forEach((t) => {
         if (!t.due) return;
         const d = new Date(t.due);
         if (d >= yStart && d < yEnd) {
           yt++;
-          if (t.status === 'completed') yc++;
+          if (t.status === "completed") yc++;
           yTasks.push(t);
         }
       });
@@ -1185,19 +3053,26 @@ export default function App() {
       stats: { total, completed, active: total - completed },
       tagStats: tagStatsList,
       weeklyStats: {
-        rate: weekTotal === 0 ? 0 : Math.round((weekCompleted / weekTotal) * 100),
+        rate:
+          weekTotal === 0 ? 0 : Math.round((weekCompleted / weekTotal) * 100),
         completed: weekCompleted,
         totalTarget: weekTotal,
         tasks: weekTasks,
       },
       nextWeekStats: {
-        rate: nextWeekTotal === 0 ? 0 : Math.round((nextWeekCompleted / nextWeekTotal) * 100),
+        rate:
+          nextWeekTotal === 0
+            ? 0
+            : Math.round((nextWeekCompleted / nextWeekTotal) * 100),
         completed: nextWeekCompleted,
         totalTarget: nextWeekTotal,
         tasks: nextWeekTasks,
       },
       monthStats: {
-        rate: monthTotal === 0 ? 0 : Math.round((monthCompleted / monthTotal) * 100),
+        rate:
+          monthTotal === 0
+            ? 0
+            : Math.round((monthCompleted / monthTotal) * 100),
         completed: monthCompleted,
         totalTarget: monthTotal,
         tasks: monthTasks,
@@ -1211,8 +3086,6 @@ export default function App() {
     };
   }, [tasks, selectedTag, selectedRoutineTaskIds]);
 
-
-
   // === フィルター & ソート ===
   const { activeGroups, activeTotalCount, historyList } = useMemo(() => {
     // タグ×ルーチンは baseFilteredTasks 済み
@@ -1221,25 +3094,29 @@ export default function App() {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(
-        t =>
+        (t) =>
           (t.cleanTitle && t.cleanTitle.toLowerCase().includes(q)) ||
-          t.tags.some(tag => tag.toLowerCase().includes(q)),
+          t.tags.some((tag) => tag.toLowerCase().includes(q))
       );
     }
 
     const now = new Date();
     const { start: weekStart, end: weekEnd } = getWeekRange(now);
 
-    let active = filtered.filter(t => t.status === 'needsAction');
+    let active = filtered.filter((t) => t.status === "needsAction");
     if (showOnlyNoDue) {
-      active = active.filter(t => !t.due);
-      const sorted = [...active].sort((a, b) => (a.cleanTitle || '').localeCompare(b.cleanTitle || '', 'ja'));
+      active = active.filter((t) => !t.due);
+      const sorted = [...active].sort((a, b) =>
+        (a.cleanTitle || "").localeCompare(b.cleanTitle || "", "ja")
+      );
       const groups = sorted.length
         ? [{ bucket: 5, title: ACTIVE_SECTION_TITLES[5], tasks: sorted }]
         : [];
       const history = filtered
-        .filter(t => t.status === 'completed')
-        .sort((a, b) => new Date(b.completed || 0) - new Date(a.completed || 0));
+        .filter((t) => t.status === "completed")
+        .sort(
+          (a, b) => new Date(b.completed || 0) - new Date(a.completed || 0)
+        );
       return {
         activeGroups: groups,
         activeTotalCount: sorted.length,
@@ -1250,31 +3127,38 @@ export default function App() {
     const buckets = ACTIVE_SECTION_TITLES.map((title, bucket) => {
       let groupTitle = title;
       if (bucket === 1) {
-        groupTitle = `今日 (${now.getMonth() + 1}/${now.getDate()}(${WEEKDAYS[now.getDay()]}))`;
+        groupTitle = `今日 (${now.getMonth() + 1}/${now.getDate()}(${
+          WEEKDAYS[now.getDay()]
+        }))`;
       } else if (bucket === 2) {
         const tmr = new Date(now);
         tmr.setDate(tmr.getDate() + 1);
-        groupTitle = `明日 (${tmr.getMonth() + 1}/${tmr.getDate()}(${WEEKDAYS[tmr.getDay()]}))`;
+        groupTitle = `明日 (${tmr.getMonth() + 1}/${tmr.getDate()}(${
+          WEEKDAYS[tmr.getDay()]
+        }))`;
       }
       return { bucket, title: groupTitle, tasks: [] };
     });
 
-    active.forEach(task => {
+    active.forEach((task) => {
       const { bucket } = getActiveSortKey(task, now, weekStart, weekEnd);
       buckets[bucket].tasks.push(task);
     });
-    buckets.forEach(b => {
+    buckets.forEach((b) => {
       b.tasks.sort((a, c) => {
         const ka = getActiveSortKey(a, now, weekStart, weekEnd);
         const kc = getActiveSortKey(c, now, weekStart, weekEnd);
         return ka.dueMs - kc.dueMs;
       });
     });
-    const activeGroups = buckets.filter(b => b.tasks.length > 0);
-    const activeTotalCount = activeGroups.reduce((n, g) => n + g.tasks.length, 0);
+    const activeGroups = buckets.filter((b) => b.tasks.length > 0);
+    const activeTotalCount = activeGroups.reduce(
+      (n, g) => n + g.tasks.length,
+      0
+    );
 
     const history = filtered
-      .filter(t => t.status === 'completed')
+      .filter((t) => t.status === "completed")
       .sort((a, b) => new Date(b.completed || 0) - new Date(a.completed || 0));
 
     return { activeGroups, activeTotalCount, historyList: history };
@@ -1284,16 +3168,20 @@ export default function App() {
     if (!searchQuery.trim()) return baseFilteredTasks.length;
     const q = searchQuery.toLowerCase();
     return baseFilteredTasks.filter(
-      t =>
+      (t) =>
         (t.cleanTitle && t.cleanTitle.toLowerCase().includes(q)) ||
-        t.tags.some(tag => tag.toLowerCase().includes(q)),
+        t.tags.some((tag) => tag.toLowerCase().includes(q))
     ).length;
   }, [baseFilteredTasks, searchQuery]);
 
   const leadTimeStats = useMemo(() => {
-    let early = 0; let onTime = 0; let late = 0; let totalDiff = 0; let count = 0;
-    baseFilteredTasks.forEach(t => {
-      if (t.status === 'completed' && t.completed && t.due) {
+    let early = 0;
+    let onTime = 0;
+    let late = 0;
+    let totalDiff = 0;
+    let count = 0;
+    baseFilteredTasks.forEach((t) => {
+      if (t.status === "completed" && t.completed && t.due) {
         const c = new Date(t.completed);
         const d = new Date(t.due);
         const diffDays = (d.getTime() - c.getTime()) / (1000 * 60 * 60 * 24);
@@ -1314,8 +3202,8 @@ export default function App() {
   const calendarTasks = useMemo(() => baseFilteredTasks, [baseFilteredTasks]);
 
   const flatNavTasks = useMemo(() => {
-    if (activeTab === 'active') return activeGroups.flatMap((g) => g.tasks);
-    if (activeTab === 'history') return historyList;
+    if (activeTab === "active") return activeGroups.flatMap((g) => g.tasks);
+    if (activeTab === "history") return historyList;
     return [];
   }, [activeTab, activeGroups, historyList]);
 
@@ -1323,7 +3211,7 @@ export default function App() {
     const el = document.activeElement;
     if (!el) return false;
     const tag = el.tagName;
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
     return el.isContentEditable;
   };
 
@@ -1335,9 +3223,11 @@ export default function App() {
 
   useEffect(() => {
     if (!keyboardFocusedTaskId) return;
-    const esc = (s) => String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-    const el = document.querySelector(`[data-task-row-id="${esc(keyboardFocusedTaskId)}"]`);
-    el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    const esc = (s) => String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    const el = document.querySelector(
+      `[data-task-row-id="${esc(keyboardFocusedTaskId)}"]`
+    );
+    el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [keyboardFocusedTaskId, flatNavTasks]);
 
   useEffect(() => {
@@ -1349,14 +3239,14 @@ export default function App() {
   }, [flatNavTasks]);
 
   useEffect(() => {
-    if (activeTab !== 'active' && activeTab !== 'history') {
+    if (activeTab !== "active" && activeTab !== "history") {
       setKeyboardFocusedTaskId(null);
     }
   }, [activeTab]);
 
   useEffect(() => {
     const onKeyDown = (e) => {
-      if (e.key === 'Shift') {
+      if (e.key === "Shift") {
         setShiftHeld(true);
         return;
       }
@@ -1366,19 +3256,19 @@ export default function App() {
       if (isTypingInField()) return;
 
       if (periodModalPeriod) {
-        if (e.key === 'Escape') {
+        if (e.key === "Escape") {
           e.preventDefault();
           setPeriodModalPeriod(null);
           return;
         }
-        if (e.key === 'ArrowLeft') {
+        if (e.key === "ArrowLeft") {
           e.preventDefault();
           const i = PERIOD_MODAL_ORDER.indexOf(periodModalPeriod);
           setPeriodModalTiltDeg(-14);
           setPeriodModalPeriod(PERIOD_MODAL_ORDER[(i - 1 + 3) % 3]);
           return;
         }
-        if (e.key === 'ArrowRight') {
+        if (e.key === "ArrowRight") {
           e.preventDefault();
           const i = PERIOD_MODAL_ORDER.indexOf(periodModalPeriod);
           setPeriodModalTiltDeg(14);
@@ -1387,7 +3277,7 @@ export default function App() {
         }
       }
 
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         if (selectedTag != null) {
           e.preventDefault();
           setSelectedTag(null);
@@ -1410,10 +3300,10 @@ export default function App() {
         return;
       }
 
-      if (activeTab !== 'active' && activeTab !== 'history') return;
+      if (activeTab !== "active" && activeTab !== "history") return;
       if (loading) return;
 
-      if (e.key === 'ArrowDown') {
+      if (e.key === "ArrowDown") {
         e.preventDefault();
         if (flatNavTasks.length === 0) return;
         setKeyboardFocusedTaskId((prev) => {
@@ -1425,7 +3315,7 @@ export default function App() {
         return;
       }
 
-      if (e.key === 'ArrowUp') {
+      if (e.key === "ArrowUp") {
         e.preventDefault();
         if (flatNavTasks.length === 0) return;
         setKeyboardFocusedTaskId((prev) => {
@@ -1437,7 +3327,7 @@ export default function App() {
         return;
       }
 
-      if (e.key === 'Enter') {
+      if (e.key === "Enter") {
         const id = keyboardFocusedTaskId;
         if (!id) return;
         const task = flatNavTasks.find((t) => t.id === id);
@@ -1448,8 +3338,8 @@ export default function App() {
       }
     };
 
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, [
     PERIOD_MODAL_ORDER,
     periodModalPeriod,
@@ -1466,42 +3356,44 @@ export default function App() {
 
   // === マウス連動アニメーションの座標追従 ===
   useEffect(() => {
-    if (uiConfig.mouseEffect !== 'glow') return;
+    if (uiConfig.mouseEffect !== "glow") return;
     const handleMouseMove = (e) => {
-      document.documentElement.style.setProperty('--mouse-x', `${e.clientX}px`);
-      document.documentElement.style.setProperty('--mouse-y', `${e.clientY}px`);
+      document.documentElement.style.setProperty("--mouse-x", `${e.clientX}px`);
+      document.documentElement.style.setProperty("--mouse-y", `${e.clientY}px`);
     };
-    window.addEventListener('mousemove', handleMouseMove, { passive: true });
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [uiConfig.mouseEffect]);
 
   // === サイドバーのハイライト追従 ===
   useEffect(() => {
     if (!sidebarNavRef.current) return;
-    const activeEl = sidebarNavRef.current.querySelector(`[data-menu-val="${activeTab}"]`);
+    const activeEl = sidebarNavRef.current.querySelector(
+      `[data-menu-val="${activeTab}"]`
+    );
     if (activeEl) {
       setNavHighlightStyle({
         top: activeEl.offsetTop,
         height: activeEl.offsetHeight,
         opacity: 1,
-        ready: true
+        ready: true,
       });
     }
   }, [activeTab]);
 
-
   const getTagColor = (tag) => {
-    const s = String(tag || '');
+    const s = String(tag || "");
     const colors = [
-      'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-      'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-      'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
-      'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
-      'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
-      'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
+      "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+      "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+      "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+      "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+      "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+      "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20",
     ];
     let hash = 0;
-    for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
+    for (let i = 0; i < s.length; i++)
+      hash = s.charCodeAt(i) + ((hash << 5) - hash);
     return colors[Math.abs(hash) % colors.length];
   };
 
@@ -1516,7 +3408,9 @@ export default function App() {
           <div className="bg-slate-800 p-6 text-center">
             <LayoutDashboard className="mx-auto text-white mb-3" size={40} />
             <h1 className="text-2xl font-bold text-white">Task Dashboard</h1>
-            <p className="text-slate-300 text-sm mt-1">タグ分類＆達成率分析付き ToDo</p>
+            <p className="text-slate-300 text-sm mt-1">
+              タグ分類＆達成率分析付き ToDo
+            </p>
           </div>
           <div className="p-6 space-y-6">
             {error && (
@@ -1530,9 +3424,15 @@ export default function App() {
               <button
                 onClick={handleAuth}
                 disabled={loading}
-                className={`w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition shadow-md flex items-center justify-center gap-2 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                className={`w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition shadow-md flex items-center justify-center gap-2 ${
+                  loading ? "opacity-70 cursor-not-allowed" : ""
+                }`}
               >
-                {loading ? <RefreshCw className="animate-spin" size={20} /> : <Play size={20} />}
+                {loading ? (
+                  <RefreshCw className="animate-spin" size={20} />
+                ) : (
+                  <Play size={20} />
+                )}
                 Google でログイン
               </button>
               <button
@@ -1550,14 +3450,19 @@ export default function App() {
                 onClick={() => setClientIdOverrideOpen(!clientIdOverrideOpen)}
                 className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1 transition mx-auto"
               >
-                {clientIdOverrideOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                {clientIdOverrideOpen ? (
+                  <ChevronUp size={14} />
+                ) : (
+                  <ChevronDown size={14} />
+                )}
                 Client ID の設定
               </button>
 
               {clientIdOverrideOpen && (
                 <div className="mt-3 space-y-3 p-4 bg-slate-50 rounded-xl border border-slate-100 animate-in fade-in slide-in-from-top-2">
                   <p className="text-[10px] text-slate-500 leading-relaxed">
-                    Google Cloud Console で作成した「Web アプリケーション」の Client ID を入力してください。
+                    Google Cloud Console で作成した「Web アプリケーション」の
+                    Client ID を入力してください。
                   </p>
                   <div className="flex gap-2">
                     <input
@@ -1569,7 +3474,10 @@ export default function App() {
                     />
                     <button
                       onClick={() => {
-                        localStorage.setItem('google_tasks_client_id', clientId);
+                        localStorage.setItem(
+                          "google_tasks_client_id",
+                          clientId
+                        );
                         setError("Client IDを保存しました。再開してください。");
                       }}
                       className="px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-lg hover:bg-slate-700 transition"
@@ -1586,56 +3494,88 @@ export default function App() {
     );
   }
 
-  const isDark = ['dark', 'navy', 'pitchBlack'].includes(uiConfig.bgTheme);
-  const animDur = uiConfig.animation === 'off' ? '0s' : '0.3s';
-  const animDurBg = uiConfig.animation === 'off' ? '0s' : '0.5s';
+  const isDark = ["dark", "navy", "pitchBlack"].includes(uiConfig.bgTheme);
+  const animDur = uiConfig.animation === "off" ? "0s" : "0.3s";
+  const animDurBg = uiConfig.animation === "off" ? "0s" : "0.5s";
 
   let panelBg = tColors.panel;
-  let panelBlur = '0px';
+  let panelBlur = "0px";
 
   // シャドウとボーダーの変数化
-  const shadowVals = { none: 'none', sm: '0 1px 3px rgba(0,0,0,0.05)', md: '0 4px 6px -1px rgba(0,0,0,0.1)', lg: '0 10px 15px -3px rgba(0,0,0,0.1)' };
-  const borderVals = { none: 'none', thin: `1px solid ${tColors.border}`, thick: `2px solid ${tColors.text}` };
+  const shadowVals = {
+    none: "none",
+    sm: "0 1px 3px rgba(0,0,0,0.05)",
+    md: "0 4px 6px -1px rgba(0,0,0,0.1)",
+    lg: "0 10px 15px -3px rgba(0,0,0,0.1)",
+  };
+  const borderVals = {
+    none: "none",
+    thin: `1px solid ${tColors.border}`,
+    thick: `2px solid ${tColors.text}`,
+  };
 
-  let panelShadow = isDark ? 'none' : shadowVals[uiConfig.shadow];
+  let panelShadow = isDark ? "none" : shadowVals[uiConfig.shadow];
   let panelBorder = borderVals[uiConfig.border];
   let panelBackdropFilter = `blur(${panelBlur})`;
-  let panelBoxShadowInset = '';
+  let panelBoxShadowInset = "";
 
-  if (uiConfig.texture === 'glass') {
-    panelBg = isDark ? 'rgba(15, 23, 42, 0.45)' : 'rgba(255, 255, 255, 0.5)';
-    panelBlur = '40px';
-    panelShadow = isDark ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(31, 38, 135, 0.1)';
-    panelBorder = isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(255,255,255,0.5)';
-    panelBoxShadowInset = isDark ? 'inset 0 1px 0 rgba(255,255,255,0.1)' : 'inset 0 1px 0 rgba(255,255,255,0.8)';
+  if (uiConfig.texture === "glass") {
+    panelBg = isDark ? "rgba(15, 23, 42, 0.45)" : "rgba(255, 255, 255, 0.5)";
+    panelBlur = "40px";
+    panelShadow = isDark
+      ? "0 8px 32px rgba(0,0,0,0.5)"
+      : "0 8px 32px rgba(31, 38, 135, 0.1)";
+    panelBorder = isDark
+      ? "1px solid rgba(255,255,255,0.08)"
+      : "1px solid rgba(255,255,255,0.5)";
+    panelBoxShadowInset = isDark
+      ? "inset 0 1px 0 rgba(255,255,255,0.1)"
+      : "inset 0 1px 0 rgba(255,255,255,0.8)";
     panelBackdropFilter = `blur(${panelBlur}) saturate(150%)`;
-  } else if (uiConfig.texture === 'simple') {
-    panelShadow = 'none';
+  } else if (uiConfig.texture === "simple") {
+    panelShadow = "none";
     panelBorder = borderVals[uiConfig.border];
-  } else if (uiConfig.texture === 'paper') {
+  } else if (uiConfig.texture === "paper") {
     panelBg = tColors.panel;
-    panelShadow = isDark ? '0 2px 4px rgba(0,0,0,0.5)' : '0 1px 3px rgba(0,0,0,0.05), inset 0 0 0 1px rgba(255,255,255,0.5)';
-  } else if (uiConfig.texture === 'neon') {
+    panelShadow = isDark
+      ? "0 2px 4px rgba(0,0,0,0.5)"
+      : "0 1px 3px rgba(0,0,0,0.05), inset 0 0 0 1px rgba(255,255,255,0.5)";
+  } else if (uiConfig.texture === "neon") {
     panelBorder = `1px solid ${uiColors.dark}`;
     panelShadow = `0 0 15px ${uiColors.main}60, inset 0 0 8px ${uiColors.main}30`;
   }
   if (panelBoxShadowInset) {
-    panelShadow = panelShadow !== 'none' ? `${panelShadow}, ${panelBoxShadowInset}` : panelBoxShadowInset;
+    panelShadow =
+      panelShadow !== "none"
+        ? `${panelShadow}, ${panelBoxShadowInset}`
+        : panelBoxShadowInset;
   }
 
-  const appBgColor = uiConfig.texture === 'glass'
-    ? `linear-gradient(135deg, ${tColors.bg} 0%, ${isDark ? '#000000' : uiColors.light} 100%)`
-    : tColors.bg;
+  const appBgColor =
+    uiConfig.texture === "glass"
+      ? `linear-gradient(135deg, ${tColors.bg} 0%, ${
+          isDark ? "#000000" : uiColors.light
+        } 100%)`
+      : tColors.bg;
 
   return (
-    <div className="h-[100dvh] w-full flex flex-col overflow-hidden" style={{ fontFamily: fontMap[uiConfig.font], background: appBgColor, color: tColors.text, fontWeight: currentWeight.base, transition: `background-color ${animDurBg}, color ${animDurBg}` }}>
-      {uiConfig.mouseEffect === 'glow' && (
+    <div
+      className="h-[100dvh] w-full flex flex-col overflow-hidden"
+      style={{
+        fontFamily: fontMap[uiConfig.font],
+        background: appBgColor,
+        color: tColors.text,
+        fontWeight: currentWeight.base,
+        transition: `background-color ${animDurBg}, color ${animDurBg}`,
+      }}
+    >
+      {uiConfig.mouseEffect === "glow" && (
         <div
           className="pointer-events-none fixed inset-0 z-[100] transition-opacity duration-500"
           style={{
             background: `radial-gradient(800px circle at var(--mouse-x, 50vw) var(--mouse-y, 50vh), var(--ui-accent-light), transparent 40%)`,
             opacity: isDark ? 0.08 : 0.4,
-            mixBlendMode: isDark ? 'screen' : 'multiply'
+            mixBlendMode: isDark ? "screen" : "multiply",
           }}
         />
       )}
@@ -1653,8 +3593,10 @@ export default function App() {
         :root {
           --ui-accent: ${uiColors.main};
           --ui-accent-dark: ${uiColors.dark};
-          --ui-accent-light: ${isDark ? uiColors.dark + '40' : uiColors.light};
-          --ui-accent-border: ${isDark ? uiColors.main + '80' : uiColors.border};
+          --ui-accent-light: ${isDark ? uiColors.dark + "40" : uiColors.light};
+          --ui-accent-border: ${
+            isDark ? uiColors.main + "80" : uiColors.border
+          };
           --ui-accent-contrast: ${uiColors.contrast};
           --ui-radius: ${radiusMap[uiConfig.radius]};
           --ui-font: ${fontMap[uiConfig.font]};
@@ -1665,44 +3607,88 @@ export default function App() {
           --ui-text: ${tColors.text};
           --ui-text-muted: ${tColors.textMuted};
           --ui-transition: ${animDur};
-          --ui-icon-weight: ${uiConfig.iconWeight === 'light' ? '1.25' : uiConfig.iconWeight === 'bold' ? '2.75' : '2'};
+          --ui-icon-weight: ${
+            uiConfig.iconWeight === "light"
+              ? "1.25"
+              : uiConfig.iconWeight === "bold"
+              ? "2.75"
+              : "2"
+          };
           --ui-density-gap: ${densityValues[uiConfig.density].gap};
           --ui-density-p: ${densityValues[uiConfig.density].p};
           --ui-bg: ${tColors.bg};
           --ui-panel-bg: ${panelBg};
           --ui-border: ${tColors.border};
           
-          --ui-danger: ${isDark ? '#f43f5e' : '#e11d48'};
-          --ui-danger-bg: ${isDark ? 'rgba(244, 63, 94, 0.15)' : 'rgba(225, 29, 72, 0.08)'};
-          --ui-success: ${isDark ? '#10b981' : '#059669'};
-          --ui-success-bg: ${isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(5, 150, 105, 0.08)'};
-          --ui-warning: ${isDark ? '#f59e0b' : '#d97706'};
-          --ui-warning-bg: ${isDark ? 'rgba(245, 158, 11, 0.15)' : 'rgba(217, 119, 6, 0.08)'};
+          --ui-danger: ${isDark ? "#f43f5e" : "#e11d48"};
+          --ui-danger-bg: ${
+            isDark ? "rgba(244, 63, 94, 0.15)" : "rgba(225, 29, 72, 0.08)"
+          };
+          --ui-success: ${isDark ? "#10b981" : "#059669"};
+          --ui-success-bg: ${
+            isDark ? "rgba(16, 185, 129, 0.15)" : "rgba(5, 150, 105, 0.08)"
+          };
+          --ui-warning: ${isDark ? "#f59e0b" : "#d97706"};
+          --ui-warning-bg: ${
+            isDark ? "rgba(245, 158, 11, 0.15)" : "rgba(217, 119, 6, 0.08)"
+          };
 
           /* 新規追加：透過背景やタグ用のセマンティックカラー */
-          --ui-hover: ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)'};
-          --ui-hover-active: ${isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)'};
-          --ui-backdrop: ${isDark ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.2)'};
-          --ui-skeleton: ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
+          --ui-hover: ${
+            isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)"
+          };
+          --ui-hover-active: ${
+            isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)"
+          };
+          --ui-backdrop: ${
+            isDark ? "rgba(0, 0, 0, 0.6)" : "rgba(0, 0, 0, 0.2)"
+          };
+          --ui-skeleton: ${
+            isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)"
+          };
 
-          --tag-1-text: ${isDark ? '#60a5fa' : '#2563eb'};
-          --tag-1-bg: ${isDark ? 'rgba(96, 165, 250, 0.15)' : 'rgba(37, 99, 235, 0.1)'};
-          --tag-1-border: ${isDark ? 'rgba(96, 165, 250, 0.3)' : 'rgba(37, 99, 235, 0.2)'};
-          --tag-2-text: ${isDark ? '#34d399' : '#059669'};
-          --tag-2-bg: ${isDark ? 'rgba(52, 211, 153, 0.15)' : 'rgba(5, 150, 105, 0.1)'};
-          --tag-2-border: ${isDark ? 'rgba(52, 211, 153, 0.3)' : 'rgba(5, 150, 105, 0.2)'};
-          --tag-3-text: ${isDark ? '#a78bfa' : '#7c3aed'};
-          --tag-3-bg: ${isDark ? 'rgba(167, 139, 250, 0.15)' : 'rgba(124, 58, 237, 0.1)'};
-          --tag-3-border: ${isDark ? 'rgba(167, 139, 250, 0.3)' : 'rgba(124, 58, 237, 0.2)'};
-          --tag-4-text: ${isDark ? '#fbbf24' : '#d97706'};
-          --tag-4-bg: ${isDark ? 'rgba(251, 191, 36, 0.15)' : 'rgba(217, 119, 6, 0.1)'};
-          --tag-4-border: ${isDark ? 'rgba(251, 191, 36, 0.3)' : 'rgba(217, 119, 6, 0.2)'};
-          --tag-5-text: ${isDark ? '#fb7185' : '#e11d48'};
-          --tag-5-bg: ${isDark ? 'rgba(251, 113, 133, 0.15)' : 'rgba(225, 29, 72, 0.1)'};
-          --tag-5-border: ${isDark ? 'rgba(251, 113, 133, 0.3)' : 'rgba(225, 29, 72, 0.2)'};
-          --tag-6-text: ${isDark ? '#22d3ee' : '#0891b2'};
-          --tag-6-bg: ${isDark ? 'rgba(34, 211, 238, 0.15)' : 'rgba(8, 145, 178, 0.1)'};
-          --tag-6-border: ${isDark ? 'rgba(34, 211, 238, 0.3)' : 'rgba(8, 145, 178, 0.2)'};
+          --tag-1-text: ${isDark ? "#60a5fa" : "#2563eb"};
+          --tag-1-bg: ${
+            isDark ? "rgba(96, 165, 250, 0.15)" : "rgba(37, 99, 235, 0.1)"
+          };
+          --tag-1-border: ${
+            isDark ? "rgba(96, 165, 250, 0.3)" : "rgba(37, 99, 235, 0.2)"
+          };
+          --tag-2-text: ${isDark ? "#34d399" : "#059669"};
+          --tag-2-bg: ${
+            isDark ? "rgba(52, 211, 153, 0.15)" : "rgba(5, 150, 105, 0.1)"
+          };
+          --tag-2-border: ${
+            isDark ? "rgba(52, 211, 153, 0.3)" : "rgba(5, 150, 105, 0.2)"
+          };
+          --tag-3-text: ${isDark ? "#a78bfa" : "#7c3aed"};
+          --tag-3-bg: ${
+            isDark ? "rgba(167, 139, 250, 0.15)" : "rgba(124, 58, 237, 0.1)"
+          };
+          --tag-3-border: ${
+            isDark ? "rgba(167, 139, 250, 0.3)" : "rgba(124, 58, 237, 0.2)"
+          };
+          --tag-4-text: ${isDark ? "#fbbf24" : "#d97706"};
+          --tag-4-bg: ${
+            isDark ? "rgba(251, 191, 36, 0.15)" : "rgba(217, 119, 6, 0.1)"
+          };
+          --tag-4-border: ${
+            isDark ? "rgba(251, 191, 36, 0.3)" : "rgba(217, 119, 6, 0.2)"
+          };
+          --tag-5-text: ${isDark ? "#fb7185" : "#e11d48"};
+          --tag-5-bg: ${
+            isDark ? "rgba(251, 113, 133, 0.15)" : "rgba(225, 29, 72, 0.1)"
+          };
+          --tag-5-border: ${
+            isDark ? "rgba(251, 113, 133, 0.3)" : "rgba(225, 29, 72, 0.2)"
+          };
+          --tag-6-text: ${isDark ? "#22d3ee" : "#0891b2"};
+          --tag-6-bg: ${
+            isDark ? "rgba(34, 211, 238, 0.15)" : "rgba(8, 145, 178, 0.1)"
+          };
+          --tag-6-border: ${
+            isDark ? "rgba(34, 211, 238, 0.3)" : "rgba(8, 145, 178, 0.2)"
+          };
         }
 
         html, body { overflow: hidden; width: 100%; height: 100%; }
@@ -1721,10 +3707,18 @@ export default function App() {
           box-shadow: ${panelShadow} !important;
           border: ${panelBorder} !important;
           color: var(--ui-text) !important;
-          ${uiConfig.texture === 'paper' ? `background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");` : ''}
+          ${
+            uiConfig.texture === "paper"
+              ? `background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");`
+              : ""
+          }
         }
 
-        input, textarea { background-color: ${isDark ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.9)'} !important; color: var(--ui-text) !important; border-color: ${tColors.border} !important; }
+        input, textarea { background-color: ${
+          isDark ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.9)"
+        } !important; color: var(--ui-text) !important; border-color: ${
+        tColors.border
+      } !important; }
 
         .ui-gradient-card { background: linear-gradient(135deg, var(--ui-accent) 0%, var(--ui-accent-dark) 100%) !important; color: var(--ui-accent-contrast) !important; border: none !important; }
         .ui-gradient-card p, .ui-gradient-card span, .ui-gradient-card div { color: var(--ui-accent-contrast) !important; opacity: 0.95; }
@@ -1738,7 +3732,9 @@ export default function App() {
 
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background-color: ${isDark ? '#334155' : 'var(--ui-accent-border)'}; border-radius: var(--ui-radius); border: 2px solid transparent; background-clip: padding-box; }
+        ::-webkit-scrollbar-thumb { background-color: ${
+          isDark ? "#334155" : "var(--ui-accent-border)"
+        }; border-radius: var(--ui-radius); border: 2px solid transparent; background-clip: padding-box; }
         ::-webkit-scrollbar-thumb:hover { background-color: var(--ui-accent); }
 
         .ui-highlight-bg { background-color: var(--ui-text) !important; opacity: 0.08 !important; border:none !important; }
@@ -1748,42 +3744,104 @@ export default function App() {
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-100 border border-red-300 text-red-800 px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 text-sm animate-in fade-in slide-in-from-top-4">
           <AlertCircle size={16} />
           {error}
-          <button onClick={() => setError(null)} className="ml-2 p-1 hover:bg-red-200 rounded-full"><X size={14} /></button>
+          <button
+            onClick={() => setError(null)}
+            className="ml-2 p-1 hover:bg-red-200 rounded-full"
+          >
+            <X size={14} />
+          </button>
         </div>
       )}
 
-      <header className="border-b z-30 shrink-0 xl:hidden" style={{ background: panelBg, backdropFilter: panelBackdropFilter }}>
+      <header
+        className="border-b z-30 shrink-0 xl:hidden"
+        style={{ background: panelBg, backdropFilter: panelBackdropFilter }}
+      >
         <div className="max-w-[100rem] mx-auto px-4 sm:px-6 xl:px-8 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 shrink-0">
-            <LayoutDashboard style={{ color: 'var(--ui-accent)' }} size={24} />
-            <h1 className="font-bold text-lg hidden sm:block" style={{ color: 'var(--ui-text)' }}>Task Dashboard</h1>
+            <LayoutDashboard style={{ color: "var(--ui-accent)" }} size={24} />
+            <h1
+              className="font-bold text-lg hidden sm:block"
+              style={{ color: "var(--ui-text)" }}
+            >
+              Task Dashboard
+            </h1>
           </div>
           <div className="hidden sm:flex items-center gap-2 sm:gap-4 shrink-0 ml-auto">
             {!accessToken && !isDemo && tasks.length > 0 && (
-              <button onClick={handleAuth} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 transition flex items-center gap-1">
+              <button
+                onClick={handleAuth}
+                className="text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 transition flex items-center gap-1"
+              >
                 <AlertCircle size={14} /> 再接続
               </button>
             )}
-            <button type="button" onClick={handleRefresh} disabled={loading || (!accessToken && !isDemo)} className="p-2 rounded-full transition disabled:opacity-50 hover:bg-black/5 dark:hover:bg-white/10" style={{ color: 'var(--ui-text)' }}>
-              <RefreshCw size={20} className={loading ? 'animate-spin' : 'opacity-70 hover:opacity-100'} />
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={loading || (!accessToken && !isDemo)}
+              className="p-2 rounded-full transition disabled:opacity-50 hover:bg-black/5 dark:hover:bg-white/10"
+              style={{ color: "var(--ui-text)" }}
+            >
+              <RefreshCw
+                size={20}
+                className={
+                  loading ? "animate-spin" : "opacity-70 hover:opacity-100"
+                }
+              />
             </button>
           </div>
           {!accessToken && !isDemo && tasks.length > 0 && (
-            <button onClick={handleAuth} className="xl:hidden ml-auto text-[10px] font-bold px-2 py-1 rounded bg-amber-100 text-amber-700 flex items-center gap-1">
+            <button
+              onClick={handleAuth}
+              className="xl:hidden ml-auto text-[10px] font-bold px-2 py-1 rounded bg-amber-100 text-amber-700 flex items-center gap-1"
+            >
               再接続
             </button>
           )}
-          <button type="button" className={`xl:hidden p-2 rounded-lg transition relative w-10 h-10 flex flex-col justify-center items-center gap-1.5 hover:bg-black/5 dark:hover:bg-white/10 ${(!accessToken && !isDemo && tasks.length > 0) ? '' : 'ml-auto'} group`} style={{ color: 'var(--ui-text)' }} onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-            <span className={`block w-6 h-0.5 bg-current transition-all duration-300 origin-center ${isMobileMenuOpen ? 'rotate-[45deg] translate-y-[8px]' : 'group-hover:-translate-y-0.5'}`} style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }} />
-            <span className={`block w-6 h-0.5 bg-current transition-all duration-200 ${isMobileMenuOpen ? 'opacity-0 scale-x-0' : 'opacity-100'}`} />
-            <span className={`block w-6 h-0.5 bg-current transition-all duration-300 origin-center ${isMobileMenuOpen ? '-rotate-[45deg] -translate-y-[8px]' : 'group-hover:translate-y-0.5'}`} style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }} />
+          <button
+            type="button"
+            className={`xl:hidden p-2 rounded-lg transition relative w-10 h-10 flex flex-col justify-center items-center gap-1.5 hover:bg-black/5 dark:hover:bg-white/10 ${
+              !accessToken && !isDemo && tasks.length > 0 ? "" : "ml-auto"
+            } group`}
+            style={{ color: "var(--ui-text)" }}
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            <span
+              className={`block w-6 h-0.5 bg-current transition-all duration-300 origin-center ${
+                isMobileMenuOpen
+                  ? "rotate-[45deg] translate-y-[8px]"
+                  : "group-hover:-translate-y-0.5"
+              }`}
+              style={{
+                transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)",
+              }}
+            />
+            <span
+              className={`block w-6 h-0.5 bg-current transition-all duration-200 ${
+                isMobileMenuOpen ? "opacity-0 scale-x-0" : "opacity-100"
+              }`}
+            />
+            <span
+              className={`block w-6 h-0.5 bg-current transition-all duration-300 origin-center ${
+                isMobileMenuOpen
+                  ? "-rotate-[45deg] -translate-y-[8px]"
+                  : "group-hover:translate-y-0.5"
+              }`}
+              style={{
+                transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)",
+              }}
+            />
           </button>
         </div>
       </header>
 
       {/* ── Mobile Menu Panel ── */}
       {isMobileMenuOpen && (
-        <div className="xl:hidden fixed inset-0 z-40 flex flex-col" style={{ top: '4rem' }}>
+        <div
+          className="xl:hidden fixed inset-0 z-40 flex flex-col"
+          style={{ top: "4rem" }}
+        >
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -1792,29 +3850,72 @@ export default function App() {
           {/* Slide-down panel */}
           <div
             className="relative z-10 overflow-y-auto flex-1 animate-in slide-in-from-top-2 shadow-2xl"
-            style={{ background: panelBg, backdropFilter: `blur(${panelBlur})` }}
+            style={{
+              background: panelBg,
+              backdropFilter: `blur(${panelBlur})`,
+            }}
           >
             {/* Navigation items */}
-            <div className="p-4 border-b" style={{ borderColor: 'var(--ui-border)' }}>
-              <p className="text-[10px] font-bold uppercase tracking-wider opacity-40 mb-2 px-1">Menu</p>
+            <div
+              className="p-4 border-b"
+              style={{ borderColor: "var(--ui-border)" }}
+            >
+              <p className="text-[10px] font-bold uppercase tracking-wider opacity-40 mb-2 px-1">
+                Menu
+              </p>
               <nav className="space-y-0.5">
                 {[
-                  { value: 'active', icon: Circle, label: t('active', uiConfig.language) },
-                  { value: 'history', icon: History, label: t('history', uiConfig.language) },
-                  { value: 'calendar', icon: Calendar, label: t('calendar', uiConfig.language) },
-                  { value: 'analytics', icon: BarChart3, label: t('analytics', uiConfig.language) },
-                  { value: 'organize', icon: Layers, label: t('organize', uiConfig.language) },
-                  { value: 'settings', icon: Settings, label: t('settings', uiConfig.language) },
+                  {
+                    value: "active",
+                    icon: Circle,
+                    label: t("active", uiConfig.language),
+                  },
+                  {
+                    value: "history",
+                    icon: History,
+                    label: t("history", uiConfig.language),
+                  },
+                  {
+                    value: "calendar",
+                    icon: Calendar,
+                    label: t("calendar", uiConfig.language),
+                  },
+                  {
+                    value: "analytics",
+                    icon: BarChart3,
+                    label: t("analytics", uiConfig.language),
+                  },
+                  {
+                    value: "organize",
+                    icon: Layers,
+                    label: t("organize", uiConfig.language),
+                  },
+                  {
+                    value: "settings",
+                    icon: Settings,
+                    label: t("settings", uiConfig.language),
+                  },
                 ].map(({ value, label, icon: Icon }) => (
                   <button
                     key={value}
-                    onClick={() => { setActiveTab(value); setIsMobileMenuOpen(false); }}
-                    className={`w-full px-4 py-3 rounded-xl text-left flex items-center gap-3 font-medium transition ${activeTab === value
-                        ? 'bg-[var(--ui-accent-light)] text-[var(--ui-accent)]'
-                        : 'text-[var(--ui-text)] hover:bg-black/5 dark:hover:bg-white/5'
-                      }`}
+                    onClick={() => {
+                      setActiveTab(value);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full px-4 py-3 rounded-xl text-left flex items-center gap-3 font-medium transition ${
+                      activeTab === value
+                        ? "bg-[var(--ui-accent-light)] text-[var(--ui-accent)]"
+                        : "text-[var(--ui-text)] hover:bg-black/5 dark:hover:bg-white/5"
+                    }`}
                   >
-                    <Icon size={18} className={activeTab === value ? 'text-[var(--ui-accent)]' : 'opacity-60'} />
+                    <Icon
+                      size={18}
+                      className={
+                        activeTab === value
+                          ? "text-[var(--ui-accent)]"
+                          : "opacity-60"
+                      }
+                    />
                     {label}
                   </button>
                 ))}
@@ -1822,26 +3923,49 @@ export default function App() {
             </div>
 
             {/* Tag filter */}
-            <div className="p-4 border-b" style={{ borderColor: 'var(--ui-border)' }}>
-              <p className="text-[10px] font-bold uppercase tracking-wider opacity-40 mb-2 px-1">タグフィルター</p>
+            <div
+              className="p-4 border-b"
+              style={{ borderColor: "var(--ui-border)" }}
+            >
+              <p className="text-[10px] font-bold uppercase tracking-wider opacity-40 mb-2 px-1">
+                タグフィルター
+              </p>
               <div className="space-y-0.5">
                 <button
-                  onClick={() => { setSelectedTag(null); setIsMobileMenuOpen(false); }}
-                  className={`w-full px-3 py-2 rounded-lg text-sm flex justify-between items-center transition ${selectedTag === null ? 'text-[var(--ui-accent)] font-bold bg-[var(--ui-accent-light)]' : 'text-[var(--ui-text-muted)] hover:bg-black/5'
-                    }`}
+                  onClick={() => {
+                    setSelectedTag(null);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full px-3 py-2 rounded-lg text-sm flex justify-between items-center transition ${
+                    selectedTag === null
+                      ? "text-[var(--ui-accent)] font-bold bg-[var(--ui-accent-light)]"
+                      : "text-[var(--ui-text-muted)] hover:bg-black/5"
+                  }`}
                 >
                   <span>すべて</span>
-                  <span className="text-[10px] opacity-60">({stats.total})</span>
+                  <span className="text-[10px] opacity-60">
+                    ({stats.total})
+                  </span>
                 </button>
                 {tagStats.map((tData) => (
                   <button
                     key={tData.tag}
-                    onClick={() => { setSelectedTag((prev) => (prev === tData.tag ? null : tData.tag)); setIsMobileMenuOpen(false); }}
-                    className={`w-full px-3 py-2 rounded-lg text-sm flex justify-between items-center transition ${selectedTag === tData.tag ? 'text-[var(--ui-accent)] font-bold bg-[var(--ui-accent-light)]' : 'text-[var(--ui-text-muted)] hover:bg-black/5'
-                      }`}
+                    onClick={() => {
+                      setSelectedTag((prev) =>
+                        prev === tData.tag ? null : tData.tag
+                      );
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full px-3 py-2 rounded-lg text-sm flex justify-between items-center transition ${
+                      selectedTag === tData.tag
+                        ? "text-[var(--ui-accent)] font-bold bg-[var(--ui-accent-light)]"
+                        : "text-[var(--ui-text-muted)] hover:bg-black/5"
+                    }`}
                   >
                     <span className="truncate pr-2">{tData.tag}</span>
-                    <span className="text-[10px] shrink-0 font-bold">{tData.active > 0 ? tData.active : '✓'}</span>
+                    <span className="text-[10px] shrink-0 font-bold">
+                      {tData.active > 0 ? tData.active : "✓"}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -1851,7 +3975,10 @@ export default function App() {
             <div className="p-4 flex flex-col gap-3 pb-8">
               {!accessToken && !isDemo && tasks.length > 0 && (
                 <button
-                  onClick={() => { handleAuth(); setIsMobileMenuOpen(false); }}
+                  onClick={() => {
+                    handleAuth();
+                    setIsMobileMenuOpen(false);
+                  }}
                   className="w-full py-2.5 text-sm font-bold rounded-xl border flex items-center justify-center gap-2 transition bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
                 >
                   <AlertCircle size={15} /> 再接続 (セッション切れ)
@@ -1859,17 +3986,33 @@ export default function App() {
               )}
               <div className="flex gap-3">
                 <button
-                  onClick={() => { handleRefresh(); setIsMobileMenuOpen(false); }}
+                  onClick={() => {
+                    handleRefresh();
+                    setIsMobileMenuOpen(false);
+                  }}
                   disabled={loading || (!accessToken && !isDemo)}
                   className="flex-1 py-2.5 text-sm font-medium rounded-xl border flex items-center justify-center gap-2 transition hover:bg-black/5 disabled:opacity-50"
-                  style={{ borderColor: 'var(--ui-border)', color: 'var(--ui-text)' }}
+                  style={{
+                    borderColor: "var(--ui-border)",
+                    color: "var(--ui-text)",
+                  }}
                 >
-                  <RefreshCw size={15} className={loading ? 'animate-spin' : ''} /> 更新
+                  <RefreshCw
+                    size={15}
+                    className={loading ? "animate-spin" : ""}
+                  />{" "}
+                  更新
                 </button>
                 <button
-                  onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
+                  onClick={() => {
+                    handleLogout();
+                    setIsMobileMenuOpen(false);
+                  }}
                   className="flex-1 py-2.5 text-sm font-medium rounded-xl border flex items-center justify-center gap-2 transition hover:bg-red-500/10"
-                  style={{ borderColor: 'rgba(239,68,68,0.4)', color: '#ef4444' }}
+                  style={{
+                    borderColor: "rgba(239,68,68,0.4)",
+                    color: "#ef4444",
+                  }}
                 >
                   <LogOut size={15} /> 切断
                 </button>
@@ -1880,32 +4023,86 @@ export default function App() {
       )}
 
       <div className="flex-1 flex overflow-hidden w-full max-w-[100rem] mx-auto px-4 sm:px-6 xl:px-8 pt-6 ui-layout-gap">
-
         {/* --- 左サイドバー (統合版) --- */}
         <aside className="hidden xl:flex flex-col w-[260px] 2xl:w-[280px] shrink-0 ui-layout-gap overflow-y-auto hide-scrollbar pb-6 relative">
           {/* 1. Menu */}
           <div className="bg-white rounded-xl shadow-sm border ui-panel shrink-0">
             <h2 className="text-sm font-bold opacity-80 mb-3 flex items-center gap-2 uppercase tracking-wide">
-              {uiConfig.iconStyle !== 'text' && <LayoutDashboard size={16} />} Menu
+              {uiConfig.iconStyle !== "text" && <LayoutDashboard size={16} />}{" "}
+              Menu
             </h2>
             <nav ref={sidebarNavRef} className="flex flex-col gap-2 relative">
               <div
                 className="absolute left-0 right-0 rounded-lg pointer-events-none ui-highlight-bg"
-                style={{ top: navHighlightStyle.top, height: navHighlightStyle.height, opacity: navHighlightStyle.opacity, transition: navHighlightStyle.ready ? 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none', backgroundColor: 'var(--ui-text)', border: 'none' }}
+                style={{
+                  top: navHighlightStyle.top,
+                  height: navHighlightStyle.height,
+                  opacity: navHighlightStyle.opacity,
+                  transition: navHighlightStyle.ready
+                    ? "all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)"
+                    : "none",
+                  backgroundColor: "var(--ui-text)",
+                  border: "none",
+                }}
               />
               {[
-                { value: 'active', icon: Circle, textIcon: 'ACT', label: t('active', uiConfig.language) },
-                { value: 'history', icon: History, textIcon: 'HIS', label: t('history', uiConfig.language) },
-                { value: 'calendar', icon: Calendar, textIcon: 'CAL', label: t('calendar', uiConfig.language) },
-                { value: 'analytics', icon: BarChart3, textIcon: 'ANA', label: t('analytics', uiConfig.language) },
-                { value: 'organize', icon: Layers, textIcon: 'ORG', label: t('organize', uiConfig.language) },
-                { value: 'settings', icon: Settings, textIcon: 'SET', label: t('settings', uiConfig.language) },
+                {
+                  value: "active",
+                  icon: Circle,
+                  textIcon: "ACT",
+                  label: t("active", uiConfig.language),
+                },
+                {
+                  value: "history",
+                  icon: History,
+                  textIcon: "HIS",
+                  label: t("history", uiConfig.language),
+                },
+                {
+                  value: "calendar",
+                  icon: Calendar,
+                  textIcon: "CAL",
+                  label: t("calendar", uiConfig.language),
+                },
+                {
+                  value: "analytics",
+                  icon: BarChart3,
+                  textIcon: "ANA",
+                  label: t("analytics", uiConfig.language),
+                },
+                {
+                  value: "organize",
+                  icon: Layers,
+                  textIcon: "ORG",
+                  label: t("organize", uiConfig.language),
+                },
+                {
+                  value: "settings",
+                  icon: Settings,
+                  textIcon: "SET",
+                  label: t("settings", uiConfig.language),
+                },
               ].map(({ value, label, textIcon, icon: Icon }) => {
                 const isActive = activeTab === value;
                 return (
-                  <button key={value} type="button" data-menu-val={value} onClick={() => setActiveTab(value)}
-                    className={`px-3 py-2 rounded-lg text-sm transition relative z-10 flex items-center gap-2 ${isActive ? 'text-[var(--ui-accent)] font-bold' : 'text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5 hover:text-[var(--ui-text)]'}`}>
-                    {uiConfig.iconStyle === 'text' ? <span className="font-mono font-bold text-xs">[{textIcon}]</span> : <Icon size={16} />}
+                  <button
+                    key={value}
+                    type="button"
+                    data-menu-val={value}
+                    onClick={() => setActiveTab(value)}
+                    className={`px-3 py-2 rounded-lg text-sm transition relative z-10 flex items-center gap-2 ${
+                      isActive
+                        ? "text-[var(--ui-accent)] font-bold"
+                        : "text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5 hover:text-[var(--ui-text)]"
+                    }`}
+                  >
+                    {uiConfig.iconStyle === "text" ? (
+                      <span className="font-mono font-bold text-xs">
+                        [{textIcon}]
+                      </span>
+                    ) : (
+                      <Icon size={16} />
+                    )}
                     {label}
                   </button>
                 );
@@ -1915,54 +4112,142 @@ export default function App() {
 
           {/* 2. Search */}
           <div className="w-full relative shrink-0">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50" style={{ color: 'var(--ui-text)' }} />
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50"
+              style={{ color: "var(--ui-text)" }}
+            />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('search', uiConfig.language)}
+              placeholder={t("search", uiConfig.language)}
               className="w-full pl-9 pr-4 py-2.5 rounded-xl border shadow-sm outline-none focus:ring-2 transition-all text-sm"
-              style={{ borderColor: 'var(--ui-border)', '--tw-ring-color': 'var(--ui-accent)', background: 'var(--ui-panel-bg)', color: 'var(--ui-text)' }}
+              style={{
+                borderColor: "var(--ui-border)",
+                "--tw-ring-color": "var(--ui-accent)",
+                background: "var(--ui-panel-bg)",
+                color: "var(--ui-text)",
+              }}
             />
           </div>
 
           {/* 3. Filter (Tags / Routines) */}
           <div className="bg-white rounded-xl shadow-sm border ui-panel flex flex-col flex-1 min-h-[250px]">
             <div className="flex bg-black/5 dark:bg-white/5 rounded-lg p-1 mb-3 shrink-0">
-              <button onClick={() => setSidebarFilterTab('tags')} className={`flex-1 text-xs font-bold py-1.5 rounded-md transition ${sidebarFilterTab === 'tags' ? 'bg-[var(--ui-panel-bg)] text-[var(--ui-text)] shadow-sm' : 'text-[var(--ui-text-muted)] opacity-70'}`}>Tags</button>
-              <button onClick={() => setSidebarFilterTab('routines')} className={`flex-1 text-xs font-bold py-1.5 rounded-md transition ${sidebarFilterTab === 'routines' ? 'bg-[var(--ui-panel-bg)] text-[var(--ui-text)] shadow-sm' : 'text-[var(--ui-text-muted)] opacity-70'}`}>Routines</button>
+              <button
+                onClick={() => setSidebarFilterTab("tags")}
+                className={`flex-1 text-xs font-bold py-1.5 rounded-md transition ${
+                  sidebarFilterTab === "tags"
+                    ? "bg-[var(--ui-panel-bg)] text-[var(--ui-text)] shadow-sm"
+                    : "text-[var(--ui-text-muted)] opacity-70"
+                }`}
+              >
+                Tags
+              </button>
+              <button
+                onClick={() => setSidebarFilterTab("routines")}
+                className={`flex-1 text-xs font-bold py-1.5 rounded-md transition ${
+                  sidebarFilterTab === "routines"
+                    ? "bg-[var(--ui-panel-bg)] text-[var(--ui-text)] shadow-sm"
+                    : "text-[var(--ui-text-muted)] opacity-70"
+                }`}
+              >
+                Routines
+              </button>
             </div>
 
             <div className="flex-1 overflow-y-auto pr-1 hide-scrollbar flex flex-col gap-1.5">
-              {sidebarFilterTab === 'tags' ? (
+              {sidebarFilterTab === "tags" ? (
                 <>
-                  <button onClick={() => setSelectedTag(null)} className={`px-3 py-2 rounded-lg text-sm transition flex justify-between items-center ${selectedTag === null ? 'text-[var(--ui-accent)] font-bold bg-[var(--ui-accent-light)]' : 'text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5'}`}>
-                    {t('all', uiConfig.language)} ({stats.total})
+                  <button
+                    onClick={() => setSelectedTag(null)}
+                    className={`px-3 py-2 rounded-lg text-sm transition flex justify-between items-center ${
+                      selectedTag === null
+                        ? "text-[var(--ui-accent)] font-bold bg-[var(--ui-accent-light)]"
+                        : "text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5"
+                    }`}
+                  >
+                    {t("all", uiConfig.language)} ({stats.total})
                   </button>
                   {tagStats.map((tData) => (
-                    <button key={tData.tag} onClick={() => setSelectedTag(prev => prev === tData.tag ? null : tData.tag)} className={`px-3 py-2 rounded-lg text-sm transition relative overflow-hidden flex flex-col group ${selectedTag === tData.tag ? 'text-[var(--ui-accent)] font-bold bg-[var(--ui-accent-light)]' : 'text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5'}`}>
+                    <button
+                      key={tData.tag}
+                      onClick={() =>
+                        setSelectedTag((prev) =>
+                          prev === tData.tag ? null : tData.tag
+                        )
+                      }
+                      className={`px-3 py-2 rounded-lg text-sm transition relative overflow-hidden flex flex-col group ${
+                        selectedTag === tData.tag
+                          ? "text-[var(--ui-accent)] font-bold bg-[var(--ui-accent-light)]"
+                          : "text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5"
+                      }`}
+                    >
                       <div className="flex justify-between items-center w-full relative z-10">
                         <div className="flex items-center gap-1.5 truncate">
-                          <span className={`w-2 h-2 rounded-full shrink-0 ${tData.tag === '未分類' ? 'bg-slate-300' : getTagColor(tData.tag).split(' ')[0].replace('/10', '')}`} />
-                          <span className="text-sm font-medium truncate">{tData.tag}</span>
+                          <span
+                            className={`w-2 h-2 rounded-full shrink-0 ${
+                              tData.tag === "未分類"
+                                ? "bg-slate-300"
+                                : getTagColor(tData.tag)
+                                    .split(" ")[0]
+                                    .replace("/10", "")
+                            }`}
+                          />
+                          <span className="text-sm font-medium truncate">
+                            {tData.tag}
+                          </span>
                         </div>
-                        <span className="text-[10px] bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-full shrink-0">{tData.active > 0 ? tData.active : '✓'}</span>
+                        <span className="text-[10px] bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-full shrink-0">
+                          {tData.active > 0 ? tData.active : "✓"}
+                        </span>
                       </div>
                       <div className="w-full bg-black/10 dark:bg-white/10 rounded-full h-1 mt-1.5 relative z-10 overflow-hidden">
-                        <div className={`h-1 rounded-full ${tData.rate === 100 ? 'bg-[var(--ui-success)]' : 'bg-[var(--ui-accent)] opacity-70'}`} style={{ width: `${tData.rate}%` }} />
+                        <div
+                          className={`h-1 rounded-full ${
+                            tData.rate === 100
+                              ? "bg-[var(--ui-success)]"
+                              : "bg-[var(--ui-accent)] opacity-70"
+                          }`}
+                          style={{ width: `${tData.rate}%` }}
+                        />
                       </div>
                     </button>
                   ))}
                 </>
               ) : (
                 <>
-                  <button onClick={() => setSelectedRoutine(null)} className={`px-3 py-2 rounded-lg text-sm transition flex justify-between items-center ${selectedRoutine === null ? 'text-[var(--ui-accent)] font-bold bg-[var(--ui-accent-light)]' : 'text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5'}`}>
-                    {t('all', uiConfig.language)}
+                  <button
+                    onClick={() => setSelectedRoutine(null)}
+                    className={`px-3 py-2 rounded-lg text-sm transition flex justify-between items-center ${
+                      selectedRoutine === null
+                        ? "text-[var(--ui-accent)] font-bold bg-[var(--ui-accent-light)]"
+                        : "text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5"
+                    }`}
+                  >
+                    {t("all", uiConfig.language)}
                   </button>
                   {routineGroups.map((g) => (
-                    <button key={g.titleLabel} onClick={() => setSelectedRoutine(prev => prev === g.titleLabel ? null : g.titleLabel)} className={`px-3 py-2 rounded-lg text-sm transition flex justify-between items-center ${selectedRoutine === g.titleLabel ? 'text-[var(--ui-accent)] font-bold bg-[var(--ui-accent-light)]' : 'text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5'}`}>
-                      <span className="truncate relative z-10">{g.titleLabel}</span>
-                      <span className="text-[10px] bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-full shrink-0 relative z-10">{g.activeCount > 0 ? g.activeCount : '✓'}</span>
+                    <button
+                      key={g.titleLabel}
+                      onClick={() =>
+                        setSelectedRoutine((prev) =>
+                          prev === g.titleLabel ? null : g.titleLabel
+                        )
+                      }
+                      className={`px-3 py-2 rounded-lg text-sm transition flex justify-between items-center ${
+                        selectedRoutine === g.titleLabel
+                          ? "text-[var(--ui-accent)] font-bold bg-[var(--ui-accent-light)]"
+                          : "text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5"
+                      }`}
+                    >
+                      <span className="truncate relative z-10">
+                        {g.titleLabel}
+                      </span>
+                      <span className="text-[10px] bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-full shrink-0 relative z-10">
+                        {g.activeCount > 0 ? g.activeCount : "✓"}
+                      </span>
                     </button>
                   ))}
                 </>
@@ -1973,33 +4258,66 @@ export default function App() {
           {/* 4. Actions (Refresh / Logout) - コンパクト化 */}
           <div className="flex flex-col gap-2 shrink-0">
             {!accessToken && !isDemo && tasks.length > 0 && (
-              <button onClick={handleAuth} className="w-full rounded-xl shadow-sm border border-amber-200 bg-amber-50 text-amber-700 flex items-center justify-center gap-1.5 py-2 hover:bg-amber-100 transition text-xs font-bold">
+              <button
+                onClick={handleAuth}
+                className="w-full rounded-xl shadow-sm border border-amber-200 bg-amber-50 text-amber-700 flex items-center justify-center gap-1.5 py-2 hover:bg-amber-100 transition text-xs font-bold"
+              >
                 <AlertCircle size={14} /> セッション切れ (再接続)
               </button>
             )}
             <div className="flex gap-2">
-              <button onClick={handleRefresh} disabled={loading || (!accessToken && !isDemo)} className="flex-1 rounded-xl shadow-sm border flex items-center justify-center gap-1.5 py-2.5 hover:bg-black/5 dark:hover:bg-white/5 transition text-xs font-bold disabled:opacity-50" style={{ color: 'var(--ui-text)', borderColor: 'var(--ui-border)', background: 'var(--ui-panel-bg)' }}>
-                <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> {t('refresh', uiConfig.language)}
+              <button
+                onClick={handleRefresh}
+                disabled={loading || (!accessToken && !isDemo)}
+                className="flex-1 rounded-xl shadow-sm border flex items-center justify-center gap-1.5 py-2.5 hover:bg-black/5 dark:hover:bg-white/5 transition text-xs font-bold disabled:opacity-50"
+                style={{
+                  color: "var(--ui-text)",
+                  borderColor: "var(--ui-border)",
+                  background: "var(--ui-panel-bg)",
+                }}
+              >
+                <RefreshCw
+                  size={14}
+                  className={loading ? "animate-spin" : ""}
+                />{" "}
+                {t("refresh", uiConfig.language)}
               </button>
-              <button onClick={handleLogout} className="flex-1 rounded-xl shadow-sm border border-red-200 dark:border-red-900/50 flex items-center justify-center gap-1.5 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/20 transition text-xs font-bold text-red-500" style={{ background: 'var(--ui-panel-bg)' }}>
-                <LogOut size={14} /> {t('logout', uiConfig.language)}
+              <button
+                onClick={handleLogout}
+                className="flex-1 rounded-xl shadow-sm border border-red-200 dark:border-red-900/50 flex items-center justify-center gap-1.5 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/20 transition text-xs font-bold text-red-500"
+                style={{ background: "var(--ui-panel-bg)" }}
+              >
+                <LogOut size={14} /> {t("logout", uiConfig.language)}
               </button>
             </div>
           </div>
         </aside>
 
         <main className="flex-1 overflow-y-auto hide-scrollbar pb-32 flex flex-col ui-layout-gap w-full h-full relative">
-          <div key={`${activeTab}-${selectedTag || 'all'}-${selectedRoutine || 'all'}`} className={`page-transition-${uiConfig.animation} w-full flex flex-col ui-layout-gap`}>
-            {(activeTab === 'active' || activeTab === 'history') && (
+          <div
+            key={`${activeTab}-${selectedTag || "all"}-${
+              selectedRoutine || "all"
+            }`}
+            className={`page-transition-${uiConfig.animation} w-full flex flex-col ui-layout-gap`}
+          >
+            {(activeTab === "active" || activeTab === "history") && (
               <div className="xl:hidden w-full relative">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50" style={{ color: 'var(--ui-text)' }} />
+                <Search
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50"
+                  style={{ color: "var(--ui-text)" }}
+                />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t('search', uiConfig.language)}
+                  placeholder={t("search", uiConfig.language)}
                   className="w-full pl-9 pr-4 py-2.5 rounded-xl border bg-white shadow-sm outline-none focus:ring-2 transition-all text-sm"
-                  style={{ borderColor: 'var(--ui-border)', '--tw-ring-color': 'var(--ui-accent)', background: 'var(--ui-panel-bg)' }}
+                  style={{
+                    borderColor: "var(--ui-border)",
+                    "--tw-ring-color": "var(--ui-accent)",
+                    background: "var(--ui-panel-bg)",
+                  }}
                 />
               </div>
             )}
@@ -2009,49 +4327,127 @@ export default function App() {
                 <div className="snap-center shrink-0 w-[85vw] sm:w-auto col-span-2 lg:col-span-1 2xl:col-span-2 ui-gradient-card ui-panel rounded-xl relative overflow-hidden shadow-sm flex flex-col justify-between min-h-[120px]">
                   <div className="relative z-10 text-white">
                     <p className="text-sm font-bold mb-1 flex items-center gap-1.5">
-                      {uiConfig.iconStyle !== 'text' && <TrendingUp size={16} />} {t('weeklyProgress', uiConfig.language)}
+                      {uiConfig.iconStyle !== "text" && (
+                        <TrendingUp size={16} />
+                      )}{" "}
+                      {t("weeklyProgress", uiConfig.language)}
                     </p>
                     <div className="flex items-baseline gap-1 mt-2">
-                      <span className="text-4xl font-black">{weeklyStats.rate}</span>
+                      <span className="text-4xl font-black">
+                        {weeklyStats.rate}
+                      </span>
                       <span className="text-lg font-bold">%</span>
                     </div>
                     <p className="text-xs mt-2 font-medium opacity-80">
-                      {weeklyStats.totalTarget === 0 ? '-' : `${t('completed', uiConfig.language)} ${weeklyStats.completed} / ${t('total', uiConfig.language)} ${weeklyStats.totalTarget}`}
+                      {weeklyStats.totalTarget === 0
+                        ? "-"
+                        : `${t("completed", uiConfig.language)} ${
+                            weeklyStats.completed
+                          } / ${t("total", uiConfig.language)} ${
+                            weeklyStats.totalTarget
+                          }`}
                     </p>
                   </div>
-                  {uiConfig.widgetDecor === 'target' && <Target className="absolute -right-4 -bottom-4 opacity-10 text-white" size={100} />}
-                  {uiConfig.widgetDecor === 'sparkle' && <Sparkles className="absolute right-2 bottom-2 text-white opacity-25" size={64} strokeWidth={1.5} />}
-                  {uiConfig.widgetDecor === 'neon' && <div className="absolute right-0 bottom-0 w-32 h-32 bg-white rounded-full blur-3xl opacity-20 mix-blend-overlay" />}
+                  {uiConfig.widgetDecor === "target" && (
+                    <Target
+                      className="absolute -right-4 -bottom-4 opacity-10 text-white"
+                      size={100}
+                    />
+                  )}
+                  {uiConfig.widgetDecor === "sparkle" && (
+                    <Sparkles
+                      className="absolute right-2 bottom-2 text-white opacity-25"
+                      size={64}
+                      strokeWidth={1.5}
+                    />
+                  )}
+                  {uiConfig.widgetDecor === "neon" && (
+                    <div className="absolute right-0 bottom-0 w-32 h-32 bg-white rounded-full blur-3xl opacity-20 mix-blend-overlay" />
+                  )}
                 </div>
                 <div className="snap-center shrink-0 w-[85vw] sm:w-auto col-span-1">
-                  <PeriodCard label={t('thisWeek', uiConfig.language)} icon={uiConfig.iconStyle !== 'text' && <Calendar size={14} />} stats={weeklyStats} accent="text-[var(--ui-accent)]" onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod('week'); }} />
+                  <PeriodCard
+                    label={t("thisWeek", uiConfig.language)}
+                    icon={
+                      uiConfig.iconStyle !== "text" && <Calendar size={14} />
+                    }
+                    stats={weeklyStats}
+                    accent="text-[var(--ui-accent)]"
+                    onClick={() => {
+                      setPeriodModalTiltDeg(0);
+                      setPeriodModalPeriod("week");
+                    }}
+                  />
                 </div>
                 <div className="snap-center shrink-0 w-[85vw] sm:w-auto col-span-1">
-                  <PeriodCard label={t('nextWeek', uiConfig.language)} icon={uiConfig.iconStyle !== 'text' && <Calendar size={14} />} stats={nextWeekStats} accent="text-[var(--ui-accent-dark)]" onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod('nextWeek'); }} />
+                  <PeriodCard
+                    label={t("nextWeek", uiConfig.language)}
+                    icon={
+                      uiConfig.iconStyle !== "text" && <Calendar size={14} />
+                    }
+                    stats={nextWeekStats}
+                    accent="text-[var(--ui-accent-dark)]"
+                    onClick={() => {
+                      setPeriodModalTiltDeg(0);
+                      setPeriodModalPeriod("nextWeek");
+                    }}
+                  />
                 </div>
                 <div className="snap-center shrink-0 w-[85vw] sm:w-auto col-span-2 lg:col-span-1">
-                  <PeriodCard label={t('thisMonth', uiConfig.language)} icon={uiConfig.iconStyle !== 'text' && <Calendar size={14} />} stats={monthStats} accent="text-[var(--ui-accent-dark)] opacity-70" onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod('month'); }} />
+                  <PeriodCard
+                    label={t("thisMonth", uiConfig.language)}
+                    icon={
+                      uiConfig.iconStyle !== "text" && <Calendar size={14} />
+                    }
+                    stats={monthStats}
+                    accent="text-[var(--ui-accent-dark)] opacity-70"
+                    onClick={() => {
+                      setPeriodModalTiltDeg(0);
+                      setPeriodModalPeriod("month");
+                    }}
+                  />
                 </div>
               </div>
             </div>
 
-            {activeTab === 'active' && (
+            {activeTab === "active" && (
               <>
                 {taskFormExpanded ? (
-                  <div className="bg-white rounded-xl shadow-lg border p-4 animate-in slide-in-from-bottom-4" style={{ borderColor: 'var(--ui-border)', background: 'var(--ui-panel-bg)' }}>
+                  <div
+                    className="bg-white rounded-xl shadow-lg border p-4 animate-in slide-in-from-bottom-4"
+                    style={{
+                      borderColor: "var(--ui-border)",
+                      background: "var(--ui-panel-bg)",
+                    }}
+                  >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
-                        <span className="text-sm font-bold opacity-80" style={{ color: 'var(--ui-text)' }}>タスク追加</span>
+                        <span
+                          className="text-sm font-bold opacity-80"
+                          style={{ color: "var(--ui-text)" }}
+                        >
+                          タスク追加
+                        </span>
                         <button
                           type="button"
                           onClick={copyAiPrompt}
                           className="text-[10px] px-2.5 py-1 rounded-md font-bold flex items-center gap-1.5 transition"
-                          style={{ backgroundColor: 'var(--ui-accent-light)', color: 'var(--ui-accent-dark)' }}
+                          style={{
+                            backgroundColor: "var(--ui-accent-light)",
+                            color: "var(--ui-accent-dark)",
+                          }}
                         >
                           <Sparkles size={12} /> AIプロンプト作成
                         </button>
                       </div>
-                      <button type="button" onClick={() => setTaskFormExpanded(false)} className="p-1 opacity-50 hover:opacity-100 transition" style={{ color: 'var(--ui-text)' }}><X size={18} /></button>
+                      <button
+                        type="button"
+                        onClick={() => setTaskFormExpanded(false)}
+                        className="p-1 opacity-50 hover:opacity-100 transition"
+                        style={{ color: "var(--ui-text)" }}
+                      >
+                        <X size={18} />
+                      </button>
                     </div>
 
                     <textarea
@@ -2059,74 +4455,153 @@ export default function App() {
                       rows={4}
                       value={newTaskTitle}
                       onChange={(e) => setNewTaskTitle(e.target.value)}
-                      placeholder={"タスクを入力...\n（例: [Univ] レポート作成, 2024-05-15）\n※改行で複数同時に入力できます"}
+                      placeholder={
+                        "タスクを入力...\n（例: [Univ] レポート作成, 2024-05-15）\n※改行で複数同時に入力できます"
+                      }
                       className="w-full p-3 text-[16px] sm:text-sm rounded-lg border focus:ring-2 outline-none transition-all resize-y"
-                      style={{ background: 'var(--ui-bg)', color: 'var(--ui-text)', borderColor: 'var(--ui-border)', '--tw-ring-color': 'var(--ui-accent)' }}
+                      style={{
+                        background: "var(--ui-bg)",
+                        color: "var(--ui-text)",
+                        borderColor: "var(--ui-border)",
+                        "--tw-ring-color": "var(--ui-accent)",
+                      }}
                     />
 
                     <div className="mt-3 flex flex-col sm:flex-row sm:items-start gap-3">
-                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border flex-1" style={{ borderColor: 'var(--ui-border)', background: 'var(--ui-bg)' }}>
-                        <Calendar size={14} className="opacity-50 shrink-0" style={{ color: 'var(--ui-text)' }} />
+                      <div
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg border flex-1"
+                        style={{
+                          borderColor: "var(--ui-border)",
+                          background: "var(--ui-bg)",
+                        }}
+                      >
+                        <Calendar
+                          size={14}
+                          className="opacity-50 shrink-0"
+                          style={{ color: "var(--ui-text)" }}
+                        />
                         <input
                           type="datetime-local"
                           value={newTaskDue}
                           onChange={(e) => setNewTaskDue(e.target.value)}
                           className="text-xs w-full bg-transparent outline-none cursor-pointer"
-                          style={{ color: 'var(--ui-text)', colorScheme: isDark ? 'dark' : 'light' }}
+                          style={{
+                            color: "var(--ui-text)",
+                            colorScheme: isDark ? "dark" : "light",
+                          }}
                         />
                         {newTaskDue && (
-                          <button type="button" onClick={() => setNewTaskDue('')} className="opacity-40 hover:opacity-100 shrink-0" style={{ color: 'var(--ui-text)' }}>
+                          <button
+                            type="button"
+                            onClick={() => setNewTaskDue("")}
+                            className="opacity-40 hover:opacity-100 shrink-0"
+                            style={{ color: "var(--ui-text)" }}
+                          >
                             <X size={14} />
                           </button>
                         )}
                       </div>
 
                       <div className="flex flex-col gap-2 flex-[2]">
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border min-h-[38px] flex-wrap" style={{ borderColor: 'var(--ui-border)', background: 'var(--ui-bg)' }}>
-                          <Tag size={14} className="opacity-50 shrink-0" style={{ color: 'var(--ui-text)' }} />
-                          {newTaskTags.map(tag => (
-                            <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 font-medium border" style={{ backgroundColor: 'var(--ui-accent-light)', color: 'var(--ui-accent-dark)', borderColor: 'var(--ui-accent-border)' }}>
+                        <div
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-lg border min-h-[38px] flex-wrap"
+                          style={{
+                            borderColor: "var(--ui-border)",
+                            background: "var(--ui-bg)",
+                          }}
+                        >
+                          <Tag
+                            size={14}
+                            className="opacity-50 shrink-0"
+                            style={{ color: "var(--ui-text)" }}
+                          />
+                          {newTaskTags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 font-medium border"
+                              style={{
+                                backgroundColor: "var(--ui-accent-light)",
+                                color: "var(--ui-accent-dark)",
+                                borderColor: "var(--ui-accent-border)",
+                              }}
+                            >
                               {tag}
-                              <button type="button" onClick={() => setNewTaskTags(prev => prev.filter(t => t !== tag))} className="opacity-60 hover:opacity-100"><X size={10} /></button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setNewTaskTags((prev) =>
+                                    prev.filter((t) => t !== tag)
+                                  )
+                                }
+                                className="opacity-60 hover:opacity-100"
+                              >
+                                <X size={10} />
+                              </button>
                             </span>
                           ))}
                           <input
                             type="text"
                             placeholder="タグ入力 (Enterで追加)"
                             className="text-[16px] sm:text-xs bg-transparent outline-none flex-1 min-w-[100px] py-1"
-                            style={{ color: 'var(--ui-text)' }}
+                            style={{ color: "var(--ui-text)" }}
                             onKeyDown={(e) => {
                               if (e.nativeEvent.isComposing) return;
-                              if (e.key === 'Enter') {
+                              if (e.key === "Enter") {
                                 e.preventDefault();
                                 const val = e.target.value.trim();
-                                if (val && !newTaskTags.includes(val)) setNewTaskTags([...newTaskTags, val]);
-                                e.target.value = '';
+                                if (val && !newTaskTags.includes(val))
+                                  setNewTaskTags([...newTaskTags, val]);
+                                e.target.value = "";
                               }
                             }}
                           />
                         </div>
                         {tagStats.length > 0 && (
                           <div className="flex gap-1.5 flex-wrap px-1">
-                            {tagStats.slice(0, 8).map(t => !newTaskTags.includes(t.tag) && t.tag !== '未分類' && (
-                              <button key={`sug-${t.tag}`} type="button" onClick={() => setNewTaskTags(prev => [...prev, t.tag])}
-                                className="text-[9px] px-1.5 py-0.5 rounded border opacity-60 hover:opacity-100 transition"
-                                style={{ borderColor: 'var(--ui-border)', color: 'var(--ui-text)' }}>
-                                + {t.tag}
-                              </button>
-                            ))}
+                            {tagStats.slice(0, 8).map(
+                              (t) =>
+                                !newTaskTags.includes(t.tag) &&
+                                t.tag !== "未分類" && (
+                                  <button
+                                    key={`sug-${t.tag}`}
+                                    type="button"
+                                    onClick={() =>
+                                      setNewTaskTags((prev) => [...prev, t.tag])
+                                    }
+                                    className="text-[9px] px-1.5 py-0.5 rounded border opacity-60 hover:opacity-100 transition"
+                                    style={{
+                                      borderColor: "var(--ui-border)",
+                                      color: "var(--ui-text)",
+                                    }}
+                                  >
+                                    + {t.tag}
+                                  </button>
+                                )
+                            )}
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex justify-between items-center mt-4 pt-4 border-t" style={{ borderColor: 'var(--ui-border)' }}>
-                      <p className="text-[10px] opacity-50 hidden sm:block" style={{ color: 'var(--ui-text)' }}>ヒント: テキスト内の記法（[タグ] や 行末の日付）は、GUI設定を上書きします</p>
+                    <div
+                      className="flex justify-between items-center mt-4 pt-4 border-t"
+                      style={{ borderColor: "var(--ui-border)" }}
+                    >
+                      <p
+                        className="text-[10px] opacity-50 hidden sm:block"
+                        style={{ color: "var(--ui-text)" }}
+                      >
+                        ヒント: テキスト内の記法（[タグ] や
+                        行末の日付）は、GUI設定を上書きします
+                      </p>
                       <button
                         type="button"
                         onClick={handleAddTask}
                         className="px-6 py-2 rounded-lg font-bold shadow-md transition active:scale-95 text-sm ml-auto"
-                        style={{ backgroundColor: 'var(--ui-accent)', color: 'var(--ui-accent-contrast)' }}
+                        style={{
+                          backgroundColor: "var(--ui-accent)",
+                          color: "var(--ui-accent-contrast)",
+                        }}
                       >
                         {loading ? "追加中..." : "タスクを一括登録"}
                       </button>
@@ -2136,35 +4611,68 @@ export default function App() {
               </>
             )}
 
-            {activeTab === 'analytics' && (
-              <AnalyticsView tasks={tasks} weeklyHistory={weeklyHistory} monthlyHistory={monthlyHistory} yearlyHistory={yearlyHistory} overallCompletionRate={overallCompletionRate} totalTasks={analyticsTotalTasks} completedTasks={analyticsCompletedTasks} tagStats={tagStats} selectedTag={selectedTag} toggleTaskStatus={toggleTaskStatus} {...leadTimeStats} />
+            {activeTab === "analytics" && (
+              <AnalyticsView
+                tasks={tasks}
+                weeklyHistory={weeklyHistory}
+                monthlyHistory={monthlyHistory}
+                yearlyHistory={yearlyHistory}
+                overallCompletionRate={overallCompletionRate}
+                totalTasks={analyticsTotalTasks}
+                completedTasks={analyticsCompletedTasks}
+                tagStats={tagStats}
+                selectedTag={selectedTag}
+                toggleTaskStatus={toggleTaskStatus}
+                {...leadTimeStats}
+              />
             )}
-            {activeTab === 'calendar' && (
-              <CalendarView tasks={calendarTasks} mode={calendarMode} setMode={setCalendarMode} cursor={calendarCursor} setCursor={setCalendarCursor} toggleTaskStatus={toggleTaskStatus} getTagColor={getTagColor} />
+            {activeTab === "calendar" && (
+              <CalendarView
+                tasks={calendarTasks}
+                mode={calendarMode}
+                setMode={setCalendarMode}
+                cursor={calendarCursor}
+                setCursor={setCalendarCursor}
+                toggleTaskStatus={toggleTaskStatus}
+                getTagColor={getTagColor}
+              />
             )}
-            {activeTab === 'organize' && (
+            {activeTab === "organize" && (
               <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 border-b pb-4" style={{ borderColor: 'var(--ui-border)' }}>
+                <div
+                  className="flex flex-col sm:flex-row sm:items-center gap-3 border-b pb-4"
+                  style={{ borderColor: "var(--ui-border)" }}
+                >
                   <div className="flex items-center gap-2">
                     <Layers size={22} className="opacity-70" />
-                    <h2 className="text-xl font-bold">{t('organize', uiConfig.language)}</h2>
+                    <h2 className="text-xl font-bold">
+                      {t("organize", uiConfig.language)}
+                    </h2>
                   </div>
                   <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-xl sm:ml-auto w-fit">
                     <button
-                      onClick={() => setOrganizeSubTab('tags')}
-                      className={`px-4 py-2 text-sm font-bold rounded-lg transition flex items-center gap-1.5 ${organizeSubTab === 'tags' ? 'bg-[var(--ui-panel-bg)] shadow-sm text-[var(--ui-text)]' : 'text-[var(--ui-text-muted)] opacity-60 hover:opacity-100'}`}
+                      onClick={() => setOrganizeSubTab("tags")}
+                      className={`px-4 py-2 text-sm font-bold rounded-lg transition flex items-center gap-1.5 ${
+                        organizeSubTab === "tags"
+                          ? "bg-[var(--ui-panel-bg)] shadow-sm text-[var(--ui-text)]"
+                          : "text-[var(--ui-text-muted)] opacity-60 hover:opacity-100"
+                      }`}
                     >
                       <Tag size={14} /> タグ管理
                     </button>
                     <button
-                      onClick={() => setOrganizeSubTab('routines')}
-                      className={`px-4 py-2 text-sm font-bold rounded-lg transition flex items-center gap-1.5 ${organizeSubTab === 'routines' ? 'bg-[var(--ui-panel-bg)] shadow-sm text-[var(--ui-text)]' : 'text-[var(--ui-text-muted)] opacity-60 hover:opacity-100'}`}
+                      onClick={() => setOrganizeSubTab("routines")}
+                      className={`px-4 py-2 text-sm font-bold rounded-lg transition flex items-center gap-1.5 ${
+                        organizeSubTab === "routines"
+                          ? "bg-[var(--ui-panel-bg)] shadow-sm text-[var(--ui-text)]"
+                          : "text-[var(--ui-text-muted)] opacity-60 hover:opacity-100"
+                      }`}
                     >
                       <RotateCcw size={14} /> ルーチン管理
                     </button>
                   </div>
                 </div>
-                {organizeSubTab === 'tags' ? (
+                {organizeSubTab === "tags" ? (
                   <TagManagerView
                     tagStats={tagStats}
                     tasks={tasks}
@@ -2198,48 +4706,125 @@ export default function App() {
                 )}
               </div>
             )}
-            {activeTab === 'settings' && (
+            {activeTab === "settings" && (
               <UISettingsView
-                uiConfig={uiConfig} setUiConfig={setUiConfig}
-                tasks={tasks} accessToken={accessToken} fetchRealTasks={fetchRealTasks} isDemo={isDemo}
+                uiConfig={uiConfig}
+                setUiConfig={setUiConfig}
+                tasks={tasks}
+                accessToken={accessToken}
+                fetchRealTasks={fetchRealTasks}
+                isDemo={isDemo}
                 handleLogout={handleLogout}
               />
             )}
 
-            {(activeTab === 'active' || activeTab === 'history') && (
-              <div className="bg-white rounded-xl shadow-sm border overflow-hidden" style={{ borderColor: 'var(--ui-border)' }}>
-                <div className="px-3 py-1 border-b flex flex-wrap items-center justify-between gap-1.5" style={{ borderColor: 'var(--ui-border)', background: 'var(--ui-panel-bg)' }}>
-                  <button type="button" onClick={() => { setSelectionMode(prev => { if (prev) setSelectedTasks(new Set()); return !prev; }); }} className={`px-2 py-0.5 text-[11px] font-medium rounded-md transition border shrink-0 ${selectionMode ? 'bg-[var(--ui-text)] text-[var(--ui-bg)] shadow-sm' : 'bg-transparent text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5'}`} style={{ borderColor: 'var(--ui-border)' }}>
-                    {selectionMode ? '選択終了' : '選択モード'}
+            {(activeTab === "active" || activeTab === "history") && (
+              <div
+                className="bg-white rounded-xl shadow-sm border overflow-hidden"
+                style={{ borderColor: "var(--ui-border)" }}
+              >
+                <div
+                  className="px-3 py-1 border-b flex flex-wrap items-center justify-between gap-1.5"
+                  style={{
+                    borderColor: "var(--ui-border)",
+                    background: "var(--ui-panel-bg)",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectionMode((prev) => {
+                        if (prev) setSelectedTasks(new Set());
+                        return !prev;
+                      });
+                    }}
+                    className={`px-2 py-0.5 text-[11px] font-medium rounded-md transition border shrink-0 ${
+                      selectionMode
+                        ? "bg-[var(--ui-text)] text-[var(--ui-bg)] shadow-sm"
+                        : "bg-transparent text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5"
+                    }`}
+                    style={{ borderColor: "var(--ui-border)" }}
+                  >
+                    {selectionMode ? "選択終了" : "選択モード"}
                   </button>
-                  <span className="text-[9px] opacity-60 text-right leading-tight flex-1 min-w-0 sm:max-w-[65%]">1–9タグ · Escすべて · ↑↓ · Enter完了</span>
+                  <span className="text-[9px] opacity-60 text-right leading-tight flex-1 min-w-0 sm:max-w-[65%]">
+                    1–9タグ · Escすべて · ↑↓ · Enter完了
+                  </span>
                 </div>
-                <div className="px-3 py-1.5 border-b flex justify-between items-center gap-2" style={{ borderColor: 'var(--ui-border)', background: 'var(--ui-bg)' }}>
+                <div
+                  className="px-3 py-1.5 border-b flex justify-between items-center gap-2"
+                  style={{
+                    borderColor: "var(--ui-border)",
+                    background: "var(--ui-bg)",
+                  }}
+                >
                   <h2 className="text-sm font-semibold flex items-center gap-1.5 min-w-0">
                     {selectedTag || selectedRoutine ? (
-                      <><span className="opacity-40 shrink-0">{selectedTag ? '#' : 'Routine:'}</span> <span className="truncate">{selectedTag || selectedRoutine}</span></>
-                    ) : (activeTab === 'active' ? (showOnlyNoDue ? '期限なしのアクティブタスク' : 'アクティブタスク') : 'すべての完了履歴')}
+                      <>
+                        <span className="opacity-40 shrink-0">
+                          {selectedTag ? "#" : "Routine:"}
+                        </span>{" "}
+                        <span className="truncate">
+                          {selectedTag || selectedRoutine}
+                        </span>
+                      </>
+                    ) : activeTab === "active" ? (
+                      showOnlyNoDue ? (
+                        "期限なしのアクティブタスク"
+                      ) : (
+                        "アクティブタスク"
+                      )
+                    ) : (
+                      "すべての完了履歴"
+                    )}
                   </h2>
-                  <span className="text-[10px] font-medium opacity-60 px-1.5 py-0.5 rounded border shadow-sm shrink-0 tabular-nums" style={{ borderColor: 'var(--ui-border)', background: 'var(--ui-panel-bg)' }}>
-                    {activeTab === 'active' ? activeTotalCount : historyList.length} 件
+                  <span
+                    className="text-[10px] font-medium opacity-60 px-1.5 py-0.5 rounded border shadow-sm shrink-0 tabular-nums"
+                    style={{
+                      borderColor: "var(--ui-border)",
+                      background: "var(--ui-panel-bg)",
+                    }}
+                  >
+                    {activeTab === "active"
+                      ? activeTotalCount
+                      : historyList.length}{" "}
+                    件
                   </span>
                 </div>
 
                 {/* 洗練されたフローティング選択削除バー */}
                 {selectedTasks.size > 0 && (
-                  <div className="fixed bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 z-[60] animate-in slide-in-from-bottom-8 fade-in flex items-center gap-3 sm:gap-5 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-2xl border"
-                    style={{ background: 'var(--ui-panel-bg)', borderColor: 'var(--ui-border)', backdropFilter: 'blur(24px)' }}>
-                    <span className="text-xs sm:text-sm font-bold flex items-center gap-2" style={{ color: 'var(--ui-text)' }}>
+                  <div
+                    className="fixed bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 z-[60] animate-in slide-in-from-bottom-8 fade-in flex items-center gap-3 sm:gap-5 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-2xl border"
+                    style={{
+                      background: "var(--ui-panel-bg)",
+                      borderColor: "var(--ui-border)",
+                      backdropFilter: "blur(24px)",
+                    }}
+                  >
+                    <span
+                      className="text-xs sm:text-sm font-bold flex items-center gap-2"
+                      style={{ color: "var(--ui-text)" }}
+                    >
                       <span className="bg-[var(--ui-accent)] text-[var(--ui-accent-contrast)] w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-full text-xs shadow-sm">
                         {selectedTasks.size}
                       </span>
                       件選択中
                     </span>
                     <div className="w-px h-6 bg-black/10 dark:bg-white/10" />
-                    <button type="button" onClick={() => setSelectedTasks(new Set())} className="text-xs sm:text-sm font-bold opacity-50 hover:opacity-100 transition px-1" style={{ color: 'var(--ui-text)' }}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTasks(new Set())}
+                      className="text-xs sm:text-sm font-bold opacity-50 hover:opacity-100 transition px-1"
+                      style={{ color: "var(--ui-text)" }}
+                    >
                       キャンセル
                     </button>
-                    <button type="button" onClick={handleDeleteSelected} className="px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all flex items-center gap-1.5 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95">
+                    <button
+                      type="button"
+                      onClick={handleDeleteSelected}
+                      className="px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all flex items-center gap-1.5 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95"
+                    >
                       <Trash2 size={16} /> 削除する
                     </button>
                   </div>
@@ -2250,36 +4835,155 @@ export default function App() {
                     <RefreshCw className="animate-spin mb-3" size={28} />
                     <p>読み込み中...</p>
                   </div>
-                ) : (activeTab === 'active' ? activeTotalCount === 0 : historyList.length === 0) ? (
+                ) : (
+                    activeTab === "active"
+                      ? activeTotalCount === 0
+                      : historyList.length === 0
+                  ) ? (
                   <div className="p-12 text-center opacity-40">
-                    <CheckCircle2 size={40} className="mx-auto mb-3 opacity-30" />
-                    <p>{activeTab === 'active' ? (showOnlyNoDue ? 'タスクはありません' : 'タスクはすべて完了しました！🎉') : '完了したタスクはありません'}</p>
+                    <CheckCircle2
+                      size={40}
+                      className="mx-auto mb-3 opacity-30"
+                    />
+                    <p>
+                      {activeTab === "active"
+                        ? showOnlyNoDue
+                          ? "タスクはありません"
+                          : "タスクはすべて完了しました！🎉"
+                        : "完了したタスクはありません"}
+                    </p>
                   </div>
-                ) : activeTab === 'active' ? (
+                ) : activeTab === "active" ? (
                   <div>
-                    {activeGroups.map(group => (
-                      <section key={group.bucket} className="border-b last:border-b-0" style={{ borderColor: 'var(--ui-border)' }}>
-                        <div className="sticky top-0 z-[5] px-4 py-2.5 backdrop-blur-md border-b flex items-baseline justify-between gap-2" style={{ background: panelBg.replace(/rgba\((.*), [0-9.]+\)/, 'rgba($1, 0.9)'), borderColor: 'var(--ui-border)' }}>
-                          <h3 className="text-sm font-bold opacity-90">{group.title}</h3>
-                          <span className="text-[11px] font-medium opacity-60 tabular-nums">{group.tasks.length} 件</span>
+                    {activeGroups.map((group) => (
+                      <section
+                        key={group.bucket}
+                        className="border-b last:border-b-0"
+                        style={{ borderColor: "var(--ui-border)" }}
+                      >
+                        <div
+                          className="sticky top-0 z-[5] px-4 py-2.5 backdrop-blur-md border-b flex items-baseline justify-between gap-2"
+                          style={{
+                            background: panelBg.replace(
+                              /rgba\((.*), [0-9.]+\)/,
+                              "rgba($1, 0.9)"
+                            ),
+                            borderColor: "var(--ui-border)",
+                          }}
+                        >
+                          <h3 className="text-sm font-bold opacity-90">
+                            {group.title}
+                          </h3>
+                          <span className="text-[11px] font-medium opacity-60 tabular-nums">
+                            {group.tasks.length} 件
+                          </span>
                         </div>
-                        <div className="divide-y" style={{ borderColor: 'var(--ui-border)' }}>
-                          {group.tasks.map(task => {
-                            const overdue = task.status !== 'completed' && isOverdue(task.due);
+                        <div
+                          className="divide-y"
+                          style={{ borderColor: "var(--ui-border)" }}
+                        >
+                          {group.tasks.map((task) => {
+                            const overdue =
+                              task.status !== "completed" &&
+                              isOverdue(task.due);
                             const isKbFocus = keyboardFocusedTaskId === task.id;
-                            const isMultiSel = showCheckboxes && selectedTasks.has(task.id);
+                            const isMultiSel =
+                              showCheckboxes && selectedTasks.has(task.id);
                             return (
-                              <div key={task.id} data-task-row-id={task.id} onClick={() => { if (showCheckboxes) toggleSelection(task.id); }}
-                                className={`p-4 flex items-start gap-3 transition-all duration-300 group border-l-2 ${isKbFocus ? 'ring-2 ring-inset ring-[var(--ui-accent)] z-[1]' : ''} ${isMultiSel ? 'bg-[var(--ui-accent-light)] border-[var(--ui-accent)]' : overdue ? 'bg-[var(--ui-danger-bg)] border-[var(--ui-danger)] hover:brightness-95' : 'border-transparent hover:bg-black/5 dark:hover:bg-white/5'} ${showCheckboxes ? 'cursor-pointer' : ''}`}>
-                                <button type="button" onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }} className="mt-1 p-0.5 -ml-0.5 flex-shrink-0 focus:outline-none transition-transform active:scale-90">
-                                  {task.status === 'completed' ? <CheckCircle2 className="text-[var(--ui-success)] transition" size={22} /> : <Circle className={`${overdue ? 'text-[var(--ui-danger)] opacity-70' : 'text-[var(--ui-text-muted)] opacity-40 group-hover:text-[var(--ui-accent)] group-hover:opacity-100'} transition`} size={22} />}
+                              <div
+                                key={task.id}
+                                data-task-row-id={task.id}
+                                onClick={() => {
+                                  if (showCheckboxes) toggleSelection(task.id);
+                                }}
+                                className={`p-4 flex items-start gap-3 transition-all duration-300 group border-l-2 ${
+                                  isKbFocus
+                                    ? "ring-2 ring-inset ring-[var(--ui-accent)] z-[1]"
+                                    : ""
+                                } ${
+                                  isMultiSel
+                                    ? "bg-[var(--ui-accent-light)] border-[var(--ui-accent)]"
+                                    : overdue
+                                    ? "bg-[var(--ui-danger-bg)] border-[var(--ui-danger)] hover:brightness-95"
+                                    : "border-transparent hover:bg-black/5 dark:hover:bg-white/5"
+                                } ${showCheckboxes ? "cursor-pointer" : ""}`}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleTaskStatus(task);
+                                  }}
+                                  className="mt-1 p-0.5 -ml-0.5 flex-shrink-0 focus:outline-none transition-transform active:scale-90"
+                                >
+                                  {task.status === "completed" ? (
+                                    <CheckCircle2
+                                      className="text-[var(--ui-success)] transition"
+                                      size={22}
+                                    />
+                                  ) : (
+                                    <Circle
+                                      className={`${
+                                        overdue
+                                          ? "text-[var(--ui-danger)] opacity-70"
+                                          : "text-[var(--ui-text-muted)] opacity-40 group-hover:text-[var(--ui-accent)] group-hover:opacity-100"
+                                      } transition`}
+                                      size={22}
+                                    />
+                                  )}
                                 </button>
                                 <div className="flex-grow min-w-0">
-                                  <h3 className={`font-medium text-base mb-1.5 whitespace-normal break-words ${overdue ? 'text-[var(--ui-danger)]' : 'text-[var(--ui-text)]'}`}>{task.cleanTitle}</h3>
+                                  <h3
+                                    className={`font-medium text-base mb-1.5 whitespace-normal break-words ${
+                                      overdue
+                                        ? "text-[var(--ui-danger)]"
+                                        : "text-[var(--ui-text)]"
+                                    }`}
+                                  >
+                                    {task.cleanTitle}
+                                  </h3>
                                   <div className="flex flex-wrap items-center gap-2">
-                                    {(task.platforms || []).map(p => (<span key={p} className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${getLmsBadgeClass(p)}`}>{p}</span>))}
-                                    {task.tags.map(tag => (<span key={tag} onClick={(e) => { e.stopPropagation(); setSelectedTag(tag); }} className={`text-[11px] font-medium px-2 py-0.5 rounded-full border cursor-pointer hover:opacity-80 transition ${getTagColor(tag)}`}>{tag}</span>))}
-                                    {task.due && (<div className={`flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border ${overdue ? 'text-[var(--ui-danger)] bg-[var(--ui-danger-bg)] border-[var(--ui-danger)] border-opacity-30' : 'text-[var(--ui-warning)] bg-[var(--ui-warning-bg)] border-[var(--ui-warning)] border-opacity-30'}`}>{overdue ? <AlertCircle size={11} /> : <Calendar size={11} />}{overdue ? '期限超過: ' : '期限: '}{formatDue(task.due)}</div>)}
+                                    {(task.platforms || []).map((p) => (
+                                      <span
+                                        key={p}
+                                        className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${getLmsBadgeClass(
+                                          p
+                                        )}`}
+                                      >
+                                        {p}
+                                      </span>
+                                    ))}
+                                    {task.tags.map((tag) => (
+                                      <span
+                                        key={tag}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedTag(tag);
+                                        }}
+                                        className={`text-[11px] font-medium px-2 py-0.5 rounded-full border cursor-pointer hover:opacity-80 transition ${getTagColor(
+                                          tag
+                                        )}`}
+                                      >
+                                        {tag}
+                                      </span>
+                                    ))}
+                                    {task.due && (
+                                      <div
+                                        className={`flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border ${
+                                          overdue
+                                            ? "text-[var(--ui-danger)] bg-[var(--ui-danger-bg)] border-[var(--ui-danger)] border-opacity-30"
+                                            : "text-[var(--ui-warning)] bg-[var(--ui-warning-bg)] border-[var(--ui-warning)] border-opacity-30"
+                                        }`}
+                                      >
+                                        {overdue ? (
+                                          <AlertCircle size={11} />
+                                        ) : (
+                                          <Calendar size={11} />
+                                        )}
+                                        {overdue ? "期限超過: " : "期限: "}
+                                        {formatDue(task.due)}
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -2290,23 +4994,94 @@ export default function App() {
                     ))}
                   </div>
                 ) : (
-                  <div className="divide-y" style={{ borderColor: 'var(--ui-border)' }}>
-                    {historyList.map(task => {
-                      const overdue = task.status !== 'completed' && isOverdue(task.due);
+                  <div
+                    className="divide-y"
+                    style={{ borderColor: "var(--ui-border)" }}
+                  >
+                    {historyList.map((task) => {
+                      const overdue =
+                        task.status !== "completed" && isOverdue(task.due);
                       const isKbFocus = keyboardFocusedTaskId === task.id;
-                      const isMultiSel = showCheckboxes && selectedTasks.has(task.id);
+                      const isMultiSel =
+                        showCheckboxes && selectedTasks.has(task.id);
                       return (
-                        <div key={task.id} data-task-row-id={task.id} onClick={() => { if (showCheckboxes) toggleSelection(task.id); }}
-                          className={`p-4 flex items-start gap-3 transition-all duration-300 group border-l-2 ${isKbFocus ? 'ring-2 ring-inset ring-[var(--ui-accent)] z-[1]' : ''} ${isMultiSel ? 'bg-[var(--ui-accent-light)] border-[var(--ui-accent)] opacity-100 grayscale-0' : 'border-transparent opacity-50 grayscale hover:opacity-100 hover:grayscale-0 hover:bg-black/5 dark:hover:bg-white/5'} ${showCheckboxes ? 'cursor-pointer' : ''}`}>
-                          <button type="button" onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }} className="mt-1 p-0.5 -ml-0.5 flex-shrink-0 focus:outline-none transition-transform active:scale-90">
-                            {task.status === 'completed' ? <CheckCircle2 className="text-[var(--ui-success)] transition" size={22} /> : <Circle className={`${overdue ? 'text-red-400 group-hover:text-red-500' : 'text-slate-300 group-hover:text-blue-500'} transition`} size={22} />}
+                        <div
+                          key={task.id}
+                          data-task-row-id={task.id}
+                          onClick={() => {
+                            if (showCheckboxes) toggleSelection(task.id);
+                          }}
+                          className={`p-4 flex items-start gap-3 transition-all duration-300 group border-l-2 ${
+                            isKbFocus
+                              ? "ring-2 ring-inset ring-[var(--ui-accent)] z-[1]"
+                              : ""
+                          } ${
+                            isMultiSel
+                              ? "bg-[var(--ui-accent-light)] border-[var(--ui-accent)] opacity-100 grayscale-0"
+                              : "border-transparent opacity-50 grayscale hover:opacity-100 hover:grayscale-0 hover:bg-black/5 dark:hover:bg-white/5"
+                          } ${showCheckboxes ? "cursor-pointer" : ""}`}
+                        >
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleTaskStatus(task);
+                            }}
+                            className="mt-1 p-0.5 -ml-0.5 flex-shrink-0 focus:outline-none transition-transform active:scale-90"
+                          >
+                            {task.status === "completed" ? (
+                              <CheckCircle2
+                                className="text-[var(--ui-success)] transition"
+                                size={22}
+                              />
+                            ) : (
+                              <Circle
+                                className={`${
+                                  overdue
+                                    ? "text-red-400 group-hover:text-red-500"
+                                    : "text-slate-300 group-hover:text-blue-500"
+                                } transition`}
+                                size={22}
+                              />
+                            )}
                           </button>
                           <div className="flex-grow min-w-0">
-                            <h3 className={`font-medium text-base mb-1.5 whitespace-normal break-words line-through text-[var(--ui-text-muted)]`}>{task.cleanTitle}</h3>
+                            <h3
+                              className={`font-medium text-base mb-1.5 whitespace-normal break-words line-through text-[var(--ui-text-muted)]`}
+                            >
+                              {task.cleanTitle}
+                            </h3>
                             <div className="flex flex-wrap items-center gap-2">
-                              {(task.platforms || []).map(p => (<span key={p} className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${getLmsBadgeClass(p)}`}>{p}</span>))}
-                              {task.tags.map(tag => (<span key={tag} onClick={(e) => { e.stopPropagation(); setSelectedTag(tag); }} className={`text-[11px] font-medium px-2 py-0.5 rounded-full border cursor-pointer hover:opacity-80 transition ${getTagColor(tag)}`}>{tag}</span>))}
-                              {task.completed && (<div className="flex items-center gap-1 text-[11px] font-medium text-[var(--ui-text-muted)] bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-full border border-[var(--ui-border)]"><History size={11} /> 完了: {formatDate(task.completed)}</div>)}
+                              {(task.platforms || []).map((p) => (
+                                <span
+                                  key={p}
+                                  className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${getLmsBadgeClass(
+                                    p
+                                  )}`}
+                                >
+                                  {p}
+                                </span>
+                              ))}
+                              {task.tags.map((tag) => (
+                                <span
+                                  key={tag}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedTag(tag);
+                                  }}
+                                  className={`text-[11px] font-medium px-2 py-0.5 rounded-full border cursor-pointer hover:opacity-80 transition ${getTagColor(
+                                    tag
+                                  )}`}
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                              {task.completed && (
+                                <div className="flex items-center gap-1 text-[11px] font-medium text-[var(--ui-text-muted)] bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-full border border-[var(--ui-border)]">
+                                  <History size={11} /> 完了:{" "}
+                                  {formatDate(task.completed)}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -2318,13 +5093,12 @@ export default function App() {
             )}
           </div>
         </main>
-
       </div>
 
-      {(accessToken || isDemo) && activeTab === 'active' && (
+      {(accessToken || isDemo) && activeTab === "active" && (
         <button
           type="button"
-          title={taskFormExpanded ? '追加パネルを閉じる' : 'タスクを追加'}
+          title={taskFormExpanded ? "追加パネルを閉じる" : "タスクを追加"}
           onClick={() => setTaskFormExpanded((v) => !v)}
           className="ui-fab fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full transition-transform hover:scale-[1.03] active:scale-95 focus:outline-none sm:bottom-6 sm:right-6 xl:bottom-8 xl:right-10"
           aria-expanded={taskFormExpanded}
@@ -2333,168 +5107,284 @@ export default function App() {
         </button>
       )}
 
-      {periodModalPeriod && (() => {
-        const periodTitleMap = { week: '今週のタスク', nextWeek: '来週のタスク', month: '今月のタスク' };
-        const sourceTasks =
-          periodModalPeriod === 'week'
-            ? weeklyStats.tasks
-            : periodModalPeriod === 'nextWeek'
+      {periodModalPeriod &&
+        (() => {
+          const periodTitleMap = {
+            week: "今週のタスク",
+            nextWeek: "来週のタスク",
+            month: "今月のタスク",
+          };
+          const sourceTasks =
+            periodModalPeriod === "week"
+              ? weeklyStats.tasks
+              : periodModalPeriod === "nextWeek"
               ? nextWeekStats.tasks
               : monthStats.tasks;
-        const modalTasks = sourceTasks
-          .map((snapshot) => tasks.find((x) => x.id === snapshot.id) ?? snapshot)
-          .sort((a, b) => (a.due ? new Date(a.due).getTime() : Infinity) - (b.due ? new Date(b.due).getTime() : Infinity));
+          const modalTasks = sourceTasks
+            .map(
+              (snapshot) => tasks.find((x) => x.id === snapshot.id) ?? snapshot
+            )
+            .sort(
+              (a, b) =>
+                (a.due ? new Date(a.due).getTime() : Infinity) -
+                (b.due ? new Date(b.due).getTime() : Infinity)
+            );
 
-        const mTot = modalTasks.length;
-        const mComp = modalTasks.filter((t) => t.status === 'completed').length;
-        const mRate = mTot === 0 ? 0 : Math.round((mComp / mTot) * 100);
+          const mTot = modalTasks.length;
+          const mComp = modalTasks.filter(
+            (t) => t.status === "completed"
+          ).length;
+          const mRate = mTot === 0 ? 0 : Math.round((mComp / mTot) * 100);
 
-        const mTagData = {};
-        modalTasks.forEach((t) => {
-          const tagList = t.tags.length === 0 ? ['未分類'] : t.tags;
-          tagList.forEach((tag) => {
-            if (!mTagData[tag]) mTagData[tag] = { t: 0, c: 0 };
-            mTagData[tag].t++;
-            if (t.status === 'completed') mTagData[tag].c++;
+          const mTagData = {};
+          modalTasks.forEach((t) => {
+            const tagList = t.tags.length === 0 ? ["未分類"] : t.tags;
+            tagList.forEach((tag) => {
+              if (!mTagData[tag]) mTagData[tag] = { t: 0, c: 0 };
+              mTagData[tag].t++;
+              if (t.status === "completed") mTagData[tag].c++;
+            });
           });
-        });
 
-        const grouped = {};
-        modalTasks.forEach((t) => {
-          const dateLabel = t.due ? formatDue(t.due).split(' ')[0] : '期限なし';
-          if (!grouped[dateLabel]) grouped[dateLabel] = [];
-          grouped[dateLabel].push(t);
-        });
-        const groupedEntries = Object.entries(grouped).sort(([ka, aTasks], [kb, bTasks]) => {
-          if (ka === '期限なし') return 1;
-          if (kb === '期限なし') return -1;
-          const minA = Math.min(...aTasks.map((x) => (x.due ? new Date(x.due).getTime() : Infinity)));
-          const minB = Math.min(...bTasks.map((x) => (x.due ? new Date(x.due).getTime() : Infinity)));
-          return minA - minB;
-        });
+          const grouped = {};
+          modalTasks.forEach((t) => {
+            const dateLabel = t.due
+              ? formatDue(t.due).split(" ")[0]
+              : "期限なし";
+            if (!grouped[dateLabel]) grouped[dateLabel] = [];
+            grouped[dateLabel].push(t);
+          });
+          const groupedEntries = Object.entries(grouped).sort(
+            ([ka, aTasks], [kb, bTasks]) => {
+              if (ka === "期限なし") return 1;
+              if (kb === "期限なし") return -1;
+              const minA = Math.min(
+                ...aTasks.map((x) =>
+                  x.due ? new Date(x.due).getTime() : Infinity
+                )
+              );
+              const minB = Math.min(
+                ...bTasks.map((x) =>
+                  x.due ? new Date(x.due).getTime() : Infinity
+                )
+              );
+              return minA - minB;
+            }
+          );
 
-        return (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in [perspective:1200px]"
-            onClick={() => setPeriodModalPeriod(null)}
-            role="presentation"
-          >
+          return (
             <div
-              className={`bg-white rounded-xl shadow-xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200/80 ${periodModalTiltDeg !== 0 ? 'period-modal-3d-panel' : ''}`}
-              style={{ '--period-from-tilt': `${periodModalTiltDeg}deg` }}
-              onClick={(e) => e.stopPropagation()}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="period-modal-title"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in [perspective:1200px]"
+              onClick={() => setPeriodModalPeriod(null)}
+              role="presentation"
             >
-              <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50 shrink-0 gap-2">
-                <div className="min-w-0">
-                  <h3 id="period-modal-title" className="font-bold text-slate-800">{periodTitleMap[periodModalPeriod]}</h3>
-                  <p className="text-[10px] text-slate-400 mt-0.5">← → 期間切替 · Esc で閉じる</p>
+              <div
+                className={`bg-white rounded-xl shadow-xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200/80 ${
+                  periodModalTiltDeg !== 0 ? "period-modal-3d-panel" : ""
+                }`}
+                style={{ "--period-from-tilt": `${periodModalTiltDeg}deg` }}
+                onClick={(e) => e.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="period-modal-title"
+              >
+                <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50 shrink-0 gap-2">
+                  <div className="min-w-0">
+                    <h3
+                      id="period-modal-title"
+                      className="font-bold text-slate-800"
+                    >
+                      {periodTitleMap[periodModalPeriod]}
+                    </h3>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      ← → 期間切替 · Esc で閉じる
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPeriodModalPeriod(null)}
+                    className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200 transition shrink-0"
+                    aria-label="閉じる"
+                  >
+                    <X size={20} />
+                  </button>
                 </div>
-                <button type="button" onClick={() => setPeriodModalPeriod(null)} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200 transition shrink-0" aria-label="閉じる">
-                  <X size={20} />
-                </button>
-              </div>
 
-              <div className="p-4 border-b border-slate-100 bg-white shrink-0 space-y-3">
-                <div>
-                  <div className="flex justify-between text-xs font-semibold text-slate-600 mb-1">
-                    <span>全体の進捗</span>
-                    <span>{mRate}% ({mComp}/{mTot})</span>
+                <div className="p-4 border-b border-slate-100 bg-white shrink-0 space-y-3">
+                  <div>
+                    <div className="flex justify-between text-xs font-semibold text-slate-600 mb-1">
+                      <span>全体の進捗</span>
+                      <span>
+                        {mRate}% ({mComp}/{mTot})
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full ${
+                          mRate === 100 ? "bg-emerald-400" : "bg-blue-500"
+                        }`}
+                        style={{ width: `${mRate}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2">
-                    <div className={`h-2 rounded-full ${mRate === 100 ? 'bg-emerald-400' : 'bg-blue-500'}`} style={{ width: `${mRate}%` }} />
-                  </div>
-                </div>
-                {Object.keys(mTagData).length > 0 && (
-                  <div className="flex flex-wrap gap-x-4 gap-y-2">
-                    {Object.entries(mTagData).map(([tag, { t, c }]) => {
-                      const r = t === 0 ? 0 : Math.round((c / t) * 100);
-                      return (
-                        <div key={tag} className="flex-1 min-w-[120px]">
-                          <div className="flex justify-between text-[10px] text-slate-500 mb-0.5">
-                            <span className="truncate pr-1">{tag}</span>
-                            <span>{r}%</span>
+                  {Object.keys(mTagData).length > 0 && (
+                    <div className="flex flex-wrap gap-x-4 gap-y-2">
+                      {Object.entries(mTagData).map(([tag, { t, c }]) => {
+                        const r = t === 0 ? 0 : Math.round((c / t) * 100);
+                        return (
+                          <div key={tag} className="flex-1 min-w-[120px]">
+                            <div className="flex justify-between text-[10px] text-slate-500 mb-0.5">
+                              <span className="truncate pr-1">{tag}</span>
+                              <span>{r}%</span>
+                            </div>
+                            <div className="w-full bg-slate-100 rounded-full h-1">
+                              <div
+                                className={`h-1 rounded-full ${
+                                  r === 100 ? "bg-emerald-400" : "bg-blue-400"
+                                }`}
+                                style={{ width: `${r}%` }}
+                              />
+                            </div>
                           </div>
-                          <div className="w-full bg-slate-100 rounded-full h-1">
-                            <div className={`h-1 rounded-full ${r === 100 ? 'bg-emerald-400' : 'bg-blue-400'}`} style={{ width: `${r}%` }} />
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div className="overflow-y-auto p-4 space-y-5 bg-slate-50/50">
+                  {modalTasks.length === 0 ? (
+                    <p className="text-center text-sm text-slate-400 py-8">
+                      タスクがありません
+                    </p>
+                  ) : (
+                    groupedEntries.map(([dateLabel, gTasks]) => {
+                      const sorted = [...gTasks].sort(
+                        (a, b) =>
+                          (a.due ? new Date(a.due).getTime() : 0) -
+                          (b.due ? new Date(b.due).getTime() : 0)
+                      );
+                      return (
+                        <div key={dateLabel}>
+                          <h4 className="text-xs font-bold text-slate-500 mb-2 border-b border-slate-200 pb-1">
+                            {dateLabel}
+                          </h4>
+                          <div className="space-y-2">
+                            {sorted.map((task) => {
+                              const done = task.status === "completed";
+                              const overdue =
+                                !done && task.due && isOverdue(task.due);
+
+                              return (
+                                <div
+                                  key={task.id}
+                                  className={`flex items-start gap-3 p-3 rounded-lg shadow-sm transition-all border ${
+                                    done
+                                      ? "opacity-50 grayscale border-transparent bg-transparent"
+                                      : "bg-[var(--ui-panel-bg)] border-black/5 dark:border-white/5"
+                                  }`}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleTaskStatus(task)}
+                                    className="mt-0.5 shrink-0 focus:outline-none transition-transform active:scale-90"
+                                  >
+                                    {done ? (
+                                      <CheckCircle2
+                                        size={18}
+                                        className="text-[var(--ui-success)]"
+                                      />
+                                    ) : (
+                                      <Circle
+                                        size={18}
+                                        className={
+                                          overdue
+                                            ? "text-[var(--ui-danger)]"
+                                            : "text-[var(--ui-text-muted)] opacity-40"
+                                        }
+                                      />
+                                    )}
+                                  </button>
+                                  <div className="min-w-0 flex-1">
+                                    <p
+                                      className={`text-sm font-medium whitespace-normal break-words leading-tight ${
+                                        done
+                                          ? "line-through text-[var(--ui-text-muted)]"
+                                          : overdue
+                                          ? "text-[var(--ui-danger)]"
+                                          : "text-[var(--ui-text)]"
+                                      }`}
+                                    >
+                                      {task.cleanTitle}
+                                    </p>
+                                    {(task.platforms?.length > 0 ||
+                                      task.tags?.length > 0) && (
+                                      <div className="flex flex-wrap gap-1 mt-1.5">
+                                        {(task.platforms || []).map((p) => (
+                                          <span
+                                            key={p}
+                                            className={`text-[9px] px-1.5 py-px rounded border ${getLmsBadgeClass(
+                                              p
+                                            )}`}
+                                          >
+                                            {p}
+                                          </span>
+                                        ))}
+                                        {(task.tags || []).map((tag) => (
+                                          <span
+                                            key={tag}
+                                            className={`text-[9px] px-1.5 py-px rounded border ${getTagColor(
+                                              tag
+                                            )}`}
+                                          >
+                                            {tag}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              <div className="overflow-y-auto p-4 space-y-5 bg-slate-50/50">
-                {modalTasks.length === 0 ? (
-                  <p className="text-center text-sm text-slate-400 py-8">タスクがありません</p>
-                ) : (
-                  groupedEntries.map(([dateLabel, gTasks]) => {
-                    const sorted = [...gTasks].sort((a, b) => (a.due ? new Date(a.due).getTime() : 0) - (b.due ? new Date(b.due).getTime() : 0));
-                    return (
-                      <div key={dateLabel}>
-                        <h4 className="text-xs font-bold text-slate-500 mb-2 border-b border-slate-200 pb-1">{dateLabel}</h4>
-                        <div className="space-y-2">
-                          {sorted.map((task) => {
-                            const done = task.status === 'completed';
-                            const overdue = !done && task.due && isOverdue(task.due);
-
-                            return (
-                              <div key={task.id} className={`flex items-start gap-3 p-3 rounded-lg shadow-sm transition-all border ${done ? 'opacity-50 grayscale border-transparent bg-transparent' : 'bg-[var(--ui-panel-bg)] border-black/5 dark:border-white/5'}`}>
-                                <button type="button" onClick={() => toggleTaskStatus(task)} className="mt-0.5 shrink-0 focus:outline-none transition-transform active:scale-90">
-                                  {done
-                                    ? <CheckCircle2 size={18} className="text-[var(--ui-success)]" />
-                                    : <Circle size={18} className={overdue ? 'text-[var(--ui-danger)]' : 'text-[var(--ui-text-muted)] opacity-40'} />}
-                                </button>
-                                <div className="min-w-0 flex-1">
-                                  <p className={`text-sm font-medium whitespace-normal break-words leading-tight ${done ? 'line-through text-[var(--ui-text-muted)]' : overdue ? 'text-[var(--ui-danger)]' : 'text-[var(--ui-text)]'}`}>
-                                    {task.cleanTitle}
-                                  </p>
-                                  {((task.platforms?.length > 0) || (task.tags?.length > 0)) && (
-                                    <div className="flex flex-wrap gap-1 mt-1.5">
-                                      {(task.platforms || []).map((p) => (
-                                        <span key={p} className={`text-[9px] px-1.5 py-px rounded border ${getLmsBadgeClass(p)}`}>{p}</span>
-                                      ))}
-                                      {(task.tags || []).map((tag) => (
-                                        <span key={tag} className={`text-[9px] px-1.5 py-px rounded border ${getTagColor(tag)}`}>{tag}</span>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
+                    })
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
     </div>
   );
 }
 
-function CalendarView({ tasks, mode, setMode, cursor, setCursor, toggleTaskStatus, getTagColor }) {
-  const [dateBase, setDateBase] = useState('due');
-  const [selectedMobileDate, setSelectedMobileDate] = useState(() => new Date());
+function CalendarView({
+  tasks,
+  mode,
+  setMode,
+  cursor,
+  setCursor,
+  toggleTaskStatus,
+  getTagColor,
+}) {
+  const [dateBase, setDateBase] = useState("due");
+  const [selectedMobileDate, setSelectedMobileDate] = useState(
+    () => new Date()
+  );
   const now = new Date();
   const { start: weekStart } = getWeekRange(cursor);
 
   const goPrev = () => {
     const d = new Date(cursor);
-    if (mode === 'month') d.setMonth(d.getMonth() - 1);
+    if (mode === "month") d.setMonth(d.getMonth() - 1);
     else d.setDate(d.getDate() - 7);
     setCursor(d);
   };
   const goNext = () => {
     const d = new Date(cursor);
-    if (mode === 'month') d.setMonth(d.getMonth() + 1);
+    if (mode === "month") d.setMonth(d.getMonth() + 1);
     else d.setDate(d.getDate() + 7);
     setCursor(d);
   };
@@ -2509,10 +5399,10 @@ function CalendarView({ tasks, mode, setMode, cursor, setCursor, toggleTaskStatu
 
   const groupedTasks = useMemo(() => {
     const map = new Map();
-    tasks.forEach(t => {
-      const targetDateStr = dateBase === 'completed' ? t.completed : t.due;
+    tasks.forEach((t) => {
+      const targetDateStr = dateBase === "completed" ? t.completed : t.due;
       if (!targetDateStr) return;
-      if (dateBase === 'completed' && t.status !== 'completed') return;
+      if (dateBase === "completed" && t.status !== "completed") return;
 
       const parts = dueCalendarDayParts(targetDateStr);
       if (!parts) return;
@@ -2529,24 +5419,73 @@ function CalendarView({ tasks, mode, setMode, cursor, setCursor, toggleTaskStatu
   };
 
   const renderTaskRow = (task, isMobile = false) => {
-    const done = task.status === 'completed';
+    const done = task.status === "completed";
     const overdue = !done && task.due && isOverdue(task.due);
     return (
-      <div key={task.id} className={`flex items-start ${isMobile ? 'gap-3 py-3' : 'gap-1.5 py-1.5'} text-left border-b border-black/5 dark:border-white/5 last:border-0 transition-opacity ${done ? 'opacity-50 grayscale' : ''}`}>
-        <button type="button" onClick={() => toggleTaskStatus(task)} className="mt-0.5 shrink-0 focus:outline-none">
-          {done ? <CheckCircle2 size={isMobile ? 20 : 14} className="text-[var(--ui-success)]" /> : <Circle size={isMobile ? 20 : 14} className={overdue ? 'text-[var(--ui-danger)]' : 'text-[var(--ui-text-muted)] opacity-40'} />}
+      <div
+        key={task.id}
+        className={`flex items-start ${
+          isMobile ? "gap-3 py-3" : "gap-1.5 py-1.5"
+        } text-left border-b border-black/5 dark:border-white/5 last:border-0 transition-opacity ${
+          done ? "opacity-50 grayscale" : ""
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => toggleTaskStatus(task)}
+          className="mt-0.5 shrink-0 focus:outline-none"
+        >
+          {done ? (
+            <CheckCircle2
+              size={isMobile ? 20 : 14}
+              className="text-[var(--ui-success)]"
+            />
+          ) : (
+            <Circle
+              size={isMobile ? 20 : 14}
+              className={
+                overdue
+                  ? "text-[var(--ui-danger)]"
+                  : "text-[var(--ui-text-muted)] opacity-40"
+              }
+            />
+          )}
         </button>
         <div className="min-w-0 flex-1">
-          <p className={`${isMobile ? 'text-sm' : 'text-[10px] sm:text-[11px]'} leading-snug break-words whitespace-normal hyphens-auto ${done ? 'line-through text-[var(--ui-text-muted)]' : overdue ? 'text-[var(--ui-danger)] font-medium' : 'text-[var(--ui-text)]'}`}>
+          <p
+            className={`${
+              isMobile ? "text-sm" : "text-[10px] sm:text-[11px]"
+            } leading-snug break-words whitespace-normal hyphens-auto ${
+              done
+                ? "line-through text-[var(--ui-text-muted)]"
+                : overdue
+                ? "text-[var(--ui-danger)] font-medium"
+                : "text-[var(--ui-text)]"
+            }`}
+          >
             {task.cleanTitle}
           </p>
-          {((task.platforms?.length > 0) || (task.tags?.length > 0)) && (
+          {(task.platforms?.length > 0 || task.tags?.length > 0) && (
             <div className="flex flex-wrap gap-0.5 mt-1">
-              {(task.platforms || []).map(p => (
-                <span key={p} className={`text-[8px] px-1 py-px rounded border leading-tight ${getLmsBadgeClass(p)}`}>{p}</span>
+              {(task.platforms || []).map((p) => (
+                <span
+                  key={p}
+                  className={`text-[8px] px-1 py-px rounded border leading-tight ${getLmsBadgeClass(
+                    p
+                  )}`}
+                >
+                  {p}
+                </span>
               ))}
-              {(task.tags || []).map(tag => (
-                <span key={tag} className={`text-[8px] px-1 py-px rounded border leading-tight ${getTagColor(tag)}`}>{tag}</span>
+              {(task.tags || []).map((tag) => (
+                <span
+                  key={tag}
+                  className={`text-[8px] px-1 py-px rounded border leading-tight ${getTagColor(
+                    tag
+                  )}`}
+                >
+                  {tag}
+                </span>
               ))}
             </div>
           )}
@@ -2556,32 +5495,115 @@ function CalendarView({ tasks, mode, setMode, cursor, setCursor, toggleTaskStatu
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-4 space-y-4" style={{ background: 'var(--ui-panel-bg)', borderColor: 'var(--ui-border)' }}>
+    <div
+      className="bg-white rounded-xl shadow-sm border p-4 space-y-4"
+      style={{
+        background: "var(--ui-panel-bg)",
+        borderColor: "var(--ui-border)",
+      }}
+    >
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex rounded-lg border overflow-hidden shadow-sm" style={{ borderColor: 'var(--ui-border)' }}>
-            <button type="button" onClick={() => setMode('month')} className={`px-3 py-1.5 text-xs font-semibold transition ${mode === 'month' ? 'bg-[var(--ui-accent)] text-[var(--ui-accent-contrast)]' : 'bg-transparent text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5'}`}>月</button>
-            <button type="button" onClick={() => setMode('week')} className={`px-3 py-1.5 text-xs font-semibold transition ${mode === 'week' ? 'bg-[var(--ui-accent)] text-[var(--ui-accent-contrast)]' : 'bg-transparent text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5'}`}>週</button>
+          <div
+            className="flex rounded-lg border overflow-hidden shadow-sm"
+            style={{ borderColor: "var(--ui-border)" }}
+          >
+            <button
+              type="button"
+              onClick={() => setMode("month")}
+              className={`px-3 py-1.5 text-xs font-semibold transition ${
+                mode === "month"
+                  ? "bg-[var(--ui-accent)] text-[var(--ui-accent-contrast)]"
+                  : "bg-transparent text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5"
+              }`}
+            >
+              月
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("week")}
+              className={`px-3 py-1.5 text-xs font-semibold transition ${
+                mode === "week"
+                  ? "bg-[var(--ui-accent)] text-[var(--ui-accent-contrast)]"
+                  : "bg-transparent text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5"
+              }`}
+            >
+              週
+            </button>
           </div>
-          <div className="flex rounded-lg border overflow-hidden shadow-sm ml-2" style={{ borderColor: 'var(--ui-border)' }}>
-            <button type="button" onClick={() => setDateBase('due')} className={`px-3 py-1.5 text-xs font-semibold transition ${dateBase === 'due' ? 'bg-[var(--ui-text)] text-[var(--ui-panel-bg)]' : 'bg-transparent text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5'}`}>設定日</button>
-            <button type="button" onClick={() => setDateBase('completed')} className={`px-3 py-1.5 text-xs font-semibold transition ${dateBase === 'completed' ? 'bg-[var(--ui-text)] text-[var(--ui-panel-bg)]' : 'bg-transparent text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5'}`}>完了日</button>
+          <div
+            className="flex rounded-lg border overflow-hidden shadow-sm ml-2"
+            style={{ borderColor: "var(--ui-border)" }}
+          >
+            <button
+              type="button"
+              onClick={() => setDateBase("due")}
+              className={`px-3 py-1.5 text-xs font-semibold transition ${
+                dateBase === "due"
+                  ? "bg-[var(--ui-text)] text-[var(--ui-panel-bg)]"
+                  : "bg-transparent text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5"
+              }`}
+            >
+              設定日
+            </button>
+            <button
+              type="button"
+              onClick={() => setDateBase("completed")}
+              className={`px-3 py-1.5 text-xs font-semibold transition ${
+                dateBase === "completed"
+                  ? "bg-[var(--ui-text)] text-[var(--ui-panel-bg)]"
+                  : "bg-transparent text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5"
+              }`}
+            >
+              完了日
+            </button>
           </div>
         </div>
         <div className="flex items-center justify-center sm:justify-end gap-2">
-          <button type="button" onClick={goPrev} className="p-2 rounded-lg border hover:bg-black/5 dark:hover:bg-white/5 transition" style={{ borderColor: 'var(--ui-border)' }}><ChevronLeft size={18} /></button>
-          <span className="text-sm font-semibold min-w-[160px] text-center" style={{ color: 'var(--ui-text)' }}>
-            {mode === 'month' ? `${y}年 ${m + 1}月` : formatWeekLabel(weekStart)}
+          <button
+            type="button"
+            onClick={goPrev}
+            className="p-2 rounded-lg border hover:bg-black/5 dark:hover:bg-white/5 transition"
+            style={{ borderColor: "var(--ui-border)" }}
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <span
+            className="text-sm font-semibold min-w-[160px] text-center"
+            style={{ color: "var(--ui-text)" }}
+          >
+            {mode === "month"
+              ? `${y}年 ${m + 1}月`
+              : formatWeekLabel(weekStart)}
           </span>
-          <button type="button" onClick={goNext} className="p-2 rounded-lg border hover:bg-black/5 dark:hover:bg-white/5 transition" style={{ borderColor: 'var(--ui-border)' }}><ChevronRight size={18} /></button>
+          <button
+            type="button"
+            onClick={goNext}
+            className="p-2 rounded-lg border hover:bg-black/5 dark:hover:bg-white/5 transition"
+            style={{ borderColor: "var(--ui-border)" }}
+          >
+            <ChevronRight size={18} />
+          </button>
         </div>
       </div>
 
-      {mode === 'month' ? (
+      {mode === "month" ? (
         <div className="flex flex-col sm:block">
-          <div className="grid grid-cols-7 gap-px rounded-lg overflow-hidden border" style={{ backgroundColor: 'var(--ui-border)', borderColor: 'var(--ui-border)' }}>
-            {CAL_WEEK_LABELS.map(lab => (
-              <div key={lab} className="text-center text-[10px] font-semibold py-2 opacity-70" style={{ background: 'var(--ui-panel-bg)' }}>{lab}</div>
+          <div
+            className="grid grid-cols-7 gap-px rounded-lg overflow-hidden border"
+            style={{
+              backgroundColor: "var(--ui-border)",
+              borderColor: "var(--ui-border)",
+            }}
+          >
+            {CAL_WEEK_LABELS.map((lab) => (
+              <div
+                key={lab}
+                className="text-center text-[10px] font-semibold py-2 opacity-70"
+                style={{ background: "var(--ui-panel-bg)" }}
+              >
+                {lab}
+              </div>
             ))}
             {Array.from({ length: 42 }, (_, i) => {
               const cellDate = new Date(gridStart);
@@ -2592,17 +5614,33 @@ function CalendarView({ tasks, mode, setMode, cursor, setCursor, toggleTaskStatu
               const dayTasks = tasksForDay(cellDate);
 
               return (
-                <div key={i} onClick={() => setSelectedMobileDate(cellDate)}
-                  className={`min-h-[80px] sm:min-h-[120px] p-1 sm:p-1.5 cursor-pointer sm:cursor-default transition-colors relative ${!inMonth ? 'opacity-45' : ''} ${isTodayCell ? 'ring-2 ring-inset ring-[var(--ui-accent)]' : ''} ${isSelectedCell ? 'bg-[var(--ui-accent-light)] sm:bg-[var(--ui-panel-bg)]' : ''}`}
-                  style={{ background: 'var(--ui-panel-bg)' }}
+                <div
+                  key={i}
+                  onClick={() => setSelectedMobileDate(cellDate)}
+                  className={`min-h-[80px] sm:min-h-[120px] p-1 sm:p-1.5 cursor-pointer sm:cursor-default transition-colors relative ${
+                    !inMonth ? "opacity-45" : ""
+                  } ${
+                    isTodayCell
+                      ? "ring-2 ring-inset ring-[var(--ui-accent)]"
+                      : ""
+                  } ${
+                    isSelectedCell
+                      ? "bg-[var(--ui-accent-light)] sm:bg-[var(--ui-panel-bg)]"
+                      : ""
+                  }`}
+                  style={{ background: "var(--ui-panel-bg)" }}
                 >
-                  <div className={`text-[10px] sm:text-[11px] font-semibold mb-1 text-center sm:text-left ${isTodayCell ? 'text-[var(--ui-accent)]' : ''}`}>
+                  <div
+                    className={`text-[10px] sm:text-[11px] font-semibold mb-1 text-center sm:text-left ${
+                      isTodayCell ? "text-[var(--ui-accent)]" : ""
+                    }`}
+                  >
                     {cellDate.getDate()}
                   </div>
 
                   {/* PC: Task Text */}
                   <div className="hidden sm:block max-h-[160px] overflow-y-auto pr-0.5">
-                    {dayTasks.map(t => renderTaskRow(t, false))}
+                    {dayTasks.map((t) => renderTaskRow(t, false))}
                   </div>
 
                   {/* Mobile: Task name preview */}
@@ -2610,19 +5648,27 @@ function CalendarView({ tasks, mode, setMode, cursor, setCursor, toggleTaskStatu
                     {dayTasks.slice(0, 2).map((t) => (
                       <p
                         key={t.id}
-                        className={`text-[8px] leading-tight truncate px-0.5 rounded ${t.status === 'completed'
-                            ? 'opacity-35 line-through'
+                        className={`text-[8px] leading-tight truncate px-0.5 rounded ${
+                          t.status === "completed"
+                            ? "opacity-35 line-through"
                             : isOverdue(t.due)
-                              ? 'font-semibold'
-                              : 'font-medium'
-                          }`}
-                        style={{ color: t.status !== 'completed' && isOverdue(t.due) ? 'var(--ui-danger)' : 'var(--ui-text)' }}
+                            ? "font-semibold"
+                            : "font-medium"
+                        }`}
+                        style={{
+                          color:
+                            t.status !== "completed" && isOverdue(t.due)
+                              ? "var(--ui-danger)"
+                              : "var(--ui-text)",
+                        }}
                       >
                         {t.cleanTitle}
                       </p>
                     ))}
                     {dayTasks.length > 2 && (
-                      <p className="text-[8px] opacity-40 text-center tabular-nums">+{dayTasks.length - 2}</p>
+                      <p className="text-[8px] opacity-40 text-center tabular-nums">
+                        +{dayTasks.length - 2}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -2631,16 +5677,34 @@ function CalendarView({ tasks, mode, setMode, cursor, setCursor, toggleTaskStatu
           </div>
 
           {/* Mobile: Selected Date Detail */}
-          <div className="sm:hidden mt-4 p-4 rounded-xl border-2" style={{ borderColor: 'var(--ui-accent)', background: 'var(--ui-accent-light)' }}>
-            <h4 className="text-sm font-bold mb-3 border-b pb-2 flex items-center gap-2" style={{ borderColor: 'var(--ui-accent)', color: 'var(--ui-accent-dark)' }}>
+          <div
+            className="sm:hidden mt-4 p-4 rounded-xl border-2"
+            style={{
+              borderColor: "var(--ui-accent)",
+              background: "var(--ui-accent-light)",
+            }}
+          >
+            <h4
+              className="text-sm font-bold mb-3 border-b pb-2 flex items-center gap-2"
+              style={{
+                borderColor: "var(--ui-accent)",
+                color: "var(--ui-accent-dark)",
+              }}
+            >
               <Calendar size={16} className="opacity-70" />
-              {selectedMobileDate.getMonth() + 1}月{selectedMobileDate.getDate()}日 ({WEEKDAYS[selectedMobileDate.getDay()]}) のタスク
+              {selectedMobileDate.getMonth() + 1}月
+              {selectedMobileDate.getDate()}日 (
+              {WEEKDAYS[selectedMobileDate.getDay()]}) のタスク
             </h4>
             <div className="space-y-1">
               {tasksForDay(selectedMobileDate).length === 0 ? (
-                <p className="text-xs opacity-50 text-center py-4">タスクなし</p>
+                <p className="text-xs opacity-50 text-center py-4">
+                  タスクなし
+                </p>
               ) : (
-                tasksForDay(selectedMobileDate).map(t => renderTaskRow(t, true))
+                tasksForDay(selectedMobileDate).map((t) =>
+                  renderTaskRow(t, true)
+                )
               )}
             </div>
           </div>
@@ -2653,16 +5717,33 @@ function CalendarView({ tasks, mode, setMode, cursor, setCursor, toggleTaskStatu
             const isTodayCell = sameLocalDay(d, now);
             const dayTasks = tasksForDay(d);
             return (
-              <div key={i} className={`border rounded-xl p-3 sm:p-2 min-h-[120px] sm:min-h-[260px] flex flex-col ${isTodayCell ? 'border-[var(--ui-accent)] bg-[var(--ui-accent-light)]' : 'border-[var(--ui-border)] bg-black/5 dark:bg-white/5'}`}>
-                <div className={`text-xs sm:text-xs font-bold mb-2 pb-2 border-b shrink-0 flex justify-between sm:block ${isTodayCell ? 'text-[var(--ui-accent)] border-[var(--ui-accent)]/30' : 'text-[var(--ui-text)] border-[var(--ui-border)]'}`}>
-                  <span>{d.getMonth() + 1}/{d.getDate()}</span>
-                  <span className="font-normal opacity-60">({WEEKDAYS[d.getDay()]})</span>
+              <div
+                key={i}
+                className={`border rounded-xl p-3 sm:p-2 min-h-[120px] sm:min-h-[260px] flex flex-col ${
+                  isTodayCell
+                    ? "border-[var(--ui-accent)] bg-[var(--ui-accent-light)]"
+                    : "border-[var(--ui-border)] bg-black/5 dark:bg-white/5"
+                }`}
+              >
+                <div
+                  className={`text-xs sm:text-xs font-bold mb-2 pb-2 border-b shrink-0 flex justify-between sm:block ${
+                    isTodayCell
+                      ? "text-[var(--ui-accent)] border-[var(--ui-accent)]/30"
+                      : "text-[var(--ui-text)] border-[var(--ui-border)]"
+                  }`}
+                >
+                  <span>
+                    {d.getMonth() + 1}/{d.getDate()}
+                  </span>
+                  <span className="font-normal opacity-60">
+                    ({WEEKDAYS[d.getDay()]})
+                  </span>
                 </div>
                 <div className="flex-1 overflow-y-auto pr-1">
                   {dayTasks.length === 0 ? (
                     <p className="text-[10px] opacity-40">タスクなし</p>
                   ) : (
-                    dayTasks.map(t => renderTaskRow(t, false))
+                    dayTasks.map((t) => renderTaskRow(t, false))
                   )}
                 </div>
               </div>
@@ -2683,7 +5764,7 @@ function PeriodCard({ label, icon, stats, accent, onClick }) {
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
+        if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           onClick?.();
         }
@@ -2692,24 +5773,32 @@ function PeriodCard({ label, icon, stats, accent, onClick }) {
     >
       <div className="w-full">
         <p className="text-sm font-medium text-slate-500 flex items-center gap-1.5">
-          {icon}{label}
+          {icon}
+          {label}
         </p>
         <div className="flex items-baseline gap-1 mt-1">
           <span className={`text-2xl font-bold ${accent}`}>{completed}</span>
           <span className="text-slate-400 text-lg font-semibold">/</span>
-          <span className="text-lg font-semibold text-slate-600">{totalTarget}</span>
+          <span className="text-lg font-semibold text-slate-600">
+            {totalTarget}
+          </span>
         </div>
       </div>
       <div className="mt-4 w-full">
         <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
           <div
-            className={`h-1.5 rounded-full transition-all duration-500 ${isEmpty ? 'bg-slate-200' : rate === 100 ? 'bg-emerald-400' : 'bg-[var(--ui-accent)]'
-              }`}
+            className={`h-1.5 rounded-full transition-all duration-500 ${
+              isEmpty
+                ? "bg-slate-200"
+                : rate === 100
+                ? "bg-emerald-400"
+                : "bg-[var(--ui-accent)]"
+            }`}
             style={{ width: `${isEmpty ? 0 : rate}%` }}
           />
         </div>
         <p className="text-[11px] text-slate-400 mt-1.5">
-          {isEmpty ? '対象タスクなし' : `達成率 ${rate}%`}
+          {isEmpty ? "対象タスクなし" : `達成率 ${rate}%`}
         </p>
       </div>
     </div>
@@ -2717,41 +5806,87 @@ function PeriodCard({ label, icon, stats, accent, onClick }) {
 }
 
 function RoutineDetectorView({
-  routineGroups, selectedRoutine, toggleTaskStatus, selectedTasks, toggleSelection,
-  setSelectedTasks, handleDeleteSelected, showCheckboxes,
-  selectionMode, setSelectionMode, showCompleted, setShowCompleted
+  routineGroups,
+  selectedRoutine,
+  toggleTaskStatus,
+  selectedTasks,
+  toggleSelection,
+  setSelectedTasks,
+  handleDeleteSelected,
+  showCheckboxes,
+  selectionMode,
+  setSelectionMode,
+  showCompleted,
+  setShowCompleted,
 }) {
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-100">
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => { setSelectionMode((prev) => { if (prev) setSelectedTasks(new Set()); return !prev; }); }} className={`px-3 py-1.5 text-xs font-medium rounded-md transition border shrink-0 ${selectionMode ? 'bg-slate-800 text-white border-slate-800 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>
-            {selectionMode ? '選択終了' : '選択モード'}
+          <button
+            type="button"
+            onClick={() => {
+              setSelectionMode((prev) => {
+                if (prev) setSelectedTasks(new Set());
+                return !prev;
+              });
+            }}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition border shrink-0 ${
+              selectionMode
+                ? "bg-slate-800 text-white border-slate-800 shadow-sm"
+                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            {selectionMode ? "選択終了" : "選択モード"}
           </button>
-          <span className="text-[10px] text-slate-400 hidden sm:inline">Shiftキー長押しでも複数選択可</span>
+          <span className="text-[10px] text-slate-400 hidden sm:inline">
+            Shiftキー長押しでも複数選択可
+          </span>
         </div>
         <label className="flex items-center gap-1.5 text-sm font-medium text-slate-600 cursor-pointer hover:text-slate-800">
-          <input type="checkbox" checked={!showCompleted} onChange={(e) => setShowCompleted(!e.target.checked)} className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
+          <input
+            type="checkbox"
+            checked={!showCompleted}
+            onChange={(e) => setShowCompleted(!e.target.checked)}
+            className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+          />
           達成済を隠す
         </label>
       </div>
 
       {/* 洗練されたフローティング選択削除バー (Organize画面用) */}
       {selectedTasks.size > 0 && (
-        <div className="fixed bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 z-[60] animate-in slide-in-from-bottom-8 fade-in flex items-center gap-3 sm:gap-5 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-2xl border"
-          style={{ background: 'var(--ui-panel-bg)', borderColor: 'var(--ui-border)', backdropFilter: 'blur(24px)' }}>
-          <span className="text-xs sm:text-sm font-bold flex items-center gap-2" style={{ color: 'var(--ui-text)' }}>
+        <div
+          className="fixed bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 z-[60] animate-in slide-in-from-bottom-8 fade-in flex items-center gap-3 sm:gap-5 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-2xl border"
+          style={{
+            background: "var(--ui-panel-bg)",
+            borderColor: "var(--ui-border)",
+            backdropFilter: "blur(24px)",
+          }}
+        >
+          <span
+            className="text-xs sm:text-sm font-bold flex items-center gap-2"
+            style={{ color: "var(--ui-text)" }}
+          >
             <span className="bg-[var(--ui-accent)] text-[var(--ui-accent-contrast)] w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-full text-xs shadow-sm">
               {selectedTasks.size}
             </span>
             件選択中
           </span>
           <div className="w-px h-6 bg-black/10 dark:bg-white/10" />
-          <button type="button" onClick={() => setSelectedTasks(new Set())} className="text-xs sm:text-sm font-bold opacity-50 hover:opacity-100 transition px-1" style={{ color: 'var(--ui-text)' }}>
+          <button
+            type="button"
+            onClick={() => setSelectedTasks(new Set())}
+            className="text-xs sm:text-sm font-bold opacity-50 hover:opacity-100 transition px-1"
+            style={{ color: "var(--ui-text)" }}
+          >
             キャンセル
           </button>
-          <button type="button" onClick={handleDeleteSelected} className="px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all flex items-center gap-1.5 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95">
+          <button
+            type="button"
+            onClick={handleDeleteSelected}
+            className="px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all flex items-center gap-1.5 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95"
+          >
             <Trash2 size={16} /> 削除する
           </button>
         </div>
@@ -2766,7 +5901,7 @@ function RoutineDetectorView({
         ) : (
           routineGroups.map((group, idx) => {
             const sortedTasks = [...group.tasks]
-              .filter((t) => showCompleted || t.status !== 'completed')
+              .filter((t) => showCompleted || t.status !== "completed")
               .sort((a, b) => {
                 const da = a.due ? new Date(a.due).getTime() : Infinity;
                 const db = b.due ? new Date(b.due).getTime() : Infinity;
@@ -2775,20 +5910,47 @@ function RoutineDetectorView({
 
             if (sortedTasks.length === 0) return null;
 
-            const isHighlighted = selectedRoutine === (group.titleLabel || group.title);
+            const isHighlighted =
+              selectedRoutine === (group.titleLabel || group.title);
 
             return (
-              <div key={group.titleLabel || group.title + String(idx)} className={`bg-white rounded-xl shadow-sm border overflow-hidden flex flex-col transition-all duration-300 ${isHighlighted ? 'ring-2 ring-amber-400 border-amber-200 scale-[1.01]' : 'border-slate-100'}`}>
+              <div
+                key={group.titleLabel || group.title + String(idx)}
+                className={`bg-white rounded-xl shadow-sm border overflow-hidden flex flex-col transition-all duration-300 ${
+                  isHighlighted
+                    ? "ring-2 ring-amber-400 border-amber-200 scale-[1.01]"
+                    : "border-slate-100"
+                }`}
+              >
                 <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex flex-col gap-2">
                   <div className="flex justify-between items-center">
-                    <h3 className="font-bold text-slate-800 text-base truncate flex-1 pr-4" title={group.titleLabel || group.title}>{group.titleLabel || group.title}</h3>
-                    <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-full shrink-0">{group.count} 件</span>
+                    <h3
+                      className="font-bold text-slate-800 text-base truncate flex-1 pr-4"
+                      title={group.titleLabel || group.title}
+                    >
+                      {group.titleLabel || group.title}
+                    </h3>
+                    <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-full shrink-0">
+                      {group.count} 件
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-slate-500">
                     <div className="flex-1 bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                      <div className="bg-emerald-400 h-1.5 rounded-full transition-all" style={{ width: `${(group.completedCount / (group.count || 1)) * 100}%` }} />
+                      <div
+                        className="bg-emerald-400 h-1.5 rounded-full transition-all"
+                        style={{
+                          width: `${
+                            (group.completedCount / (group.count || 1)) * 100
+                          }%`,
+                        }}
+                      />
                     </div>
-                    <span>{Math.round((group.completedCount / (group.count || 1)) * 100)}% ({group.completedCount}/{group.count})</span>
+                    <span>
+                      {Math.round(
+                        (group.completedCount / (group.count || 1)) * 100
+                      )}
+                      % ({group.completedCount}/{group.count})
+                    </span>
                   </div>
                 </div>
                 <div className="p-2 bg-white flex justify-between items-center border-b border-slate-50">
@@ -2799,33 +5961,79 @@ function RoutineDetectorView({
                       setSelectedTasks((prev) => {
                         const next = new Set(prev);
                         const allSelected = ids.every((id) => next.has(id));
-                        ids.forEach((id) => (allSelected ? next.delete(id) : next.add(id)));
+                        ids.forEach((id) =>
+                          allSelected ? next.delete(id) : next.add(id)
+                        );
                         return next;
                       });
                     }}
                     className="text-xs flex items-center gap-1 px-2 py-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition"
                   >
-                    {group.tasks.every(t => selectedTasks.has(t.id)) ? <CheckSquare size={14} className="text-blue-600" /> : <Circle size={14} />}
-                    {group.tasks.every(t => selectedTasks.has(t.id)) ? 'グループ解除' : 'グループ選択'}
+                    {group.tasks.every((t) => selectedTasks.has(t.id)) ? (
+                      <CheckSquare size={14} className="text-blue-600" />
+                    ) : (
+                      <Circle size={14} />
+                    )}
+                    {group.tasks.every((t) => selectedTasks.has(t.id))
+                      ? "グループ解除"
+                      : "グループ選択"}
                   </button>
                 </div>
                 <div className="max-h-[300px] overflow-y-auto divide-y divide-slate-50 p-2">
                   {sortedTasks.map((task) => {
-                    const done = task.status === 'completed';
+                    const done = task.status === "completed";
                     const isSelected = selectedTasks.has(task.id);
                     return (
                       <div
                         key={task.id}
-                        onClick={() => { if (showCheckboxes) toggleSelection(task.id); }}
-                        className={`flex items-start gap-3 p-2 rounded-lg transition-all duration-300 group ${showCheckboxes ? 'cursor-pointer' : ''
-                          } ${isSelected ? 'bg-[var(--ui-accent-light)] ring-1 ring-[var(--ui-accent)]' : 'hover:bg-black/5 dark:hover:bg-white/5'} ${done ? 'opacity-60 grayscale hover:grayscale-0' : ''}`}
+                        onClick={() => {
+                          if (showCheckboxes) toggleSelection(task.id);
+                        }}
+                        className={`flex items-start gap-3 p-2 rounded-lg transition-all duration-300 group ${
+                          showCheckboxes ? "cursor-pointer" : ""
+                        } ${
+                          isSelected
+                            ? "bg-[var(--ui-accent-light)] ring-1 ring-[var(--ui-accent)]"
+                            : "hover:bg-black/5 dark:hover:bg-white/5"
+                        } ${
+                          done ? "opacity-60 grayscale hover:grayscale-0" : ""
+                        }`}
                       >
-                        <button type="button" onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }} className="mt-0.5 shrink-0 focus:outline-none transition-transform active:scale-90">
-                          {done ? <CheckCircle2 size={16} className="text-[var(--ui-success)]" /> : <Circle size={16} className="text-[var(--ui-text-muted)] opacity-40 group-hover:text-[var(--ui-accent)] group-hover:opacity-100 transition" />}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleTaskStatus(task);
+                          }}
+                          className="mt-0.5 shrink-0 focus:outline-none transition-transform active:scale-90"
+                        >
+                          {done ? (
+                            <CheckCircle2
+                              size={16}
+                              className="text-[var(--ui-success)]"
+                            />
+                          ) : (
+                            <Circle
+                              size={16}
+                              className="text-[var(--ui-text-muted)] opacity-40 group-hover:text-[var(--ui-accent)] group-hover:opacity-100 transition"
+                            />
+                          )}
                         </button>
                         <div className="min-w-0 flex-1">
-                          <p className={`text-sm ${done ? 'line-through text-[var(--ui-text-muted)]' : 'text-[var(--ui-text)]'}`}>{task.cleanTitle}</p>
-                          {task.due && <p className="text-[10px] text-[var(--ui-text-muted)] mt-0.5 opacity-80">{new Date(task.due).toLocaleDateString()}</p>}
+                          <p
+                            className={`text-sm ${
+                              done
+                                ? "line-through text-[var(--ui-text-muted)]"
+                                : "text-[var(--ui-text)]"
+                            }`}
+                          >
+                            {task.cleanTitle}
+                          </p>
+                          {task.due && (
+                            <p className="text-[10px] text-[var(--ui-text-muted)] mt-0.5 opacity-80">
+                              {new Date(task.due).toLocaleDateString()}
+                            </p>
+                          )}
                         </div>
                       </div>
                     );
@@ -2857,17 +6065,19 @@ function TagManagerView({
 }) {
   const tagGroups = useMemo(() => {
     return tagStats
-      .filter(s => s.tag !== '未分類')
-      .map(s => {
-        const gTasks = tasks.filter(t => t.tags.includes(s.tag));
-        const completedCount = gTasks.filter(t => t.status === 'completed').length;
+      .filter((s) => s.tag !== "未分類")
+      .map((s) => {
+        const gTasks = tasks.filter((t) => t.tags.includes(s.tag));
+        const completedCount = gTasks.filter(
+          (t) => t.status === "completed"
+        ).length;
         return {
           title: s.tag,
           titleLabel: s.tag,
           activeCount: gTasks.length - completedCount,
           count: gTasks.length,
           completedCount,
-          tasks: gTasks
+          tasks: gTasks,
         };
       })
       .sort((a, b) => b.activeCount - a.activeCount || b.count - a.count);
@@ -2878,7 +6088,9 @@ function TagManagerView({
       <div className="flex items-center gap-2 mb-4">
         <Tag className="text-rose-500" size={24} />
         <h2 className="text-xl font-bold text-slate-800">タグ管理</h2>
-        <span className="text-xs text-slate-400 ml-2">タグごとのタスク状況を一括管理</span>
+        <span className="text-xs text-slate-400 ml-2">
+          タグごとのタスク状況を一括管理
+        </span>
       </div>
       <RoutineDetectorView
         routineGroups={tagGroups}
@@ -2898,8 +6110,10 @@ function TagManagerView({
 }
 
 function CompositeChart({ series, labelFor }) {
-  const maxTotal = Math.max(1, ...series.map(w => w.total));
-  const W = 700, H = 260, PAD = { t: 24, b: 32, l: 40, r: 40 };
+  const maxTotal = Math.max(1, ...series.map((w) => w.total));
+  const W = 700,
+    H = 260,
+    PAD = { t: 24, b: 32, l: 40, r: 40 };
   const barAreaH = H - PAD.t - PAD.b;
 
   const segment = (W - PAD.l - PAD.r) / (series.length || 1);
@@ -2909,11 +6123,17 @@ function CompositeChart({ series, labelFor }) {
   const yOfBar = (val) => PAD.t + barAreaH * (1 - val / maxTotal);
   const barH = (val) => barAreaH * (val / maxTotal);
 
-  const points = series.map((w, i) => `${xOfBar(i)},${yOfRate(w.rate)}`).join(' ');
+  const points = series
+    .map((w, i) => `${xOfBar(i)},${yOfRate(w.rate)}`)
+    .join(" ");
 
   return (
     <div className="overflow-x-auto hide-scrollbar pb-2">
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full min-w-[600px] drop-shadow-sm" style={{ fontFamily: 'var(--ui-font)' }}>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="w-full min-w-[600px] drop-shadow-sm"
+        style={{ fontFamily: "var(--ui-font)" }}
+      >
         <defs>
           <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--ui-accent)" />
@@ -2921,99 +6141,235 @@ function CompositeChart({ series, labelFor }) {
           </linearGradient>
         </defs>
 
-        {[0, 0.25, 0.5, 0.75, 1].map(t => (
+        {[0, 0.25, 0.5, 0.75, 1].map((t) => (
           <g key={`grid-${t}`}>
-            <line x1={PAD.l} x2={W - PAD.r} y1={PAD.t + barAreaH * t} y2={PAD.t + barAreaH * t} stroke="#f1f5f9" strokeWidth="1" />
-            <text x={PAD.l - 8} y={PAD.t + barAreaH * t + 3} textAnchor="end" fontSize="10" fill="#94a3b8">{Math.round(maxTotal * (1 - t))}</text>
-            <text x={W - PAD.r + 8} y={PAD.t + barAreaH * t + 3} textAnchor="start" fontSize="10" fill="#94a3b8">{Math.round((1 - t) * 100)}%</text>
+            <line
+              x1={PAD.l}
+              x2={W - PAD.r}
+              y1={PAD.t + barAreaH * t}
+              y2={PAD.t + barAreaH * t}
+              stroke="#f1f5f9"
+              strokeWidth="1"
+            />
+            <text
+              x={PAD.l - 8}
+              y={PAD.t + barAreaH * t + 3}
+              textAnchor="end"
+              fontSize="10"
+              fill="#94a3b8"
+            >
+              {Math.round(maxTotal * (1 - t))}
+            </text>
+            <text
+              x={W - PAD.r + 8}
+              y={PAD.t + barAreaH * t + 3}
+              textAnchor="start"
+              fontSize="10"
+              fill="#94a3b8"
+            >
+              {Math.round((1 - t) * 100)}%
+            </text>
           </g>
         ))}
 
         {series.map((w, i) => (
-          <rect key={`tot-${i}`} x={xOfBar(i) - barW / 2} y={yOfBar(w.total)} width={barW} height={barH(w.total)}
-            fill="var(--ui-accent-light)" rx="4" opacity="0.6" />
+          <rect
+            key={`tot-${i}`}
+            x={xOfBar(i) - barW / 2}
+            y={yOfBar(w.total)}
+            width={barW}
+            height={barH(w.total)}
+            fill="var(--ui-accent-light)"
+            rx="4"
+            opacity="0.6"
+          />
         ))}
 
         {series.map((w, i) => (
-          <rect key={`comp-${i}`} x={xOfBar(i) - barW / 2} y={yOfBar(w.completed)} width={barW} height={barH(w.completed)}
-            fill="url(#barGrad)" rx="4" className={w.isFuture ? 'opacity-40' : 'opacity-95'} />
+          <rect
+            key={`comp-${i}`}
+            x={xOfBar(i) - barW / 2}
+            y={yOfBar(w.completed)}
+            width={barW}
+            height={barH(w.completed)}
+            fill="url(#barGrad)"
+            rx="4"
+            className={w.isFuture ? "opacity-40" : "opacity-95"}
+          />
         ))}
 
-        <polyline points={points} fill="none" stroke="var(--ui-accent-dark)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+        <polyline
+          points={points}
+          fill="none"
+          stroke="var(--ui-accent-dark)"
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
 
         {series.map((w, i) => (
           <g key={`point-${i}`}>
-            <circle cx={xOfBar(i)} cy={yOfRate(w.rate)} r="4" fill="#ffffff" stroke="var(--ui-accent-dark)" strokeWidth="2" />
+            <circle
+              cx={xOfBar(i)}
+              cy={yOfRate(w.rate)}
+              r="4"
+              fill="#ffffff"
+              stroke="var(--ui-accent-dark)"
+              strokeWidth="2"
+            />
             {w.total > 0 && (
-              <text x={xOfBar(i)} y={yOfRate(w.rate) - 10} textAnchor="middle" fontSize="11" fill="var(--ui-accent-dark)" fontWeight="800">
+              <text
+                x={xOfBar(i)}
+                y={yOfRate(w.rate) - 10}
+                textAnchor="middle"
+                fontSize="11"
+                fill="var(--ui-accent-dark)"
+                fontWeight="800"
+              >
                 {w.rate}%
               </text>
             )}
-            <text x={xOfBar(i)} y={H - 8} textAnchor="middle" fontSize="11" fill={w.isCurrent ? 'var(--ui-accent-dark)' : '#64748b'} fontWeight={w.isCurrent ? '800' : '500'}>
+            <text
+              x={xOfBar(i)}
+              y={H - 8}
+              textAnchor="middle"
+              fontSize="11"
+              fill={w.isCurrent ? "var(--ui-accent-dark)" : "#64748b"}
+              fontWeight={w.isCurrent ? "800" : "500"}
+            >
               {labelFor(w)}
             </text>
           </g>
         ))}
 
         <g transform={`translate(${PAD.l}, 8)`}>
-          <rect width="10" height="10" fill="var(--ui-accent-light)" rx="2" /><text x="14" y="9" fontSize="10" fill="#64748b">設定数</text>
-          <rect x="65" width="10" height="10" fill="url(#barGrad)" rx="2" /><text x="79" y="9" fontSize="10" fill="#64748b">完了数 (左軸)</text>
-          <line x1="150" y1="5" x2="165" y2="5" stroke="var(--ui-accent-dark)" strokeWidth="2" /><circle cx="157.5" cy="5" r="3" fill="#fff" stroke="var(--ui-accent-dark)" strokeWidth="1.5" /><text x="170" y="9" fontSize="10" fill="#64748b">達成率 (右軸)</text>
+          <rect width="10" height="10" fill="var(--ui-accent-light)" rx="2" />
+          <text x="14" y="9" fontSize="10" fill="#64748b">
+            設定数
+          </text>
+          <rect x="65" width="10" height="10" fill="url(#barGrad)" rx="2" />
+          <text x="79" y="9" fontSize="10" fill="#64748b">
+            完了数 (左軸)
+          </text>
+          <line
+            x1="150"
+            y1="5"
+            x2="165"
+            y2="5"
+            stroke="var(--ui-accent-dark)"
+            strokeWidth="2"
+          />
+          <circle
+            cx="157.5"
+            cy="5"
+            r="3"
+            fill="#fff"
+            stroke="var(--ui-accent-dark)"
+            strokeWidth="1.5"
+          />
+          <text x="170" y="9" fontSize="10" fill="#64748b">
+            達成率 (右軸)
+          </text>
         </g>
       </svg>
     </div>
   );
 }
 
-function UISettingsView({ uiConfig, setUiConfig, tasks, accessToken, fetchRealTasks, isDemo, handleLogout }) {
-  const [settingTab, setSettingTab] = useState('ui'); // 'ui' | 'replace'
-  const update = (key, val) => setUiConfig(prev => ({ ...prev, [key]: val }));
+function UISettingsView({
+  uiConfig,
+  setUiConfig,
+  tasks,
+  accessToken,
+  fetchRealTasks,
+  isDemo,
+  handleLogout,
+}) {
+  const [settingTab, setSettingTab] = useState("ui"); // 'ui' | 'replace'
+  const update = (key, val) => setUiConfig((prev) => ({ ...prev, [key]: val }));
   const applyPreset = (config) => setUiConfig(config);
 
   const Section = ({ title, children }) => (
-    <div className="bg-white rounded-xl shadow-sm border p-5 space-y-4" style={{ background: 'var(--ui-panel-bg)', borderColor: 'var(--ui-border)' }}>
-      <h3 className="font-bold text-sm uppercase tracking-wider" style={{ color: 'var(--ui-text)' }}>{title}</h3>
+    <div
+      className="bg-white rounded-xl shadow-sm border p-5 space-y-4"
+      style={{
+        background: "var(--ui-panel-bg)",
+        borderColor: "var(--ui-border)",
+      }}
+    >
+      <h3
+        className="font-bold text-sm uppercase tracking-wider"
+        style={{ color: "var(--ui-text)" }}
+      >
+        {title}
+      </h3>
       {children}
     </div>
   );
 
   const OptionRow = ({ label, options, current, onChange }) => (
     <div className="flex flex-col lg:flex-row lg:items-center gap-3 border-b border-black/5 dark:border-white/5 pb-4 last:border-0 last:pb-0">
-      <span className="text-sm font-bold w-40 shrink-0 opacity-90">{label}</span>
-      <div className="flex-1 p-1.5 rounded-xl border" style={{ background: 'var(--ui-bg)', borderColor: 'var(--ui-border)' }}>
-        <AnimatedToggle options={options} current={current} onChange={onChange} className="w-full" optionClassName="flex-1 min-w-[80px]" />
+      <span className="text-sm font-bold w-40 shrink-0 opacity-90">
+        {label}
+      </span>
+      <div
+        className="flex-1 p-1.5 rounded-xl border"
+        style={{ background: "var(--ui-bg)", borderColor: "var(--ui-border)" }}
+      >
+        <AnimatedToggle
+          options={options}
+          current={current}
+          onChange={onChange}
+          className="w-full"
+          optionClassName="flex-1 min-w-[80px]"
+        />
       </div>
     </div>
   );
 
   // タスク置換用のState
-  const [searchText, setSearchText] = useState('');
-  const [replaceText, setReplaceText] = useState('');
+  const [searchText, setSearchText] = useState("");
+  const [replaceText, setReplaceText] = useState("");
   const [replacing, setReplacing] = useState(false);
-  const matchedTasks = tasks.filter(t => searchText && t.title.includes(searchText) && t.status !== 'completed');
+  const matchedTasks = tasks.filter(
+    (t) =>
+      searchText && t.title.includes(searchText) && t.status !== "completed"
+  );
 
   const handleReplace = async () => {
     if (!accessToken && !isDemo) {
-      alert('セッションが切れています。再接続してください。');
+      alert("セッションが切れています。再接続してください。");
       handleAuth();
       return;
     }
     if (!searchText) return;
     const targetTasks = matchedTasks.slice(0, 10);
     if (targetTasks.length === 0) return;
-    if (!window.confirm(`${targetTasks.length}件のタスク名を置換しますか？`)) return;
+    if (!window.confirm(`${targetTasks.length}件のタスク名を置換しますか？`))
+      return;
 
     setReplacing(true);
     if (!isDemo) {
       try {
-        await Promise.all(targetTasks.map(task => {
-          const newTitle = task.title.replace(new RegExp(searchText, 'g'), replaceText);
-          return fetch(`https://tasks.googleapis.com/tasks/v1/lists/${task.listId}/tasks/${task.id}`, {
-            method: 'PATCH',
-            headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title: newTitle })
-          });
-        }));
+        await Promise.all(
+          targetTasks.map((task) => {
+            const newTitle = task.title.replace(
+              new RegExp(searchText, "g"),
+              replaceText
+            );
+            return fetch(
+              `https://tasks.googleapis.com/tasks/v1/lists/${task.listId}/tasks/${task.id}`,
+              {
+                method: "PATCH",
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ title: newTitle }),
+              }
+            );
+          })
+        );
         fetchRealTasks(accessToken);
         alert(`${targetTasks.length}件の置換が完了しました。`);
       } catch (e) {
@@ -3025,101 +6381,247 @@ function UISettingsView({ uiConfig, setUiConfig, tasks, accessToken, fetchRealTa
     setReplacing(false);
   };
 
-  const categories = [...new Set(THEME_PRESETS.map(p => p.category))];
+  const categories = [...new Set(THEME_PRESETS.map((p) => p.category))];
 
   return (
     <div className="space-y-6 w-full xl:max-w-6xl">
-      <div className="flex items-center gap-2 mb-2 px-2 border-b pb-4" style={{ borderColor: 'var(--ui-border)' }}>
+      <div
+        className="flex items-center gap-2 mb-2 px-2 border-b pb-4"
+        style={{ borderColor: "var(--ui-border)" }}
+      >
         <Settings className="opacity-80" size={28} />
         <h2 className="text-2xl font-bold">システム設定</h2>
         <div className="ml-auto flex bg-black/5 dark:bg-white/5 p-1 rounded-lg">
-          <button onClick={() => setSettingTab('ui')} className={`px-4 py-1.5 text-sm font-bold rounded-md transition ${settingTab === 'ui' ? 'bg-[var(--ui-panel-bg)] shadow-sm' : 'opacity-60'}`}>デザイン</button>
-          <button onClick={() => setSettingTab('replace')} className={`px-4 py-1.5 text-sm font-bold rounded-md transition ${settingTab === 'replace' ? 'bg-[var(--ui-panel-bg)] shadow-sm' : 'opacity-60'}`}>一括置換</button>
+          <button
+            onClick={() => setSettingTab("ui")}
+            className={`px-4 py-1.5 text-sm font-bold rounded-md transition ${
+              settingTab === "ui"
+                ? "bg-[var(--ui-panel-bg)] shadow-sm"
+                : "opacity-60"
+            }`}
+          >
+            デザイン
+          </button>
+          <button
+            onClick={() => setSettingTab("replace")}
+            className={`px-4 py-1.5 text-sm font-bold rounded-md transition ${
+              settingTab === "replace"
+                ? "bg-[var(--ui-panel-bg)] shadow-sm"
+                : "opacity-60"
+            }`}
+          >
+            一括置換
+          </button>
         </div>
       </div>
 
-      {settingTab === 'ui' ? (
+      {settingTab === "ui" ? (
         <div className="space-y-6 animate-in fade-in">
           <Section title="🎨 デザインプリセット (カテゴリ別)">
             <div className="space-y-8">
-              {categories.map(cat => (
+              {categories.map((cat) => (
                 <div key={cat}>
-                  <h4 className="text-xs font-bold opacity-60 mb-3 border-b pb-1" style={{ borderColor: 'var(--ui-border)' }}>{cat}</h4>
+                  <h4
+                    className="text-xs font-bold opacity-60 mb-3 border-b pb-1"
+                    style={{ borderColor: "var(--ui-border)" }}
+                  >
+                    {cat}
+                  </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 items-stretch">
-                    {THEME_PRESETS.filter(p => p.category === cat).map((preset) => {
-                      const bgThemeColorMap = {
-                        white: '#ffffff', light: '#f8fafc', paper: '#fdfcf8', gray: '#e5e7eb',
-                        dark: '#1e293b', navy: '#0a0a2a', pitchBlack: '#000000',
-                        cream: '#fefce8', sepia: '#f3e8d2',
-                      };
-                      const accentColorMap = {
-                        blue: '#2563eb', indigo: '#4f46e5', emerald: '#059669', teal: '#0d9488',
-                        cyan: '#0891b2', rose: '#e11d48', fuchsia: '#c026d3', amber: '#d97706',
-                        violet: '#7c3aed', slate: '#64748b', zinc: '#52525b', white: '#f8fafc',
-                        black: '#09090b', gold: '#d4af37', bronze: '#cd7f32', sand: '#e7e5e4',
-                      };
-                      const previewBg = bgThemeColorMap[preset.config.bgTheme] ?? '#f8fafc';
-                      const previewAccent = accentColorMap[preset.config.accent] ?? '#2563eb';
-                      const isDarkP = ['dark', 'navy', 'pitchBlack'].includes(preset.config.bgTheme);
-                      const previewText = isDarkP ? '#e2e8f0' : '#1e293b';
-                      const previewRadiusPx = { none: '0px', sm: '4px', md: '8px', lg: '14px', xl: '20px' }[preset.config.radius] ?? '8px';
-                      const isActive = preset.config.bgTheme === uiConfig.bgTheme
-                        && preset.config.accent === uiConfig.accent
-                        && preset.config.texture === uiConfig.texture
-                        && preset.config.radius === uiConfig.radius;
+                    {THEME_PRESETS.filter((p) => p.category === cat).map(
+                      (preset) => {
+                        const bgThemeColorMap = {
+                          white: "#ffffff",
+                          light: "#f8fafc",
+                          paper: "#fdfcf8",
+                          gray: "#e5e7eb",
+                          dark: "#1e293b",
+                          navy: "#0a0a2a",
+                          pitchBlack: "#000000",
+                          cream: "#fefce8",
+                          sepia: "#f3e8d2",
+                        };
+                        const accentColorMap = {
+                          blue: "#2563eb",
+                          indigo: "#4f46e5",
+                          emerald: "#059669",
+                          teal: "#0d9488",
+                          cyan: "#0891b2",
+                          rose: "#e11d48",
+                          fuchsia: "#c026d3",
+                          amber: "#d97706",
+                          violet: "#7c3aed",
+                          slate: "#64748b",
+                          zinc: "#52525b",
+                          white: "#f8fafc",
+                          black: "#09090b",
+                          gold: "#d4af37",
+                          bronze: "#cd7f32",
+                          sand: "#e7e5e4",
+                        };
+                        const previewBg =
+                          bgThemeColorMap[preset.config.bgTheme] ?? "#f8fafc";
+                        const previewAccent =
+                          accentColorMap[preset.config.accent] ?? "#2563eb";
+                        const isDarkP = ["dark", "navy", "pitchBlack"].includes(
+                          preset.config.bgTheme
+                        );
+                        const previewText = isDarkP ? "#e2e8f0" : "#1e293b";
+                        const previewRadiusPx =
+                          {
+                            none: "0px",
+                            sm: "4px",
+                            md: "8px",
+                            lg: "14px",
+                            xl: "20px",
+                          }[preset.config.radius] ?? "8px";
+                        const isActive =
+                          preset.config.bgTheme === uiConfig.bgTheme &&
+                          preset.config.accent === uiConfig.accent &&
+                          preset.config.texture === uiConfig.texture &&
+                          preset.config.radius === uiConfig.radius;
 
-                      return (
-                        <button
-                          key={preset.id}
-                          onClick={() => applyPreset(preset.config)}
-                          className={`group relative flex flex-col items-start text-left h-full overflow-hidden transition-all duration-500 hover:-translate-y-1 ${isActive ? 'scale-[1.04] z-10' : 'hover:scale-[1.02]'}`}
-                          style={{
-                            borderRadius: previewRadiusPx,
-                            boxShadow: isActive
-                              ? `0 10px 40px -8px ${previewAccent}80, 0 0 0 2px ${previewAccent}`
-                              : '0 4px 20px -5px rgba(0,0,0,0.12)',
-                            border: '1px solid var(--ui-border)',
-                            background: 'var(--ui-panel-bg)',
-                          }}
-                        >
-                          {/* ── Mini preview ── */}
-                          <div
-                            className="w-full relative overflow-hidden shrink-0"
-                            style={{ height: 72, background: previewBg, borderRadius: `${previewRadiusPx} ${previewRadiusPx} 0 0` }}
+                        return (
+                          <button
+                            key={preset.id}
+                            onClick={() => applyPreset(preset.config)}
+                            className={`group relative flex flex-col items-start text-left h-full overflow-hidden transition-all duration-500 hover:-translate-y-1 ${
+                              isActive
+                                ? "scale-[1.04] z-10"
+                                : "hover:scale-[1.02]"
+                            }`}
+                            style={{
+                              borderRadius: previewRadiusPx,
+                              boxShadow: isActive
+                                ? `0 10px 40px -8px ${previewAccent}80, 0 0 0 2px ${previewAccent}`
+                                : "0 4px 20px -5px rgba(0,0,0,0.12)",
+                              border: "1px solid var(--ui-border)",
+                              background: "var(--ui-panel-bg)",
+                            }}
                           >
-                            {/* Mock task rows */}
-                            <div className="absolute inset-0 flex flex-col justify-center gap-1.5 px-3 py-2">
-                              {[90, 75, 55].map((w, i) => (
-                                <div key={i} className="flex items-center gap-1.5">
-                                  <div style={{ width: 9, height: 9, borderRadius: '50%', border: `2px solid ${i === 0 ? previewAccent : previewText + '40'}`, flexShrink: 0 }} />
-                                  <div style={{ width: `${w}%`, height: 5, borderRadius: 3, background: i === 0 ? previewAccent + '50' : previewText + '18' }} />
-                                </div>
-                              ))}
-                            </div>
-                            {/* Accent FAB dot */}
-                            <div style={{ position: 'absolute', bottom: 6, right: 8, width: 16, height: 16, borderRadius: '50%', background: previewAccent, boxShadow: `0 2px 8px ${previewAccent}70` }} />
-                            {/* Gradient overlay for neon/glass */}
-                            {(preset.config.texture === 'glass' || preset.config.useGradient) && (
-                              <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${previewAccent}18 0%, transparent 60%)`, pointerEvents: 'none' }} />
-                            )}
-                          </div>
-
-                          {/* ── Info ── */}
-                          <div className="p-3 flex flex-col gap-2 w-full">
-                            <span className="font-bold text-sm leading-tight" style={{ color: 'var(--ui-text)' }}>{preset.name}</span>
-                            <div className="flex flex-wrap gap-1">
-                              <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold" style={{ background: previewAccent + '22', color: previewAccent }}>{preset.config.accent}</span>
-                              <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-black/5 dark:bg-white/10" style={{ color: 'var(--ui-text-muted)' }}>r:{preset.config.radius}</span>
-                              <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-black/5 dark:bg-white/10" style={{ color: 'var(--ui-text-muted)' }}>{preset.config.texture}</span>
-                              <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-black/5 dark:bg-white/10" style={{ color: 'var(--ui-text-muted)' }}>{preset.config.animation}</span>
-                              {preset.config.useGradient && (
-                                <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold" style={{ background: previewAccent + '30', color: previewAccent }}>grad</span>
+                            {/* ── Mini preview ── */}
+                            <div
+                              className="w-full relative overflow-hidden shrink-0"
+                              style={{
+                                height: 72,
+                                background: previewBg,
+                                borderRadius: `${previewRadiusPx} ${previewRadiusPx} 0 0`,
+                              }}
+                            >
+                              {/* Mock task rows */}
+                              <div className="absolute inset-0 flex flex-col justify-center gap-1.5 px-3 py-2">
+                                {[90, 75, 55].map((w, i) => (
+                                  <div
+                                    key={i}
+                                    className="flex items-center gap-1.5"
+                                  >
+                                    <div
+                                      style={{
+                                        width: 9,
+                                        height: 9,
+                                        borderRadius: "50%",
+                                        border: `2px solid ${
+                                          i === 0
+                                            ? previewAccent
+                                            : previewText + "40"
+                                        }`,
+                                        flexShrink: 0,
+                                      }}
+                                    />
+                                    <div
+                                      style={{
+                                        width: `${w}%`,
+                                        height: 5,
+                                        borderRadius: 3,
+                                        background:
+                                          i === 0
+                                            ? previewAccent + "50"
+                                            : previewText + "18",
+                                      }}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                              {/* Accent FAB dot */}
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  bottom: 6,
+                                  right: 8,
+                                  width: 16,
+                                  height: 16,
+                                  borderRadius: "50%",
+                                  background: previewAccent,
+                                  boxShadow: `0 2px 8px ${previewAccent}70`,
+                                }}
+                              />
+                              {/* Gradient overlay for neon/glass */}
+                              {(preset.config.texture === "glass" ||
+                                preset.config.useGradient) && (
+                                <div
+                                  style={{
+                                    position: "absolute",
+                                    inset: 0,
+                                    background: `linear-gradient(135deg, ${previewAccent}18 0%, transparent 60%)`,
+                                    pointerEvents: "none",
+                                  }}
+                                />
                               )}
                             </div>
-                          </div>
-                        </button>
-                      );
-                    })}
+
+                            {/* ── Info ── */}
+                            <div className="p-3 flex flex-col gap-2 w-full">
+                              <span
+                                className="font-bold text-sm leading-tight"
+                                style={{ color: "var(--ui-text)" }}
+                              >
+                                {preset.name}
+                              </span>
+                              <div className="flex flex-wrap gap-1">
+                                <span
+                                  className="text-[9px] px-1.5 py-0.5 rounded-full font-bold"
+                                  style={{
+                                    background: previewAccent + "22",
+                                    color: previewAccent,
+                                  }}
+                                >
+                                  {preset.config.accent}
+                                </span>
+                                <span
+                                  className="text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-black/5 dark:bg-white/10"
+                                  style={{ color: "var(--ui-text-muted)" }}
+                                >
+                                  r:{preset.config.radius}
+                                </span>
+                                <span
+                                  className="text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-black/5 dark:bg-white/10"
+                                  style={{ color: "var(--ui-text-muted)" }}
+                                >
+                                  {preset.config.texture}
+                                </span>
+                                <span
+                                  className="text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-black/5 dark:bg-white/10"
+                                  style={{ color: "var(--ui-text-muted)" }}
+                                >
+                                  {preset.config.animation}
+                                </span>
+                                {preset.config.useGradient && (
+                                  <span
+                                    className="text-[9px] px-1.5 py-0.5 rounded-full font-bold"
+                                    style={{
+                                      background: previewAccent + "30",
+                                      color: previewAccent,
+                                    }}
+                                  >
+                                    grad
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      }
+                    )}
                   </div>
                 </div>
               ))}
@@ -3127,40 +6629,186 @@ function UISettingsView({ uiConfig, setUiConfig, tasks, accessToken, fetchRealTa
           </Section>
 
           <Section title="🛠️ カスタム詳細設定">
-            <OptionRow label="ベーステーマ" current={uiConfig.bgTheme} onChange={v => update('bgTheme', v)} options={[{ value: 'white', label: 'White' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }, { value: 'navy', label: 'Navy' }, { value: 'pitchBlack', label: 'Black' }, { value: 'paper', label: 'Paper' }, { value: 'cream', label: 'Cream' }, { value: 'sepia', label: 'Sepia' }, { value: 'gray', label: 'Gray' }]} />
-            <OptionRow label="アクセント" current={uiConfig.accent} onChange={v => update('accent', v)} options={[{ value: 'blue', label: 'Blue' }, { value: 'indigo', label: 'Indigo' }, { value: 'emerald', label: 'Emerald' }, { value: 'rose', label: 'Rose' }, { value: 'amber', label: 'Amber' }, { value: 'violet', label: 'Violet' }, { value: 'cyan', label: 'Cyan' }, { value: 'slate', label: 'Slate' }, { value: 'zinc', label: 'Zinc' }, { value: 'gold', label: 'Gold' }]} />
-            <OptionRow label="フォント" current={uiConfig.font} onChange={v => update('font', v)} options={[{ value: 'sans', label: 'Sans' }, { value: 'serif', label: 'Serif' }, { value: 'mono', label: 'Mono' }, { value: 'rounded', label: 'Rounded' }, { value: 'bizUD', label: 'UD' }, { value: 'zenKakuAntique', label: 'Antique' }]} />
-            <OptionRow label="角丸" current={uiConfig.radius} onChange={v => update('radius', v)} options={[{ value: 'none', label: 'なし' }, { value: 'sm', label: '小' }, { value: 'md', label: '中' }, { value: 'lg', label: '大' }, { value: 'xl', label: '特大' }]} />
-            <OptionRow label="影 (Shadow)" current={uiConfig.shadow} onChange={v => update('shadow', v)} options={[{ value: 'none', label: 'なし' }, { value: 'sm', label: '小' }, { value: 'md', label: '中' }, { value: 'lg', label: '大' }]} />
-            <OptionRow label="枠線 (Border)" current={uiConfig.border} onChange={v => update('border', v)} options={[{ value: 'none', label: 'なし' }, { value: 'thin', label: '細' }, { value: 'thick', label: '太' }]} />
-            <OptionRow label="質感" current={uiConfig.texture} onChange={v => update('texture', v)} options={[{ value: 'flat', label: 'Flat' }, { value: 'glass', label: 'Glass' }, { value: 'simple', label: 'Simple' }, { value: 'paper', label: 'Paper' }, { value: 'neon', label: 'Neon' }]} />
-            <OptionRow label="アニメーション" current={uiConfig.animation} onChange={v => update('animation', v)} options={[{ value: 'spring', label: 'Spring' }, { value: 'blur', label: 'Blur' }, { value: 'slide', label: 'Slide' }, { value: 'fade', label: 'Fade' }, { value: 'off', label: 'Off' }]} />
-            <OptionRow label="マウスエフェクト" current={uiConfig.mouseEffect} onChange={v => update('mouseEffect', v)} options={[{ value: 'glow', label: 'Glow' }, { value: 'none', label: 'Off' }]} />
+            <OptionRow
+              label="ベーステーマ"
+              current={uiConfig.bgTheme}
+              onChange={(v) => update("bgTheme", v)}
+              options={[
+                { value: "white", label: "White" },
+                { value: "light", label: "Light" },
+                { value: "dark", label: "Dark" },
+                { value: "navy", label: "Navy" },
+                { value: "pitchBlack", label: "Black" },
+                { value: "paper", label: "Paper" },
+                { value: "cream", label: "Cream" },
+                { value: "sepia", label: "Sepia" },
+                { value: "gray", label: "Gray" },
+              ]}
+            />
+            <OptionRow
+              label="アクセント"
+              current={uiConfig.accent}
+              onChange={(v) => update("accent", v)}
+              options={[
+                { value: "blue", label: "Blue" },
+                { value: "indigo", label: "Indigo" },
+                { value: "emerald", label: "Emerald" },
+                { value: "rose", label: "Rose" },
+                { value: "amber", label: "Amber" },
+                { value: "violet", label: "Violet" },
+                { value: "cyan", label: "Cyan" },
+                { value: "slate", label: "Slate" },
+                { value: "zinc", label: "Zinc" },
+                { value: "gold", label: "Gold" },
+              ]}
+            />
+            <OptionRow
+              label="フォント"
+              current={uiConfig.font}
+              onChange={(v) => update("font", v)}
+              options={[
+                { value: "sans", label: "Sans" },
+                { value: "serif", label: "Serif" },
+                { value: "mono", label: "Mono" },
+                { value: "rounded", label: "Rounded" },
+                { value: "bizUD", label: "UD" },
+                { value: "zenKakuAntique", label: "Antique" },
+              ]}
+            />
+            <OptionRow
+              label="角丸"
+              current={uiConfig.radius}
+              onChange={(v) => update("radius", v)}
+              options={[
+                { value: "none", label: "なし" },
+                { value: "sm", label: "小" },
+                { value: "md", label: "中" },
+                { value: "lg", label: "大" },
+                { value: "xl", label: "特大" },
+              ]}
+            />
+            <OptionRow
+              label="影 (Shadow)"
+              current={uiConfig.shadow}
+              onChange={(v) => update("shadow", v)}
+              options={[
+                { value: "none", label: "なし" },
+                { value: "sm", label: "小" },
+                { value: "md", label: "中" },
+                { value: "lg", label: "大" },
+              ]}
+            />
+            <OptionRow
+              label="枠線 (Border)"
+              current={uiConfig.border}
+              onChange={(v) => update("border", v)}
+              options={[
+                { value: "none", label: "なし" },
+                { value: "thin", label: "細" },
+                { value: "thick", label: "太" },
+              ]}
+            />
+            <OptionRow
+              label="質感"
+              current={uiConfig.texture}
+              onChange={(v) => update("texture", v)}
+              options={[
+                { value: "flat", label: "Flat" },
+                { value: "glass", label: "Glass" },
+                { value: "simple", label: "Simple" },
+                { value: "paper", label: "Paper" },
+                { value: "neon", label: "Neon" },
+              ]}
+            />
+            <OptionRow
+              label="アニメーション"
+              current={uiConfig.animation}
+              onChange={(v) => update("animation", v)}
+              options={[
+                { value: "spring", label: "Spring" },
+                { value: "blur", label: "Blur" },
+                { value: "slide", label: "Slide" },
+                { value: "fade", label: "Fade" },
+                { value: "off", label: "Off" },
+              ]}
+            />
+            <OptionRow
+              label="マウスエフェクト"
+              current={uiConfig.mouseEffect}
+              onChange={(v) => update("mouseEffect", v)}
+              options={[
+                { value: "glow", label: "Glow" },
+                { value: "none", label: "Off" },
+              ]}
+            />
           </Section>
         </div>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 animate-in fade-in">
           <Section title="タスク名一括置換">
-            <p className="text-xs opacity-60">API制限を避けるため、一度に最大10件ずつ置換を実行します。</p>
+            <p className="text-xs opacity-60">
+              API制限を避けるため、一度に最大10件ずつ置換を実行します。
+            </p>
             <div className="space-y-3">
-              <input type="text" placeholder="検索文字列 (例: 課題)" value={searchText} onChange={e => setSearchText(e.target.value)} className="w-full p-2.5 rounded-lg border outline-none focus:ring-2 bg-transparent" style={{ borderColor: 'var(--ui-border)' }} />
-              <input type="text" placeholder="置換後文字列 (例: Report)" value={replaceText} onChange={e => setReplaceText(e.target.value)} className="w-full p-2.5 rounded-lg border outline-none focus:ring-2 bg-transparent" style={{ borderColor: 'var(--ui-border)' }} />
+              <input
+                type="text"
+                placeholder="検索文字列 (例: 課題)"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                className="w-full p-2.5 rounded-lg border outline-none focus:ring-2 bg-transparent"
+                style={{ borderColor: "var(--ui-border)" }}
+              />
+              <input
+                type="text"
+                placeholder="置換後文字列 (例: Report)"
+                value={replaceText}
+                onChange={(e) => setReplaceText(e.target.value)}
+                className="w-full p-2.5 rounded-lg border outline-none focus:ring-2 bg-transparent"
+                style={{ borderColor: "var(--ui-border)" }}
+              />
             </div>
             <div className="flex justify-between items-center pt-2">
-              <p className="text-sm font-medium">一致: <span className="text-[var(--ui-accent)] font-bold">{matchedTasks.length}</span> 件</p>
-              <button onClick={handleReplace} disabled={replacing || matchedTasks.length === 0} className="px-5 py-2 bg-[var(--ui-accent)] text-[var(--ui-accent-contrast)] rounded-lg font-bold disabled:opacity-50 transition hover:brightness-110">
-                {replacing ? '置換中...' : `10件置換実行`}
+              <p className="text-sm font-medium">
+                一致:{" "}
+                <span className="text-[var(--ui-accent)] font-bold">
+                  {matchedTasks.length}
+                </span>{" "}
+                件
+              </p>
+              <button
+                onClick={handleReplace}
+                disabled={replacing || matchedTasks.length === 0}
+                className="px-5 py-2 bg-[var(--ui-accent)] text-[var(--ui-accent-contrast)] rounded-lg font-bold disabled:opacity-50 transition hover:brightness-110"
+              >
+                {replacing ? "置換中..." : `10件置換実行`}
               </button>
             </div>
           </Section>
-          <div className="max-h-[50vh] overflow-y-auto rounded-xl border bg-black/5 dark:bg-white/5 p-2 space-y-2" style={{ borderColor: 'var(--ui-border)' }}>
+          <div
+            className="max-h-[50vh] overflow-y-auto rounded-xl border bg-black/5 dark:bg-white/5 p-2 space-y-2"
+            style={{ borderColor: "var(--ui-border)" }}
+          >
             {matchedTasks.length === 0 ? (
               <div className="p-12 text-center opacity-40">対象タスクなし</div>
             ) : (
-              matchedTasks.map(t => (
-                <div key={t.id} className="p-3 text-sm flex flex-col gap-2 rounded-lg border bg-[var(--ui-panel-bg)] shadow-sm" style={{ borderColor: 'var(--ui-border)' }}>
-                  <div className="flex items-center gap-2 text-[var(--ui-danger)] line-through text-xs font-medium"><span className="shrink-0 bg-[var(--ui-danger-bg)] px-1 rounded">BEFORE</span> {t.title}</div>
-                  <div className="flex items-center gap-2 text-[var(--ui-success)] font-bold"><span className="shrink-0 bg-[var(--ui-success-bg)] px-1 rounded text-xs">AFTER</span> {t.title.replace(new RegExp(searchText, 'g'), replaceText)}</div>
+              matchedTasks.map((t) => (
+                <div
+                  key={t.id}
+                  className="p-3 text-sm flex flex-col gap-2 rounded-lg border bg-[var(--ui-panel-bg)] shadow-sm"
+                  style={{ borderColor: "var(--ui-border)" }}
+                >
+                  <div className="flex items-center gap-2 text-[var(--ui-danger)] line-through text-xs font-medium">
+                    <span className="shrink-0 bg-[var(--ui-danger-bg)] px-1 rounded">
+                      BEFORE
+                    </span>{" "}
+                    {t.title}
+                  </div>
+                  <div className="flex items-center gap-2 text-[var(--ui-success)] font-bold">
+                    <span className="shrink-0 bg-[var(--ui-success-bg)] px-1 rounded text-xs">
+                      AFTER
+                    </span>{" "}
+                    {t.title.replace(new RegExp(searchText, "g"), replaceText)}
+                  </div>
                 </div>
               ))
             )}
@@ -3169,12 +6817,36 @@ function UISettingsView({ uiConfig, setUiConfig, tasks, accessToken, fetchRealTa
       )}
 
       <div className="flex justify-end pt-2 pb-8 gap-3">
-        <button type="button"
-          onClick={() => setUiConfig({ bgTheme: 'light', radius: 'md', font: 'sans', weight: 'normal', accent: 'blue', texture: 'flat', density: 'normal', animation: 'spring', mouseEffect: 'glow', shadow: 'md', border: 'thin', iconStyle: 'lucide', language: 'en_mix', useGradient: false })}
-          className="px-4 py-2 text-sm font-bold opacity-60 hover:opacity-100 border rounded-xl transition shadow-sm bg-transparent" style={{ borderColor: 'var(--ui-border)' }}>
+        <button
+          type="button"
+          onClick={() =>
+            setUiConfig({
+              bgTheme: "light",
+              radius: "md",
+              font: "sans",
+              weight: "normal",
+              accent: "blue",
+              texture: "flat",
+              density: "normal",
+              animation: "spring",
+              mouseEffect: "glow",
+              shadow: "md",
+              border: "thin",
+              iconStyle: "lucide",
+              language: "en_mix",
+              useGradient: false,
+            })
+          }
+          className="px-4 py-2 text-sm font-bold opacity-60 hover:opacity-100 border rounded-xl transition shadow-sm bg-transparent"
+          style={{ borderColor: "var(--ui-border)" }}
+        >
           設定をデフォルトにリセット
         </button>
-        <button type="button" onClick={handleLogout} className="px-4 py-2 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-xl transition shadow-sm flex items-center gap-2">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="px-4 py-2 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-xl transition shadow-sm flex items-center gap-2"
+        >
           <LogOut size={16} /> ログアウト
         </button>
       </div>
@@ -3182,42 +6854,87 @@ function UISettingsView({ uiConfig, setUiConfig, tasks, accessToken, fetchRealTa
   );
 }
 
-function AnalyticsView({ tasks, weeklyHistory, monthlyHistory, yearlyHistory, overallCompletionRate, totalTasks, completedTasks, tagStats, selectedTag, toggleTaskStatus, averageLeadTime, onTimeTasks, lateTasks }) {
-  const [granularity, setGranularity] = useState('week');
+function AnalyticsView({
+  tasks,
+  weeklyHistory,
+  monthlyHistory,
+  yearlyHistory,
+  overallCompletionRate,
+  totalTasks,
+  completedTasks,
+  tagStats,
+  selectedTag,
+  toggleTaskStatus,
+  averageLeadTime,
+  onTimeTasks,
+  lateTasks,
+}) {
+  const [granularity, setGranularity] = useState("week");
   const [expandedRow, setExpandedRow] = useState(null);
-  const series = granularity === 'week' ? weeklyHistory : granularity === 'month' ? monthlyHistory : yearlyHistory;
+  const series =
+    granularity === "week"
+      ? weeklyHistory
+      : granularity === "month"
+      ? monthlyHistory
+      : yearlyHistory;
 
   useEffect(() => setExpandedRow(null), [granularity]);
 
-  const scopeHint = selectedTag ? `（タグ「${selectedTag}」のタスクのみ）` : '';
+  const scopeHint = selectedTag ? `（タグ「${selectedTag}」のタスクのみ）` : "";
   const chartTitle =
-    granularity === 'week' ? `週次（過去7週＋今週＋来週）${scopeHint}`
-      : granularity === 'month' ? `月次（過去12ヶ月）${scopeHint}`
-        : `年次（過去5年）${scopeHint}`;
+    granularity === "week"
+      ? `週次（過去7週＋今週＋来週）${scopeHint}`
+      : granularity === "month"
+      ? `月次（過去12ヶ月）${scopeHint}`
+      : `年次（過去5年）${scopeHint}`;
 
   const labelFor = (w) => {
-    if (granularity === 'week') {
-      if (w.isCurrent) return '今週';
-      if (w.isFuture) return '来週';
+    if (granularity === "week") {
+      if (w.isCurrent) return "今週";
+      if (w.isFuture) return "来週";
       return w.label;
     }
-    if (granularity === 'month') {
-      return w.isCurrent ? '今月' : w.shortLabel || w.label;
+    if (granularity === "month") {
+      return w.isCurrent ? "今月" : w.shortLabel || w.label;
     }
-    return w.isCurrent ? '今年' : w.label;
+    return w.isCurrent ? "今年" : w.label;
   };
 
-  const overdueList = tasks.filter((t) => t.status !== 'completed' && t.due && new Date(t.due).getTime() < Date.now() - 3 * 24 * 60 * 60 * 1000).sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime());
+  const overdueList = tasks
+    .filter(
+      (t) =>
+        t.status !== "completed" &&
+        t.due &&
+        new Date(t.due).getTime() < Date.now() - 3 * 24 * 60 * 60 * 1000
+    )
+    .sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime());
 
   return (
     <div className="space-y-6">
       {/* 複合グラフ（タスク数 ＆ 達成率） */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          <h3 className="font-bold text-slate-800 flex items-center gap-2"><BarChart3 size={18} className="text-indigo-600" /> タスク量と達成率の推移</h3>
+          <h3 className="font-bold text-slate-800 flex items-center gap-2">
+            <BarChart3 size={18} className="text-indigo-600" />{" "}
+            タスク量と達成率の推移
+          </h3>
           <div className="flex flex-wrap gap-1.5 p-1 bg-slate-100 rounded-lg">
-            {[{ id: 'week', label: '週次' }, { id: 'month', label: '月次' }, { id: 'year', label: '年次' }].map(({ id, label }) => (
-              <button key={id} onClick={() => setGranularity(id)} className={`px-3 py-1.5 text-xs font-semibold rounded-md transition ${granularity === id ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{label}</button>
+            {[
+              { id: "week", label: "週次" },
+              { id: "month", label: "月次" },
+              { id: "year", label: "年次" },
+            ].map(({ id, label }) => (
+              <button
+                key={id}
+                onClick={() => setGranularity(id)}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition ${
+                  granularity === id
+                    ? "bg-white text-indigo-600 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                {label}
+              </button>
             ))}
           </div>
         </div>
@@ -3236,74 +6953,134 @@ function AnalyticsView({ tasks, weeklyHistory, monthlyHistory, yearlyHistory, ov
           <div className="space-y-4">
             <div className="flex justify-between items-end">
               <div className="space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase">平均完了日</span>
-                <p className="text-2xl font-bold text-slate-800">{averageLeadTime === 0 ? '当日' : averageLeadTime > 0 ? `${averageLeadTime.toFixed(1)} 日前` : `${Math.abs(averageLeadTime).toFixed(1)} 日遅延`}</p>
+                <span className="text-[10px] text-slate-400 font-bold uppercase">
+                  平均完了日
+                </span>
+                <p className="text-2xl font-bold text-slate-800">
+                  {averageLeadTime === 0
+                    ? "当日"
+                    : averageLeadTime > 0
+                    ? `${averageLeadTime.toFixed(1)} 日前`
+                    : `${Math.abs(averageLeadTime).toFixed(1)} 日遅延`}
+                </p>
               </div>
               <div className="text-right">
-                <span className={`text-xs font-bold px-2 py-1 rounded-full ${averageLeadTime >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                  {averageLeadTime >= 0 ? '良好' : '改善の余地あり'}
+                <span
+                  className={`text-xs font-bold px-2 py-1 rounded-full ${
+                    averageLeadTime >= 0
+                      ? "bg-emerald-50 text-emerald-600"
+                      : "bg-red-50 text-red-600"
+                  }`}
+                >
+                  {averageLeadTime >= 0 ? "良好" : "改善の余地あり"}
                 </span>
               </div>
             </div>
 
             <div className="flex gap-2">
               <div className="flex-1 bg-emerald-50 rounded-lg p-3 text-center">
-                <p className="text-[10px] text-emerald-600 font-bold mb-1">期限前/当日</p>
-                <p className="text-lg font-bold text-emerald-700">{onTimeTasks}</p>
+                <p className="text-[10px] text-emerald-600 font-bold mb-1">
+                  期限前/当日
+                </p>
+                <p className="text-lg font-bold text-emerald-700">
+                  {onTimeTasks}
+                </p>
               </div>
               <div className="flex-1 bg-amber-50 rounded-lg p-3 text-center">
-                <p className="text-[10px] text-amber-600 font-bold mb-1">期限後完了</p>
+                <p className="text-[10px] text-amber-600 font-bold mb-1">
+                  期限後完了
+                </p>
                 <p className="text-lg font-bold text-amber-700">{lateTasks}</p>
               </div>
             </div>
 
             {/* 週ごとの遅延率推移 */}
             <div className="mt-4 pt-3 border-t border-slate-100">
-              <p className="text-xs font-bold text-slate-500 mb-2">週ごとの完了ペース推移</p>
+              <p className="text-xs font-bold text-slate-500 mb-2">
+                週ごとの完了ペース推移
+              </p>
               <div className="space-y-2.5 max-h-[180px] overflow-y-auto pr-1 hide-scrollbar">
-                {weeklyHistory.slice(-8).reverse().map(w => {
-                  const wTasks = w.tasks || [];
-                  let wEarly = 0, wOnTime = 0, wLate = 0;
-                  wTasks.forEach(t => {
-                    if (t.status === 'completed' && t.completed && t.due) {
-                      const c = new Date(t.completed).getTime(), d = new Date(t.due).getTime();
-                      if (c <= d - 86400000) wEarly++;
-                      else if (c <= d + 86400000) wOnTime++;
-                      else wLate++;
-                    }
-                  });
-                  const tot = Math.max(wEarly + wOnTime + wLate, 1);
-                  return (
-                    <div key={w.key}>
-                      <div className="flex justify-between text-[10px] text-slate-500 mb-1">
-                        <span className={w.isCurrent ? 'font-bold text-indigo-600' : ''}>{w.isCurrent ? '今週' : w.label}</span>
-                        <span>前{wEarly} / 当{wOnTime} / 遅{wLate}</span>
+                {weeklyHistory
+                  .slice(-8)
+                  .reverse()
+                  .map((w) => {
+                    const wTasks = w.tasks || [];
+                    let wEarly = 0,
+                      wOnTime = 0,
+                      wLate = 0;
+                    wTasks.forEach((t) => {
+                      if (t.status === "completed" && t.completed && t.due) {
+                        const c = new Date(t.completed).getTime(),
+                          d = new Date(t.due).getTime();
+                        if (c <= d - 86400000) wEarly++;
+                        else if (c <= d + 86400000) wOnTime++;
+                        else wLate++;
+                      }
+                    });
+                    const tot = Math.max(wEarly + wOnTime + wLate, 1);
+                    return (
+                      <div key={w.key}>
+                        <div className="flex justify-between text-[10px] text-slate-500 mb-1">
+                          <span
+                            className={
+                              w.isCurrent ? "font-bold text-indigo-600" : ""
+                            }
+                          >
+                            {w.isCurrent ? "今週" : w.label}
+                          </span>
+                          <span>
+                            前{wEarly} / 当{wOnTime} / 遅{wLate}
+                          </span>
+                        </div>
+                        <div className="flex w-full h-2 rounded-full overflow-hidden bg-slate-100">
+                          <div
+                            className="bg-emerald-400 transition-all"
+                            style={{ width: `${(wEarly / tot) * 100}%` }}
+                          />
+                          <div
+                            className="bg-blue-400 transition-all"
+                            style={{ width: `${(wOnTime / tot) * 100}%` }}
+                          />
+                          <div
+                            className="bg-rose-400 transition-all"
+                            style={{ width: `${(wLate / tot) * 100}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="flex w-full h-2 rounded-full overflow-hidden bg-slate-100">
-                        <div className="bg-emerald-400 transition-all" style={{ width: `${(wEarly / tot) * 100}%` }} />
-                        <div className="bg-blue-400 transition-all" style={{ width: `${(wOnTime / tot) * 100}%` }} />
-                        <div className="bg-rose-400 transition-all" style={{ width: `${(wLate / tot) * 100}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             </div>
           </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
-          <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><AlertCircle size={18} className="text-red-500" /> 長期滞留アラート</h3>
-          <p className="text-xs text-slate-500 mb-4">期限が過ぎてから3日以上放置されている未完了タスクです。</p>
+          <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+            <AlertCircle size={18} className="text-red-500" /> 長期滞留アラート
+          </h3>
+          <p className="text-xs text-slate-500 mb-4">
+            期限が過ぎてから3日以上放置されている未完了タスクです。
+          </p>
           <div className="divide-y divide-slate-100 max-h-[300px] overflow-y-auto pr-1 hide-scrollbar">
             {overdueList.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-4">長期滞留しているタスクはありません🎉</p>
+              <p className="text-sm text-slate-400 text-center py-4">
+                長期滞留しているタスクはありません🎉
+              </p>
             ) : (
               overdueList.map((t) => (
-                <div key={t.id} className="py-3 flex justify-between items-center gap-4">
-                  <span className="text-sm font-medium text-slate-700 truncate">{t.cleanTitle}</span>
+                <div
+                  key={t.id}
+                  className="py-3 flex justify-between items-center gap-4"
+                >
+                  <span className="text-sm font-medium text-slate-700 truncate">
+                    {t.cleanTitle}
+                  </span>
                   <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded whitespace-nowrap">
-                    {Math.floor((Date.now() - new Date(t.due).getTime()) / (1000 * 60 * 60 * 24))} 日経過
+                    {Math.floor(
+                      (Date.now() - new Date(t.due).getTime()) /
+                        (1000 * 60 * 60 * 24)
+                    )}{" "}
+                    日経過
                   </span>
                 </div>
               ))
@@ -3313,15 +7090,27 @@ function AnalyticsView({ tasks, weeklyHistory, monthlyHistory, yearlyHistory, ov
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 mt-6">
-        <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Clock size={18} className="text-blue-500" /> 完了ペース推移 ({granularity === 'week' ? '週次' : granularity === 'month' ? '月次' : '年次'})</h3>
-        <p className="text-xs text-slate-500 mb-3">設定された期限に対する完了タイミング（期限設定ありのタスクのみ）</p>
+        <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+          <Clock size={18} className="text-blue-500" /> 完了ペース推移 (
+          {granularity === "week"
+            ? "週次"
+            : granularity === "month"
+            ? "月次"
+            : "年次"}
+          )
+        </h3>
+        <p className="text-xs text-slate-500 mb-3">
+          設定された期限に対する完了タイミング（期限設定ありのタスクのみ）
+        </p>
 
         <div className="flex items-end gap-1 sm:gap-2 h-40 px-1 sm:px-2 border-b border-slate-100 overflow-x-auto">
-          {series.map(w => {
+          {series.map((w) => {
             const wTasks = w.tasks || [];
-            let e = 0, o = 0, l = 0;
-            wTasks.forEach(t => {
-              if (t.status === 'completed' && t.completed && t.due) {
+            let e = 0,
+              o = 0,
+              l = 0;
+            wTasks.forEach((t) => {
+              if (t.status === "completed" && t.completed && t.due) {
                 const c = new Date(t.completed).getTime();
                 const d = new Date(t.due).getTime();
                 if (c <= d - 86400000) e++;
@@ -3333,38 +7122,88 @@ function AnalyticsView({ tasks, weeklyHistory, monthlyHistory, yearlyHistory, ov
             const hE = tot === 0 ? 0 : (e / tot) * 100;
             const hO = tot === 0 ? 0 : (o / tot) * 100;
             const hL = tot === 0 ? 0 : (l / tot) * 100;
-            const maxPaceTot = Math.max(1, ...series.map(x => {
-              let count = 0;
-              (x.tasks || []).forEach(t => { if (t.status === 'completed' && t.completed && t.due) count++; });
-              return count;
-            }));
+            const maxPaceTot = Math.max(
+              1,
+              ...series.map((x) => {
+                let count = 0;
+                (x.tasks || []).forEach((t) => {
+                  if (t.status === "completed" && t.completed && t.due) count++;
+                });
+                return count;
+              })
+            );
             const heightPct = tot === 0 ? 0 : (tot / maxPaceTot) * 100;
 
             return (
-              <div key={w.key} className="flex-1 min-w-[28px] flex flex-col items-center justify-end h-full group relative">
+              <div
+                key={w.key}
+                className="flex-1 min-w-[28px] flex flex-col items-center justify-end h-full group relative"
+              >
                 <span className="text-[10px] text-slate-600 font-bold mb-1 opacity-0 group-hover:opacity-100 transition absolute -top-6 whitespace-nowrap z-20 bg-white px-2 py-1 border border-slate-200 rounded shadow-lg pointer-events-none">
                   前:{e} 当:{o} 遅:{l}
                 </span>
-                <div className="w-full max-w-[20px] flex flex-col justify-end overflow-hidden rounded-t-sm" style={{ height: `${heightPct}%`, minHeight: tot === 0 ? '0' : '4px' }}>
-                  <div className="w-full bg-amber-400 transition-all hover:opacity-80" style={{ height: `${hL}%` }} title={`遅延: ${l}`} />
-                  <div className="w-full bg-blue-400 transition-all hover:opacity-80" style={{ height: `${hO}%` }} title={`当日: ${o}`} />
-                  <div className="w-full bg-emerald-400 transition-all hover:opacity-80" style={{ height: `${hE}%` }} title={`期限前: ${e}`} />
+                <div
+                  className="w-full max-w-[20px] flex flex-col justify-end overflow-hidden rounded-t-sm"
+                  style={{
+                    height: `${heightPct}%`,
+                    minHeight: tot === 0 ? "0" : "4px",
+                  }}
+                >
+                  <div
+                    className="w-full bg-amber-400 transition-all hover:opacity-80"
+                    style={{ height: `${hL}%` }}
+                    title={`遅延: ${l}`}
+                  />
+                  <div
+                    className="w-full bg-blue-400 transition-all hover:opacity-80"
+                    style={{ height: `${hO}%` }}
+                    title={`当日: ${o}`}
+                  />
+                  <div
+                    className="w-full bg-emerald-400 transition-all hover:opacity-80"
+                    style={{ height: `${hE}%` }}
+                    title={`期限前: ${e}`}
+                  />
                 </div>
               </div>
             );
           })}
         </div>
         <div className="flex gap-1 sm:gap-2 mt-2 px-1 sm:px-2 overflow-x-auto">
-          {series.map(w => (<div key={`lp-${w.key}`} className="flex-1 min-w-[28px] text-[9px] sm:text-[10px] text-center truncate text-slate-500">{labelFor(w)}</div>))}
+          {series.map((w) => (
+            <div
+              key={`lp-${w.key}`}
+              className="flex-1 min-w-[28px] text-[9px] sm:text-[10px] text-center truncate text-slate-500"
+            >
+              {labelFor(w)}
+            </div>
+          ))}
         </div>
         <div className="flex justify-center gap-4 mt-4 text-xs font-medium text-slate-600">
-          <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-400"></span>期限前</div>
-          <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-blue-400"></span>当日</div>
-          <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-amber-400"></span>遅延</div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-sm bg-emerald-400"></span>
+            期限前
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-sm bg-blue-400"></span>当日
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-sm bg-amber-400"></span>遅延
+          </div>
         </div>
       </div>
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 mt-6">
-        <p className="text-sm font-semibold text-slate-700 mb-3">{granularity === 'week' ? '週次' : granularity === 'month' ? '月次' : '年次'}の詳細 <span className="text-xs font-normal text-slate-400 ml-2">行をクリックしてタスクを展開</span></p>
+        <p className="text-sm font-semibold text-slate-700 mb-3">
+          {granularity === "week"
+            ? "週次"
+            : granularity === "month"
+            ? "月次"
+            : "年次"}
+          の詳細{" "}
+          <span className="text-xs font-normal text-slate-400 ml-2">
+            行をクリックしてタスクを展開
+          </span>
+        </p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -3376,89 +7215,224 @@ function AnalyticsView({ tasks, weeklyHistory, monthlyHistory, yearlyHistory, ov
               </tr>
             </thead>
             <tbody>
-              {series.slice().reverse().map((w) => {
-                const isExpanded = expandedRow === w.key;
-                const rowTasks = w.tasks || [];
-                const tasksDone = rowTasks.filter((t) => t.status === 'completed');
-                const tasksUndone = rowTasks.filter((t) => t.status !== 'completed');
+              {series
+                .slice()
+                .reverse()
+                .map((w) => {
+                  const isExpanded = expandedRow === w.key;
+                  const rowTasks = w.tasks || [];
+                  const tasksDone = rowTasks.filter(
+                    (t) => t.status === "completed"
+                  );
+                  const tasksUndone = rowTasks.filter(
+                    (t) => t.status !== "completed"
+                  );
 
-                return (
-                  <React.Fragment key={`t-${w.key}`}>
-                    <tr onClick={() => setExpandedRow(isExpanded ? null : w.key)} className={`border-b border-slate-50 last:border-0 cursor-pointer transition hover:bg-slate-50 ${isExpanded ? 'bg-slate-50' : ''}`}>
-                      <td className="py-2.5 pr-4 text-slate-700">
-                        <div className="flex items-center gap-1.5">
-                          {isExpanded ? <ChevronDown size={14} className="text-slate-400 shrink-0" /> : <ChevronRight size={14} className="text-slate-300 shrink-0" />}
-                          {granularity === 'week' && w.isCurrent ? <span className="font-semibold text-indigo-600">今週 <span className="text-slate-400 font-normal">({w.label})</span></span> : granularity === 'week' && w.isFuture ? <span className="text-slate-500">来週 <span className="text-slate-400">({w.label})</span></span> : w.label}
-                        </div>
-                      </td>
-                      <td className="py-2.5 pr-4 text-slate-600">{w.total}</td>
-                      <td className="py-2.5 pr-4 text-slate-600">{w.completed}</td>
-                      <td className="py-2.5 pr-4 font-semibold">
-                        <span className={w.total === 0 ? 'text-slate-300' : w.rate >= 80 ? 'text-emerald-600' : w.rate >= 50 ? 'text-blue-600' : 'text-amber-600'}>{w.total === 0 ? '-' : `${w.rate}%`}</span>
-                      </td>
-                    </tr>
-                    {isExpanded && (
-                      <tr>
-                        <td colSpan={4} className="bg-slate-50 border-b border-slate-100 p-4">
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                              <h5 className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200 inline-block sticky top-0 z-10">未達成 ({tasksUndone.length})</h5>
-                              {tasksUndone.length === 0 ? <p className="text-xs text-slate-400 px-1">なし</p> : tasksUndone.map((t) => (
-                                <div key={t.id} className="flex items-start gap-2 text-xs bg-white p-2 rounded border border-slate-200 shadow-sm">
-                                  <button type="button" onClick={(e) => { e.stopPropagation(); toggleTaskStatus(t); }} className="mt-0.5 shrink-0"><Circle size={12} className="text-slate-300 hover:text-blue-500" /></button>
-                                  <span className="text-slate-700 leading-tight">{t.cleanTitle}</span>
-                                </div>
-                              ))}
-                            </div>
-                            <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                              <h5 className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200 inline-block sticky top-0 z-10">達成済 ({tasksDone.length})</h5>
-                              {tasksDone.length === 0 ? <p className="text-xs text-slate-400 px-1">なし</p> : tasksDone.map((t) => (
-                                <div key={t.id} className="flex items-start gap-2 text-xs bg-white p-2 rounded border border-slate-200 shadow-sm opacity-70">
-                                  <button type="button" onClick={(e) => { e.stopPropagation(); toggleTaskStatus(t); }} className="mt-0.5 shrink-0"><CheckCircle2 size={12} className="text-emerald-500" /></button>
-                                  <span className="text-slate-500 line-through leading-tight">{t.cleanTitle}</span>
-                                </div>
-                              ))}
-                            </div>
-                            <div className="space-y-2">
-                              <h5 className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-1 rounded border border-indigo-200 inline-block">期間内のタグ構成</h5>
-                              {(() => {
-                                const periodTagCounts = {};
-                                let periodTaggedTotal = 0;
-                                rowTasks.forEach(t => {
-                                  const tgs = t.tags.length > 0 ? t.tags : ['未分類'];
-                                  tgs.forEach(tag => {
-                                    periodTagCounts[tag] = (periodTagCounts[tag] || 0) + 1;
-                                    periodTaggedTotal++;
-                                  });
-                                });
-                                const periodTagStats = Object.entries(periodTagCounts)
-                                  .map(([tag, count]) => ({ tag, count, rate: Math.round((count / (periodTaggedTotal || 1)) * 100) }))
-                                  .sort((a, b) => b.count - a.count);
-
-                                return periodTagStats.length === 0 ? <p className="text-xs text-slate-400 px-1">データなし</p> : (
-                                  <div className="space-y-2.5 mt-2 bg-white p-3 rounded border border-slate-200 shadow-sm">
-                                    {periodTagStats.map(t => (
-                                      <div key={t.tag}>
-                                        <div className="flex justify-between items-center text-[10px] text-slate-600 mb-1">
-                                          <span className="truncate pr-2 font-medium">{t.tag}</span>
-                                          <span className="shrink-0">{t.rate}% <span className="text-slate-400">({t.count})</span></span>
-                                        </div>
-                                        <div className="w-full bg-slate-100 rounded-full h-1.5">
-                                          <div className="bg-indigo-400 h-1.5 rounded-full" style={{ width: `${t.rate}%` }} />
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                );
-                              })()}
-                            </div>
+                  return (
+                    <React.Fragment key={`t-${w.key}`}>
+                      <tr
+                        onClick={() =>
+                          setExpandedRow(isExpanded ? null : w.key)
+                        }
+                        className={`border-b border-slate-50 last:border-0 cursor-pointer transition hover:bg-slate-50 ${
+                          isExpanded ? "bg-slate-50" : ""
+                        }`}
+                      >
+                        <td className="py-2.5 pr-4 text-slate-700">
+                          <div className="flex items-center gap-1.5">
+                            {isExpanded ? (
+                              <ChevronDown
+                                size={14}
+                                className="text-slate-400 shrink-0"
+                              />
+                            ) : (
+                              <ChevronRight
+                                size={14}
+                                className="text-slate-300 shrink-0"
+                              />
+                            )}
+                            {granularity === "week" && w.isCurrent ? (
+                              <span className="font-semibold text-indigo-600">
+                                今週{" "}
+                                <span className="text-slate-400 font-normal">
+                                  ({w.label})
+                                </span>
+                              </span>
+                            ) : granularity === "week" && w.isFuture ? (
+                              <span className="text-slate-500">
+                                来週{" "}
+                                <span className="text-slate-400">
+                                  ({w.label})
+                                </span>
+                              </span>
+                            ) : (
+                              w.label
+                            )}
                           </div>
                         </td>
+                        <td className="py-2.5 pr-4 text-slate-600">
+                          {w.total}
+                        </td>
+                        <td className="py-2.5 pr-4 text-slate-600">
+                          {w.completed}
+                        </td>
+                        <td className="py-2.5 pr-4 font-semibold">
+                          <span
+                            className={
+                              w.total === 0
+                                ? "text-slate-300"
+                                : w.rate >= 80
+                                ? "text-emerald-600"
+                                : w.rate >= 50
+                                ? "text-blue-600"
+                                : "text-amber-600"
+                            }
+                          >
+                            {w.total === 0 ? "-" : `${w.rate}%`}
+                          </span>
+                        </td>
                       </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
+                      {isExpanded && (
+                        <tr>
+                          <td
+                            colSpan={4}
+                            className="bg-slate-50 border-b border-slate-100 p-4"
+                          >
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                              <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                                <h5 className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200 inline-block sticky top-0 z-10">
+                                  未達成 ({tasksUndone.length})
+                                </h5>
+                                {tasksUndone.length === 0 ? (
+                                  <p className="text-xs text-slate-400 px-1">
+                                    なし
+                                  </p>
+                                ) : (
+                                  tasksUndone.map((t) => (
+                                    <div
+                                      key={t.id}
+                                      className="flex items-start gap-2 text-xs bg-white p-2 rounded border border-slate-200 shadow-sm"
+                                    >
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          toggleTaskStatus(t);
+                                        }}
+                                        className="mt-0.5 shrink-0"
+                                      >
+                                        <Circle
+                                          size={12}
+                                          className="text-slate-300 hover:text-blue-500"
+                                        />
+                                      </button>
+                                      <span className="text-slate-700 leading-tight">
+                                        {t.cleanTitle}
+                                      </span>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                              <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                                <h5 className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200 inline-block sticky top-0 z-10">
+                                  達成済 ({tasksDone.length})
+                                </h5>
+                                {tasksDone.length === 0 ? (
+                                  <p className="text-xs text-slate-400 px-1">
+                                    なし
+                                  </p>
+                                ) : (
+                                  tasksDone.map((t) => (
+                                    <div
+                                      key={t.id}
+                                      className="flex items-start gap-2 text-xs bg-white p-2 rounded border border-slate-200 shadow-sm opacity-70"
+                                    >
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          toggleTaskStatus(t);
+                                        }}
+                                        className="mt-0.5 shrink-0"
+                                      >
+                                        <CheckCircle2
+                                          size={12}
+                                          className="text-emerald-500"
+                                        />
+                                      </button>
+                                      <span className="text-slate-500 line-through leading-tight">
+                                        {t.cleanTitle}
+                                      </span>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                              <div className="space-y-2">
+                                <h5 className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-1 rounded border border-indigo-200 inline-block">
+                                  期間内のタグ構成
+                                </h5>
+                                {(() => {
+                                  const periodTagCounts = {};
+                                  let periodTaggedTotal = 0;
+                                  rowTasks.forEach((t) => {
+                                    const tgs =
+                                      t.tags.length > 0 ? t.tags : ["未分類"];
+                                    tgs.forEach((tag) => {
+                                      periodTagCounts[tag] =
+                                        (periodTagCounts[tag] || 0) + 1;
+                                      periodTaggedTotal++;
+                                    });
+                                  });
+                                  const periodTagStats = Object.entries(
+                                    periodTagCounts
+                                  )
+                                    .map(([tag, count]) => ({
+                                      tag,
+                                      count,
+                                      rate: Math.round(
+                                        (count / (periodTaggedTotal || 1)) * 100
+                                      ),
+                                    }))
+                                    .sort((a, b) => b.count - a.count);
+
+                                  return periodTagStats.length === 0 ? (
+                                    <p className="text-xs text-slate-400 px-1">
+                                      データなし
+                                    </p>
+                                  ) : (
+                                    <div className="space-y-2.5 mt-2 bg-white p-3 rounded border border-slate-200 shadow-sm">
+                                      {periodTagStats.map((t) => (
+                                        <div key={t.tag}>
+                                          <div className="flex justify-between items-center text-[10px] text-slate-600 mb-1">
+                                            <span className="truncate pr-2 font-medium">
+                                              {t.tag}
+                                            </span>
+                                            <span className="shrink-0">
+                                              {t.rate}%{" "}
+                                              <span className="text-slate-400">
+                                                ({t.count})
+                                              </span>
+                                            </span>
+                                          </div>
+                                          <div className="w-full bg-slate-100 rounded-full h-1.5">
+                                            <div
+                                              className="bg-indigo-400 h-1.5 rounded-full"
+                                              style={{ width: `${t.rate}%` }}
+                                            />
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
             </tbody>
           </table>
         </div>
@@ -3466,5 +7440,3 @@ function AnalyticsView({ tasks, weeklyHistory, monthlyHistory, yearlyHistory, ov
     </div>
   );
 }
-
-
