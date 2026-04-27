@@ -2314,18 +2314,18 @@ export default function App() {
     // shadow と border を初期値に追加
     const fallback = {
       bgTheme: "light",
-      radius: "md",
+      radius: "xl",
       font: "sans",
-      weight: "normal",
-      accent: "blue",
-      texture: "flat",
+      weight: "medium",
+      accent: "slate",
+      texture: "glass",
       density: "normal",
       animation: "spring",
-      mouseEffect: "glow",
+      mouseEffect: "none",
       shadow: "md",
       border: "thin",
       iconStyle: "lucide",
-      language: "en_mix",
+      language: "ja",
       useGradient: false,
     };
     try {
@@ -2730,15 +2730,21 @@ export default function App() {
     }
     if (!window.confirm(`${selectedTasks.size}件のタスクを削除しますか？`))
       return;
+
     setLoading(true);
     const tasksToDelete = tasks.filter((t) => selectedTasks.has(t.id));
+    
+    // エラー時のロールバック用に現在の状態を保持
+    const previousTasks = [...tasks];
+    const previousSelection = new Set(selectedTasks);
 
+    // 画面上を先に更新（オプティミスティックUI）
     setTasks((prev) => prev.filter((t) => !selectedTasks.has(t.id)));
     setSelectedTasks(new Set());
 
     if (!isDemo) {
       try {
-        await Promise.all(
+        const results = await Promise.all(
           tasksToDelete.map((task) =>
             fetch(
               `https://tasks.googleapis.com/tasks/v1/lists/${task.listId || "@default"}/tasks/${task.id}`,
@@ -2749,11 +2755,16 @@ export default function App() {
             )
           )
         );
+        
+        // APIレスポンスが正常かチェック。1つでも失敗していればエラーを投げる
+        if (results.some(res => !res.ok)) {
+          throw new Error("API Error");
+        }
       } catch {
-        // ===== ここから変更 =====
-        setError("タスクの削除に失敗しました。通信環境を確認するか、再接続（再ログイン）してください。");
-        if (accessToken) fetchRealTasks(accessToken);
-        // ===== ここまで変更 =====
+        // 失敗した場合、画面の表示を元に戻す
+        setTasks(previousTasks);
+        setSelectedTasks(previousSelection);
+        setError("タスクの削除に失敗しました。画面を元に戻しました。通信環境を確認するか、再接続してください。");
       }
     }
     setLoading(false);
@@ -2889,6 +2900,11 @@ export default function App() {
     }
     const newStatus = task.status === "completed" ? "needsAction" : "completed";
     const now = new Date().toISOString();
+    
+    // エラー時のロールバック用に現在の状態を保持
+    const previousTasks = [...tasks];
+
+    // 画面上を先に更新
     setTasks((prev) =>
       prev.map((t) =>
         t.id === task.id
@@ -2903,7 +2919,7 @@ export default function App() {
 
     if (!isDemo) {
       try {
-        await fetch(
+        const res = await fetch(
           `https://tasks.googleapis.com/tasks/v1/lists/${task.listId || "@default"}/tasks/${task.id}`,
           {
             method: "PATCH",
@@ -2914,11 +2930,14 @@ export default function App() {
             body: JSON.stringify({ status: newStatus }),
           }
         );
+        
+        if (!res.ok) {
+          throw new Error("API Error");
+        }
       } catch {
-        // ===== ここから変更 =====
-        setError("ステータスの更新に失敗しました。通信環境を確認するか、再接続（再ログイン）してください。");
-        if (accessToken) fetchRealTasks(accessToken);
-        // ===== ここまで変更 =====
+        // 失敗した場合、画面の表示を元に戻す
+        setTasks(previousTasks);
+        setError("ステータスの更新に失敗しました。画面を元に戻しました。通信環境を確認するか、再接続してください。");
       }
     }
   };
@@ -6786,7 +6805,7 @@ function UISettingsView({
     setReplacing(true);
     if (!isDemo) {
       try {
-        await Promise.all(
+        const results = await Promise.all(
           targetTasks.map((task) => {
             const newTitle = task.title.replace(
               new RegExp(searchText, "g"),
@@ -6805,12 +6824,15 @@ function UISettingsView({
             );
           })
         );
+
+        if (results.some(res => !res.ok)) {
+          throw new Error("API Error");
+        }
+
         fetchRealTasks(accessToken);
         alert(`${targetTasks.length}件の置換が完了しました。`);
       } catch (e) {
-        // ===== ここから変更 =====
         alert("一部の置換に失敗しました。通信環境を確認するか、再接続（再ログイン）してください。");
-        // ===== ここまで変更 =====
       }
     } else {
       alert("デモモードではAPIは呼び出されません");
