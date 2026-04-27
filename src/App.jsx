@@ -2665,6 +2665,37 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken, isDemo]);
 
+  // ===== ここから追加 =====
+  useEffect(() => {
+    // PWA(アプリ化)時のステータスバー・タイトルバー色を明るい灰色に固定（白色にしたい場合は #ffffff）
+    let metaThemeColor = document.querySelector("meta[name=theme-color]");
+    if (!metaThemeColor) {
+      metaThemeColor = document.createElement("meta");
+      metaThemeColor.name = "theme-color";
+      document.head.appendChild(metaThemeColor);
+    }
+    metaThemeColor.content = "#f8fafc"; 
+
+    // オフライン検知と復帰時の自動更新
+    const handleOffline = () => {
+      setError("オフライン環境です。通信ができないため操作が反映されません。");
+    };
+    const handleOnline = () => {
+      setError(null);
+      if (accessToken && !isDemo) {
+        fetchRealTasks(accessToken);
+      }
+    };
+
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("online", handleOnline);
+    return () => {
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", handleOnline);
+    };
+  }, [accessToken, isDemo]);
+  // ===== ここまで追加 =====
+
 
 
   const handleLogout = () => {
@@ -2719,8 +2750,10 @@ export default function App() {
           )
         );
       } catch {
-        alert("一部のタスクの削除に失敗しました");
-        fetchRealTasks(accessToken);
+        // ===== ここから変更 =====
+        setError("タスクの削除に失敗しました。通信環境を確認するか、再接続（再ログイン）してください。");
+        if (accessToken) fetchRealTasks(accessToken);
+        // ===== ここまで変更 =====
       }
     }
     setLoading(false);
@@ -2823,9 +2856,14 @@ export default function App() {
           if (res.ok) {
             const data = await res.json();
             newTasks.push({ ...data, listId: "@default" });
+          } else {
+            // ===== ここを追加 =====
+            throw new Error("API Error");
           }
         } catch {
           /* 行ごとの失敗はスキップ */
+          // ===== ここを追加 =====
+          setError("タスクの追加に失敗しました。通信環境を確認するか、再接続（再ログイン）してください。");
         }
       }
     }
@@ -2836,7 +2874,9 @@ export default function App() {
     setNewTaskDue("");
     setTaskFormExpanded(false);
     if (!isDemo && newTasks.length === 0 && lines.length > 0) {
-      alert("タスクの追加に失敗しました");
+      // ===== ここから変更 =====
+      setError("タスクの追加に失敗しました。通信環境を確認するか、再接続（再ログイン）してください。");
+      // ===== ここまで変更 =====
     }
     setLoading(false);
   };
@@ -2875,8 +2915,10 @@ export default function App() {
           }
         );
       } catch {
-        alert("ステータスの更新に失敗しました");
-        fetchRealTasks(accessToken);
+        // ===== ここから変更 =====
+        setError("ステータスの更新に失敗しました。通信環境を確認するか、再接続（再ログイン）してください。");
+        if (accessToken) fetchRealTasks(accessToken);
+        // ===== ここまで変更 =====
       }
     }
   };
@@ -6766,7 +6808,9 @@ function UISettingsView({
         fetchRealTasks(accessToken);
         alert(`${targetTasks.length}件の置換が完了しました。`);
       } catch (e) {
-        alert("一部の置換に失敗しました。");
+        // ===== ここから変更 =====
+        alert("一部の置換に失敗しました。通信環境を確認するか、再接続（再ログイン）してください。");
+        // ===== ここまで変更 =====
       }
     } else {
       alert("デモモードではAPIは呼び出されません");
