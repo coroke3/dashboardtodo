@@ -1,4 +1,23 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
+// ===== ここから追加 =====
+const IconLayeredDashboard = ({ size = 24, className = "", color = "currentColor" }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 100 100" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    {/* ベースの背景（テーマ色を薄く敷く） */}
+    <rect width="100" height="100" rx="24" fill={color} opacity="0.1" />
+    <rect x="22" y="22" width="46" height="46" rx="12" fill={color} opacity="0.3" />
+    <rect x="36" y="36" width="46" height="46" rx="12" fill={color} />
+    <path d="M46 56 L54 64 L70 42" stroke="#FFFFFF" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+// ===== ここまで追加 =====
+
 import {
   CheckCircle2,
   Circle,
@@ -3759,8 +3778,10 @@ export default function App() {
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 font-sans text-slate-800">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
           <div className="bg-slate-800 p-6 text-center">
-            <LayoutDashboard className="mx-auto text-white mb-3" size={40} />
-            <h1 className="text-2xl font-bold text-white">Task Dashboard</h1>
+            {/* ▼ 変更: カスタムアイコンを使用し、白を設定 */}
+            <IconLayeredDashboard className="mx-auto mb-3" size={60} color="#FFFFFF" />
+            {/* ▼ 変更: タイトルを TASK Dashboard に */}
+            <h1 className="text-2xl font-bold text-white">TASK Dashboard</h1>
             <p className="text-slate-300 text-sm mt-1">
               タグ分類＆達成率分析付き ToDo
             </p>
@@ -4085,12 +4106,14 @@ export default function App() {
       >
         <div className="max-w-[100rem] mx-auto px-4 sm:px-6 xl:px-8 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 shrink-0">
-            <LayoutDashboard style={{ color: "var(--ui-accent)" }} size={24} />
+            {/* ▼ 変更: ユーザーの選択テーマ色(--ui-accent)を適用 */}
+            <IconLayeredDashboard size={28} color="var(--ui-accent)" />
             <h1
               className="font-bold text-lg hidden sm:block"
               style={{ color: "var(--ui-text)" }}
             >
-              Task Dashboard
+              {/* ▼ 変更 */}
+              TASK Dashboard
             </h1>
           </div>
           <div className="hidden sm:flex items-center gap-2 sm:gap-4 shrink-0 ml-auto">
