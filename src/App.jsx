@@ -219,6 +219,8 @@ const I18N = {
     en_mix: "Mo After Next",
     en: "Month After Next",
   },
+  lastWeek: { ja: "先週", en_mix: "Last Wk", en: "Last Week" },
+  weekBeforeLast: { ja: "先々週", en_mix: "2 Wks Ago", en: "2 Weeks Ago" },
 };
 const t = (key, lang) => I18N[key]?.[lang] || key;
 
@@ -1770,11 +1772,10 @@ function AnimatedToggle({
             key={value}
             type="button"
             onClick={() => onChange(value)}
-            className={`relative z-10 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-colors duration-300 ${optionClassName} ${
-              isActive
+            className={`relative z-10 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-colors duration-300 ${optionClassName} ${isActive
                 ? "text-[var(--ui-accent)] font-bold"
                 : "text-[var(--ui-text-muted)] hover:bg-slate-500/10 font-medium"
-            }`}
+              }`}
           >
             {isTextIcon && textIcon ? (
               <span className="font-mono font-bold">[{textIcon}]</span>
@@ -1812,9 +1813,8 @@ const addWeeks = (date, weeks) => {
 const formatWeekLabel = (start) => {
   const end = new Date(start);
   end.setDate(start.getDate() + 6);
-  return `${start.getMonth() + 1}/${start.getDate()}〜${
-    end.getMonth() + 1
-  }/${end.getDate()}`;
+  return `${start.getMonth() + 1}/${start.getDate()}〜${end.getMonth() + 1
+    }/${end.getDate()}`;
 };
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
@@ -1822,6 +1822,7 @@ const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 const formatDue = (dueString) => {
   if (!dueString) return null;
   const d = new Date(dueString);
+  if (Number.isNaN(d.getTime())) return null; // 不正な日付によるエラーを防止
 
   // UTCでの時刻が00:00:00の場合は「日付のみ指定（時間は未指定）」とみなす
   const isDateOnly =
@@ -1865,6 +1866,7 @@ const toDatetimeLocalValue = (d) => {
 const sameLocalDay = (a, b) => {
   const da = new Date(a);
   const db = new Date(b);
+  if (Number.isNaN(da.getTime()) || Number.isNaN(db.getTime())) return false; // エラー防止
   return (
     da.getFullYear() === db.getFullYear() &&
     da.getMonth() === db.getMonth() &&
@@ -2003,6 +2005,18 @@ const _getTagColorStyle = (tag) => {
 };
 
 export default function App() {
+  // 上部カードの横スクロール用
+  const topCardsScrollRef = useRef(null);
+  const handleTopCardsScroll = (direction) => {
+    if (topCardsScrollRef.current) {
+      const amount = 320;
+      topCardsScrollRef.current.scrollBy({
+        left: direction === "left" ? -amount : amount,
+        behavior: "smooth",
+      });
+    }
+  };
+
   const [clientId, setClientId] = useState(
     () => localStorage.getItem("google_tasks_client_id") || ENV_CLIENT_ID || ""
   );
@@ -2067,15 +2081,17 @@ export default function App() {
   };
 
   const parseTask = (task) => {
+    // titleが存在しない（null/undefined）場合のエラーを回避
+    const title = task.title || "";
     const tagRegex = /\[(.*?)\]/g;
     const tags = [];
     let match;
-    while ((match = tagRegex.exec(task.title)) !== null) {
+    while ((match = tagRegex.exec(title)) !== null) {
       if (match[1].trim() !== "") {
         tags.push(match[1].toLowerCase());
       }
     }
-    let cleanTitle = task.title.replace(/\[(.*?)\]/g, "").trim();
+    let cleanTitle = title.replace(/\[(.*?)\]/g, "").trim();
     const platforms = [];
     for (const { re, label } of LMS_IN_TITLE) {
       if (re.test(cleanTitle)) {
@@ -2200,8 +2216,7 @@ export default function App() {
             ...(tasksPageToken ? { pageToken: tasksPageToken } : {}),
           });
           const res = await fetch(
-            `https://tasks.googleapis.com/tasks/v1/lists/${
-              list.id
+            `https://tasks.googleapis.com/tasks/v1/lists/${list.id
             }/tasks?${query.toString()}`,
             { headers }
           );
@@ -2258,7 +2273,7 @@ export default function App() {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskTags, setNewTaskTags] = useState([]);
   const [newTaskDue, setNewTaskDue] = useState("");
-  const [showOnlyNoDue, _setShowOnlyNoDue] = useState(false);
+  const [dueFilter, setDueFilter] = useState("all"); // 'all' | 'hasDue' | 'noDue'
   const [selectedTasks, setSelectedTasks] = useState(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
@@ -2541,17 +2556,22 @@ export default function App() {
   const [keyboardFocusedTaskId, setKeyboardFocusedTaskId] = useState(null);
 
   const showCheckboxes = selectionMode || shiftHeld;
-  const PERIOD_MODAL_ORDER = useMemo(
-    () => [
-      "week",
-      "nextWeek",
-      "weekAfterNext",
-      "month",
-      "nextMonth",
-      "monthAfterNext",
-    ],
-    []
-  );
+  // 分析タブとそれ以外でモーダルの遷移順を安全に切り替える（エラー防止）
+  const PERIOD_MODAL_ORDER = useMemo(() => {
+    if (activeTab === "analytics") {
+      return [
+        "weekBeforeLast",
+        "lastWeek",
+        "week",
+        "nextWeek",
+        "weekAfterNext",
+        "month",
+        "nextMonth",
+        "monthAfterNext",
+      ];
+    }
+    return ["week", "nextWeek", "month"];
+  }, [activeTab]);
 
   useEffect(() => {
     const onKeyUp = (e) => {
@@ -2671,7 +2691,7 @@ export default function App() {
         await Promise.all(
           tasksToDelete.map((task) =>
             fetch(
-              `https://tasks.googleapis.com/tasks/v1/lists/${task.listId}/tasks/${task.id}`,
+              `https://tasks.googleapis.com/tasks/v1/lists/${task.listId || "@default"}/tasks/${task.id}`,
               {
                 method: "DELETE",
                 headers: { Authorization: `Bearer ${accessToken}` },
@@ -2710,7 +2730,7 @@ export default function App() {
     }
 
     setLoading(true);
-    const lines = newTaskTitle.split("\n").filter((l) => l.trim() !== "");
+    const lines = (newTaskTitle || "").split("\n").filter((l) => l.trim() !== "");
     const newTasks = [];
 
     // GUIで設定された期限とタグ
@@ -2814,10 +2834,10 @@ export default function App() {
       prev.map((t) =>
         t.id === task.id
           ? {
-              ...t,
-              status: newStatus,
-              completed: newStatus === "completed" ? now : null,
-            }
+            ...t,
+            status: newStatus,
+            completed: newStatus === "completed" ? now : null,
+          }
           : t
       )
     );
@@ -2825,7 +2845,7 @@ export default function App() {
     if (!isDemo) {
       try {
         await fetch(
-          `https://tasks.googleapis.com/tasks/v1/lists/${task.listId}/tasks/${task.id}`,
+          `https://tasks.googleapis.com/tasks/v1/lists/${task.listId || "@default"}/tasks/${task.id}`,
           {
             method: "PATCH",
             headers: {
@@ -2854,7 +2874,8 @@ export default function App() {
 
     const wordCounts = {};
     filteredForRoutine.forEach((t) => {
-      const words = t.cleanTitle.split(/[\s,，、・\-()（）[\]［］{}｛｝]+/);
+      const cleanTitle = t.cleanTitle || "";
+      const words = cleanTitle.split(/[\s,，、・\-()（）[\]［］{}｛｝]+/);
       words.forEach((w) => {
         if (w.length < 2 || /^[0-9０-９]+$/.test(w)) return;
         if (/課題[0-9０-９]+/.test(w) || /[0-9０-９]+回/.test(w)) return;
@@ -2869,7 +2890,8 @@ export default function App() {
 
     const tempGroups = {};
     filteredForRoutine.forEach((t) => {
-      const words = t.cleanTitle.split(/[\s,，、・\-()（）[\]［］{}｛｝]+/);
+      const cleanTitle = t.cleanTitle || "";
+      const words = cleanTitle.split(/[\s,，、・\-()（）[\]［］{}｛｝]+/);
       const taskKeywords = [
         ...new Set(words.filter((w) => routineKeywords.includes(w))),
       ];
@@ -2947,6 +2969,8 @@ export default function App() {
     monthStats,
     nextMonthStats,
     monthAfterNextStats,
+    weekBeforeLastStats,
+    lastWeekStats,
     weeklyHistory,
     monthlyHistory,
     yearlyHistory,
@@ -2979,10 +3003,26 @@ export default function App() {
       now.getMonth() + 3,
       1
     );
+    const lastWeekStart = addWeeks(weekStart, -1);
+    const lastWeekEnd = weekStart;
+    const weekBeforeLastStart = addWeeks(weekStart, -2);
+    const weekBeforeLastEnd = lastWeekStart;
 
     // ▼ 週跨ぎ遅延タスクの所属週（effectiveDate）を再定義
     const tasksForTopDashboard = baseFilteredTasks.map((t) => {
       if (!t.due) {
+        // 期限なしでも完了していれば、完了した週の実績として扱う
+        if (t.status === "completed" && t.completed) {
+          const compD = new Date(t.completed);
+          if (!Number.isNaN(compD.getTime())) {
+            return {
+              ...t,
+              effectiveDate: compD,
+              isRollover: false,
+              isDelayedCompletion: false,
+            };
+          }
+        }
         return {
           ...t,
           effectiveDate: null,
@@ -2991,6 +3031,14 @@ export default function App() {
         };
       }
       const dueD = new Date(t.due);
+      if (Number.isNaN(dueD.getTime())) {
+        return {
+          ...t,
+          effectiveDate: null,
+          isRollover: false,
+          isDelayedCompletion: false,
+        };
+      }
       const dueW = getWeekRange(dueD).start.getTime();
       const nowW = weekStart.getTime();
 
@@ -3034,6 +3082,12 @@ export default function App() {
     let monthAfterNextTotal = 0,
       monthAfterNextCompleted = 0;
     const monthAfterNextTasks = [];
+    let lastWeekTotal = 0,
+      lastWeekCompleted = 0;
+    const lastWeekTasks = [];
+    let weekBeforeLastTotal = 0,
+      weekBeforeLastCompleted = 0;
+    const weekBeforeLastTasks = [];
 
     let analyticsCompleted = 0;
     tasksForTopDashboard.forEach((t) => {
@@ -3072,6 +3126,16 @@ export default function App() {
           if (isCompleted) monthAfterNextCompleted++;
           monthAfterNextTasks.push(t);
         }
+        if (effDate >= lastWeekStart && effDate < lastWeekEnd) {
+          lastWeekTotal++;
+          if (isCompleted) lastWeekCompleted++;
+          lastWeekTasks.push(t);
+        }
+        if (effDate >= weekBeforeLastStart && effDate < weekBeforeLastEnd) {
+          weekBeforeLastTotal++;
+          if (isCompleted) weekBeforeLastCompleted++;
+          weekBeforeLastTasks.push(t);
+        }
       }
     });
     const analyticsTotal = tasksForTopDashboard.length;
@@ -3081,18 +3145,31 @@ export default function App() {
         : Math.round((analyticsCompleted / analyticsTotal) * 100);
 
     const initTagData = (tag) => {
-      if (!tagData[tag]) tagData[tag] = { total: 0, completed: 0 };
+      if (!tagData[tag])
+        tagData[tag] = { total: 0, completed: 0, active7Days: 0 };
     };
+
+    const nowMs = now.getTime();
+    const next7DaysMs = nowMs + 7 * 24 * 60 * 60 * 1000;
 
     tasks.forEach((t) => {
       const isCompleted = t.status === "completed";
       if (isCompleted) completed++;
+
+      // 7日以内の未完了タスク判定
+      const dMs = t.due ? new Date(t.due).getTime() : NaN;
+      const isWithin7Days =
+        !isCompleted &&
+        !Number.isNaN(dMs) &&
+        dMs >= nowMs &&
+        dMs <= next7DaysMs;
 
       const tags = t.tags.length === 0 ? ["未分類"] : t.tags;
       tags.forEach((tag) => {
         initTagData(tag);
         tagData[tag].total++;
         if (isCompleted) tagData[tag].completed++;
+        if (isWithin7Days) tagData[tag].active7Days++;
       });
     });
 
@@ -3104,7 +3181,7 @@ export default function App() {
             : Math.round((data.completed / data.total) * 100);
         return { tag, ...data, rate, active: data.total - data.completed };
       })
-      .sort((a, b) => b.total - a.total);
+      .sort((a, b) => b.active7Days - a.active7Days || b.active - a.active); // 7日以内の数が多い順にソート
 
     // 過去7週 + 今週 + 来週 = 9週分
     const history = [];
@@ -3221,8 +3298,8 @@ export default function App() {
           weekAfterNextTotal === 0
             ? 0
             : Math.round(
-                (weekAfterNextCompleted / weekAfterNextTotal) * 100
-              ),
+              (weekAfterNextCompleted / weekAfterNextTotal) * 100
+            ),
         completed: weekAfterNextCompleted,
         totalTarget: weekAfterNextTotal,
         tasks: weekAfterNextTasks,
@@ -3248,11 +3325,29 @@ export default function App() {
           monthAfterNextTotal === 0
             ? 0
             : Math.round(
-                (monthAfterNextCompleted / monthAfterNextTotal) * 100
-              ),
+              (monthAfterNextCompleted / monthAfterNextTotal) * 100
+            ),
         completed: monthAfterNextCompleted,
         totalTarget: monthAfterNextTotal,
         tasks: monthAfterNextTasks,
+      },
+      weekBeforeLastStats: {
+        rate:
+          weekBeforeLastTotal === 0
+            ? 0
+            : Math.round((weekBeforeLastCompleted / weekBeforeLastTotal) * 100),
+        completed: weekBeforeLastCompleted,
+        totalTarget: weekBeforeLastTotal,
+        tasks: weekBeforeLastTasks,
+      },
+      lastWeekStats: {
+        rate:
+          lastWeekTotal === 0
+            ? 0
+            : Math.round((lastWeekCompleted / lastWeekTotal) * 100),
+        completed: lastWeekCompleted,
+        totalTarget: lastWeekTotal,
+        tasks: lastWeekTasks,
       },
       weeklyHistory: history,
       monthlyHistory,
@@ -3264,82 +3359,142 @@ export default function App() {
   }, [tasks, selectedTag, selectedRoutineTaskIds]);
 
   // === フィルター & ソート ===
-  const { activeGroups, activeTotalCount, historyList } = useMemo(() => {
-    // タグ×ルーチンは baseFilteredTasks 済み
-    let filtered = baseFilteredTasks;
+  const { activeGroups, activeTotalCount, historyList, historyGroups } =
+    useMemo(() => {
+      // タグ×ルーチンは baseFilteredTasks 済み
+      let filtered = baseFilteredTasks;
 
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (t) =>
-          (t.cleanTitle && t.cleanTitle.toLowerCase().includes(q)) ||
-          t.tags.some((tag) => tag.toLowerCase().includes(q))
-      );
-    }
-
-    const now = new Date();
-    const { start: weekStart, end: weekEnd } = getWeekRange(now);
-
-    let active = filtered.filter((t) => t.status === "needsAction");
-    if (showOnlyNoDue) {
-      active = active.filter((t) => !t.due);
-      const sorted = [...active].sort((a, b) =>
-        (a.cleanTitle || "").localeCompare(b.cleanTitle || "", "ja")
-      );
-      const groups = sorted.length
-        ? [{ bucket: 5, title: ACTIVE_SECTION_TITLES[5], tasks: sorted }]
-        : [];
-      const history = filtered
-        .filter((t) => t.status === "completed")
-        .sort(
-          (a, b) => new Date(b.completed || 0) - new Date(a.completed || 0)
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        filtered = filtered.filter(
+          (t) =>
+            (t.cleanTitle && t.cleanTitle.toLowerCase().includes(q)) ||
+            t.tags.some((tag) => tag.toLowerCase().includes(q))
         );
-      return {
-        activeGroups: groups,
-        activeTotalCount: sorted.length,
-        historyList: history,
-      };
-    }
-
-    const buckets = ACTIVE_SECTION_TITLES.map((title, bucket) => {
-      let groupTitle = title;
-      if (bucket === 1) {
-        groupTitle = `今日 (${now.getMonth() + 1}/${now.getDate()}(${
-          WEEKDAYS[now.getDay()]
-        }))`;
-      } else if (bucket === 2) {
-        const tmr = new Date(now);
-        tmr.setDate(tmr.getDate() + 1);
-        groupTitle = `明日 (${tmr.getMonth() + 1}/${tmr.getDate()}(${
-          WEEKDAYS[tmr.getDay()]
-        }))`;
       }
-      return { bucket, title: groupTitle, tasks: [] };
-    });
 
-    active.forEach((task) => {
-      const { bucket } = getActiveSortKey(task, now, weekStart, weekEnd);
-      buckets[bucket].tasks.push(task);
-    });
-    buckets.forEach((b) => {
-      b.tasks.sort((a, c) => {
-        const ka = getActiveSortKey(a, now, weekStart, weekEnd);
-        const kc = getActiveSortKey(c, now, weekStart, weekEnd);
-        return ka.dueMs - kc.dueMs;
+      const now = new Date();
+      const { start: weekStart, end: weekEnd } = getWeekRange(now);
+
+      // ▼ 追加: 期限あり・なし のフィルタリングを適用
+      let currentFiltered = filtered;
+      if (dueFilter === "noDue") {
+        currentFiltered = currentFiltered.filter((t) => !t.due);
+      } else if (dueFilter === "hasDue") {
+        currentFiltered = currentFiltered.filter((t) => !!t.due);
+      }
+
+      // 履歴データ全体の安全なソート
+      const historyListRaw = currentFiltered
+        .filter((t) => t.status === "completed")
+        .sort((a, b) => {
+          const da = a.completed ? new Date(a.completed).getTime() : 0;
+          const db = b.completed ? new Date(b.completed).getTime() : 0;
+          return (Number.isNaN(db) ? 0 : db) - (Number.isNaN(da) ? 0 : da);
+        });
+
+      // 履歴のグループ化ロジック
+      const createHistoryGroups = (list) => {
+        const hToday = [],
+          hThisWeek = [],
+          hLastWeek = [],
+          hThisMonth = [],
+          hLastMonth = [],
+          hOlder = [];
+        const todayStart = new Date(now);
+        todayStart.setHours(0, 0, 0, 0);
+        const todayMs = todayStart.getTime();
+
+        const weekStartMs = weekStart.getTime();
+        const weekEndMs = weekEnd.getTime();
+        const lastWeekStartMs = addWeeks(weekStart, -1).getTime();
+
+        const thisMonthStartMs = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          1
+        ).getTime();
+        const lastMonthStartMs = new Date(
+          now.getFullYear(),
+          now.getMonth() - 1,
+          1
+        ).getTime();
+
+        list.forEach((t) => {
+          if (!t.completed) {
+            hOlder.push(t);
+            return;
+          }
+          const cdMs = new Date(t.completed).getTime();
+          // 日付がパースできない場合は Older へ
+          if (Number.isNaN(cdMs)) {
+            hOlder.push(t);
+            return;
+          }
+
+          if (cdMs >= todayMs) hToday.push(t);
+          else if (cdMs >= weekStartMs && cdMs < weekEndMs) hThisWeek.push(t);
+          else if (cdMs >= lastWeekStartMs && cdMs < weekStartMs)
+            hLastWeek.push(t);
+          else if (cdMs >= thisMonthStartMs) hThisMonth.push(t);
+          else if (cdMs >= lastMonthStartMs && cdMs < thisMonthStartMs)
+            hLastMonth.push(t);
+          else hOlder.push(t);
+        });
+
+        const res = [];
+        if (hToday.length) res.push({ title: "今日達成", tasks: hToday });
+        if (hThisWeek.length) res.push({ title: "今週達成", tasks: hThisWeek });
+        if (hLastWeek.length) res.push({ title: "先週達成", tasks: hLastWeek });
+        if (hThisMonth.length)
+          res.push({ title: "それ以外の今月達成", tasks: hThisMonth });
+        if (hLastMonth.length)
+          res.push({ title: "先月達成", tasks: hLastMonth });
+        if (hOlder.length) res.push({ title: "それ以前に達成", tasks: hOlder });
+        return res;
+      };
+
+      // アクティブタスクの抽出とバケツ振り分け
+      let active = currentFiltered.filter((t) => t.status === "needsAction");
+
+      const buckets = ACTIVE_SECTION_TITLES.map((title, bucket) => {
+        let groupTitle = title;
+        if (bucket === 1) {
+          groupTitle = `今日 (${now.getMonth() + 1}/${now.getDate()}(${WEEKDAYS[now.getDay()]
+            }))`;
+        } else if (bucket === 2) {
+          const tmr = new Date(now);
+          tmr.setDate(tmr.getDate() + 1);
+          groupTitle = `明日 (${tmr.getMonth() + 1}/${tmr.getDate()}(${WEEKDAYS[tmr.getDay()]
+            }))`;
+        }
+        return { bucket, title: groupTitle, tasks: [] };
       });
-    });
-    const activeGroups = buckets.filter((b) => b.tasks.length > 0);
-    const activeTotalCount = activeGroups.reduce(
-      (n, g) => n + g.tasks.length,
-      0
-    );
 
-    const history = filtered
-      .filter((t) => t.status === "completed")
-      .sort((a, b) => new Date(b.completed || 0) - new Date(a.completed || 0));
+      active.forEach((task) => {
+        const { bucket } = getActiveSortKey(task, now, weekStart, weekEnd);
+        buckets[bucket].tasks.push(task);
+      });
+      buckets.forEach((b) => {
+        b.tasks.sort((a, c) => {
+          const ka = getActiveSortKey(a, now, weekStart, weekEnd);
+          const kc = getActiveSortKey(c, now, weekStart, weekEnd);
+          return ka.dueMs - kc.dueMs;
+        });
+      });
+      const activeGroups = buckets.filter((b) => b.tasks.length > 0);
+      const activeTotalCount = activeGroups.reduce(
+        (n, g) => n + g.tasks.length,
+        0
+      );
 
-    return { activeGroups, activeTotalCount, historyList: history };
-  }, [baseFilteredTasks, showOnlyNoDue, searchQuery]);
+      return {
+        activeGroups,
+        activeTotalCount,
+        historyList: historyListRaw,
+        historyGroups: createHistoryGroups(historyListRaw),
+      };
+    }, [baseFilteredTasks, dueFilter, searchQuery]);
 
   /*
   const tagAndSearchTaskCount = useMemo(() => {
@@ -3391,7 +3546,8 @@ export default function App() {
     if (!el) return false;
     const tag = el.tagName;
     if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
-    return el.isContentEditable;
+    if (el.isContentEditable) return true;
+    return false;
   };
 
   useEffect(() => {
@@ -3451,16 +3607,25 @@ export default function App() {
           e.preventDefault();
           const i = PERIOD_MODAL_ORDER.indexOf(periodModalPeriod);
           setPeriodModalTiltDeg(-14);
-          setPeriodModalPeriod(PERIOD_MODAL_ORDER[(i - 1 + 3) % 3]);
+          // 安全な配列アクセスのためのモジュロ計算修正
+          setPeriodModalPeriod(
+            PERIOD_MODAL_ORDER[
+            (i - 1 + PERIOD_MODAL_ORDER.length) % PERIOD_MODAL_ORDER.length
+            ]
+          );
           return;
         }
         if (e.key === "ArrowRight") {
           e.preventDefault();
           const i = PERIOD_MODAL_ORDER.indexOf(periodModalPeriod);
           setPeriodModalTiltDeg(14);
-          setPeriodModalPeriod(PERIOD_MODAL_ORDER[(i + 1) % 3]);
+          setPeriodModalPeriod(
+            PERIOD_MODAL_ORDER[(i + 1) % PERIOD_MODAL_ORDER.length]
+          );
           return;
         }
+        // ▼ 追加: モーダル表示中は背面のリストに対するショートカットを完全にブロック
+        return;
       }
 
       if (e.key === "Escape") {
@@ -3490,8 +3655,8 @@ export default function App() {
       if (loading) return;
 
       if (e.key === "ArrowDown") {
+        if (!flatNavTasks || flatNavTasks.length === 0) return;
         e.preventDefault();
-        if (flatNavTasks.length === 0) return;
         setKeyboardFocusedTaskId((prev) => {
           if (!prev) return flatNavTasks[0].id;
           const i = flatNavTasks.findIndex((t) => t.id === prev);
@@ -3502,8 +3667,8 @@ export default function App() {
       }
 
       if (e.key === "ArrowUp") {
+        if (!flatNavTasks || flatNavTasks.length === 0) return;
         e.preventDefault();
-        if (flatNavTasks.length === 0) return;
         setKeyboardFocusedTaskId((prev) => {
           if (!prev) return flatNavTasks[0].id;
           const i = flatNavTasks.findIndex((t) => t.id === prev);
@@ -3514,6 +3679,7 @@ export default function App() {
       }
 
       if (e.key === "Enter") {
+        if (!flatNavTasks || flatNavTasks.length === 0) return;
         const id = keyboardFocusedTaskId;
         if (!id) return;
         const task = flatNavTasks.find((t) => t.id === id);
@@ -3610,9 +3776,8 @@ export default function App() {
               <button
                 onClick={handleAuth}
                 disabled={loading}
-                className={`w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition shadow-md flex items-center justify-center gap-2 ${
-                  loading ? "opacity-70 cursor-not-allowed" : ""
-                }`}
+                className={`w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition shadow-md flex items-center justify-center gap-2 ${loading ? "opacity-70 cursor-not-allowed" : ""
+                  }`}
               >
                 {loading ? (
                   <RefreshCw className="animate-spin" size={20} />
@@ -3739,9 +3904,8 @@ export default function App() {
 
   const appBgColor =
     uiConfig.texture === "glass"
-      ? `linear-gradient(135deg, ${tColors.bg} 0%, ${
-          isDark ? "#000000" : uiColors.light
-        } 100%)`
+      ? `linear-gradient(135deg, ${tColors.bg} 0%, ${isDark ? "#000000" : uiColors.light
+      } 100%)`
       : tColors.bg;
 
   return (
@@ -3780,9 +3944,8 @@ export default function App() {
           --ui-accent: ${uiColors.main};
           --ui-accent-dark: ${uiColors.dark};
           --ui-accent-light: ${isDark ? uiColors.dark + "40" : uiColors.light};
-          --ui-accent-border: ${
-            isDark ? uiColors.main + "80" : uiColors.border
-          };
+          --ui-accent-border: ${isDark ? uiColors.main + "80" : uiColors.border
+        };
           --ui-accent-contrast: ${uiColors.contrast};
           --ui-radius: ${radiusMap[uiConfig.radius]};
           --ui-font: ${fontMap[uiConfig.font]};
@@ -3793,13 +3956,12 @@ export default function App() {
           --ui-text: ${tColors.text};
           --ui-text-muted: ${tColors.textMuted};
           --ui-transition: ${animDur};
-          --ui-icon-weight: ${
-            uiConfig.iconWeight === "light"
-              ? "1.25"
-              : uiConfig.iconWeight === "bold"
-              ? "2.75"
-              : "2"
-          };
+          --ui-icon-weight: ${uiConfig.iconWeight === "light"
+          ? "1.25"
+          : uiConfig.iconWeight === "bold"
+            ? "2.75"
+            : "2"
+        };
           --ui-density-gap: ${densityValues[uiConfig.density].gap};
           --ui-density-p: ${densityValues[uiConfig.density].p};
           --ui-bg: ${tColors.bg};
@@ -3807,74 +3969,55 @@ export default function App() {
           --ui-border: ${tColors.border};
           
           --ui-danger: ${isDark ? "#f43f5e" : "#e11d48"};
-          --ui-danger-bg: ${
-            isDark ? "rgba(244, 63, 94, 0.15)" : "rgba(225, 29, 72, 0.08)"
-          };
+          --ui-danger-bg: ${isDark ? "rgba(244, 63, 94, 0.15)" : "rgba(225, 29, 72, 0.08)"
+        };
           --ui-success: ${isDark ? "#10b981" : "#059669"};
-          --ui-success-bg: ${
-            isDark ? "rgba(16, 185, 129, 0.15)" : "rgba(5, 150, 105, 0.08)"
-          };
+          --ui-success-bg: ${isDark ? "rgba(16, 185, 129, 0.15)" : "rgba(5, 150, 105, 0.08)"
+        };
           --ui-warning: ${isDark ? "#f59e0b" : "#d97706"};
-          --ui-warning-bg: ${
-            isDark ? "rgba(245, 158, 11, 0.15)" : "rgba(217, 119, 6, 0.08)"
-          };
+          --ui-warning-bg: ${isDark ? "rgba(245, 158, 11, 0.15)" : "rgba(217, 119, 6, 0.08)"
+        };
 
           /* 新規追加：透過背景やタグ用のセマンティックカラー */
-          --ui-hover: ${
-            isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)"
-          };
-          --ui-hover-active: ${
-            isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)"
-          };
-          --ui-backdrop: ${
-            isDark ? "rgba(0, 0, 0, 0.6)" : "rgba(0, 0, 0, 0.2)"
-          };
-          --ui-skeleton: ${
-            isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)"
-          };
+          --ui-hover: ${isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)"
+        };
+          --ui-hover-active: ${isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)"
+        };
+          --ui-backdrop: ${isDark ? "rgba(0, 0, 0, 0.6)" : "rgba(0, 0, 0, 0.2)"
+        };
+          --ui-skeleton: ${isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)"
+        };
 
           --tag-1-text: ${isDark ? "#60a5fa" : "#2563eb"};
-          --tag-1-bg: ${
-            isDark ? "rgba(96, 165, 250, 0.15)" : "rgba(37, 99, 235, 0.1)"
-          };
-          --tag-1-border: ${
-            isDark ? "rgba(96, 165, 250, 0.3)" : "rgba(37, 99, 235, 0.2)"
-          };
+          --tag-1-bg: ${isDark ? "rgba(96, 165, 250, 0.15)" : "rgba(37, 99, 235, 0.1)"
+        };
+          --tag-1-border: ${isDark ? "rgba(96, 165, 250, 0.3)" : "rgba(37, 99, 235, 0.2)"
+        };
           --tag-2-text: ${isDark ? "#34d399" : "#059669"};
-          --tag-2-bg: ${
-            isDark ? "rgba(52, 211, 153, 0.15)" : "rgba(5, 150, 105, 0.1)"
-          };
-          --tag-2-border: ${
-            isDark ? "rgba(52, 211, 153, 0.3)" : "rgba(5, 150, 105, 0.2)"
-          };
+          --tag-2-bg: ${isDark ? "rgba(52, 211, 153, 0.15)" : "rgba(5, 150, 105, 0.1)"
+        };
+          --tag-2-border: ${isDark ? "rgba(52, 211, 153, 0.3)" : "rgba(5, 150, 105, 0.2)"
+        };
           --tag-3-text: ${isDark ? "#a78bfa" : "#7c3aed"};
-          --tag-3-bg: ${
-            isDark ? "rgba(167, 139, 250, 0.15)" : "rgba(124, 58, 237, 0.1)"
-          };
-          --tag-3-border: ${
-            isDark ? "rgba(167, 139, 250, 0.3)" : "rgba(124, 58, 237, 0.2)"
-          };
+          --tag-3-bg: ${isDark ? "rgba(167, 139, 250, 0.15)" : "rgba(124, 58, 237, 0.1)"
+        };
+          --tag-3-border: ${isDark ? "rgba(167, 139, 250, 0.3)" : "rgba(124, 58, 237, 0.2)"
+        };
           --tag-4-text: ${isDark ? "#fbbf24" : "#d97706"};
-          --tag-4-bg: ${
-            isDark ? "rgba(251, 191, 36, 0.15)" : "rgba(217, 119, 6, 0.1)"
-          };
-          --tag-4-border: ${
-            isDark ? "rgba(251, 191, 36, 0.3)" : "rgba(217, 119, 6, 0.2)"
-          };
+          --tag-4-bg: ${isDark ? "rgba(251, 191, 36, 0.15)" : "rgba(217, 119, 6, 0.1)"
+        };
+          --tag-4-border: ${isDark ? "rgba(251, 191, 36, 0.3)" : "rgba(217, 119, 6, 0.2)"
+        };
           --tag-5-text: ${isDark ? "#fb7185" : "#e11d48"};
-          --tag-5-bg: ${
-            isDark ? "rgba(251, 113, 133, 0.15)" : "rgba(225, 29, 72, 0.1)"
-          };
-          --tag-5-border: ${
-            isDark ? "rgba(251, 113, 133, 0.3)" : "rgba(225, 29, 72, 0.2)"
-          };
+          --tag-5-bg: ${isDark ? "rgba(251, 113, 133, 0.15)" : "rgba(225, 29, 72, 0.1)"
+        };
+          --tag-5-border: ${isDark ? "rgba(251, 113, 133, 0.3)" : "rgba(225, 29, 72, 0.2)"
+        };
           --tag-6-text: ${isDark ? "#22d3ee" : "#0891b2"};
-          --tag-6-bg: ${
-            isDark ? "rgba(34, 211, 238, 0.15)" : "rgba(8, 145, 178, 0.1)"
-          };
-          --tag-6-border: ${
-            isDark ? "rgba(34, 211, 238, 0.3)" : "rgba(8, 145, 178, 0.2)"
-          };
+          --tag-6-bg: ${isDark ? "rgba(34, 211, 238, 0.15)" : "rgba(8, 145, 178, 0.1)"
+        };
+          --tag-6-border: ${isDark ? "rgba(34, 211, 238, 0.3)" : "rgba(8, 145, 178, 0.2)"
+        };
         }
 
         html, body { overflow: hidden; width: 100%; height: 100%; }
@@ -3893,18 +4036,15 @@ export default function App() {
           box-shadow: ${panelShadow} !important;
           border: ${panelBorder} !important;
           color: var(--ui-text) !important;
-          ${
-            uiConfig.texture === "paper"
-              ? `background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");`
-              : ""
-          }
+          ${uiConfig.texture === "paper"
+          ? `background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");`
+          : ""
+        }
         }
 
-        input, textarea { background-color: ${
-          isDark ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.9)"
-        } !important; color: var(--ui-text) !important; border-color: ${
-        tColors.border
-      } !important; }
+        input, textarea { background-color: ${isDark ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.9)"
+        } !important; color: var(--ui-text) !important; border-color: ${tColors.border
+        } !important; }
 
         .ui-gradient-card { background: linear-gradient(135deg, var(--ui-accent) 0%, var(--ui-accent-dark) 100%) !important; color: var(--ui-accent-contrast) !important; border: none !important; }
         .ui-gradient-card p, .ui-gradient-card span, .ui-gradient-card div { color: var(--ui-accent-contrast) !important; opacity: 0.95; }
@@ -3918,8 +4058,7 @@ export default function App() {
 
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background-color: ${
-          isDark ? "#334155" : "var(--ui-accent-border)"
+        ::-webkit-scrollbar-thumb { background-color: ${isDark ? "#334155" : "var(--ui-accent-border)"
         }; border-radius: var(--ui-radius); border: 2px solid transparent; background-clip: padding-box; }
         ::-webkit-scrollbar-thumb:hover { background-color: var(--ui-accent); }
 
@@ -3987,33 +4126,29 @@ export default function App() {
           )}
           <button
             type="button"
-            className={`xl:hidden p-2 rounded-lg transition relative w-10 h-10 flex flex-col justify-center items-center gap-1.5 hover:bg-black/5 dark:hover:bg-white/10 ${
-              !accessToken && !isDemo && tasks.length > 0 ? "" : "ml-auto"
-            } group`}
+            className={`xl:hidden p-2 rounded-lg transition relative w-10 h-10 flex flex-col justify-center items-center gap-1.5 hover:bg-black/5 dark:hover:bg-white/10 ${!accessToken && !isDemo && tasks.length > 0 ? "" : "ml-auto"
+              } group`}
             style={{ color: "var(--ui-text)" }}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             <span
-              className={`block w-6 h-0.5 bg-current transition-all duration-300 origin-center ${
-                isMobileMenuOpen
+              className={`block w-6 h-0.5 bg-current transition-all duration-300 origin-center ${isMobileMenuOpen
                   ? "rotate-[45deg] translate-y-[8px]"
                   : "group-hover:-translate-y-0.5"
-              }`}
+                }`}
               style={{
                 transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)",
               }}
             />
             <span
-              className={`block w-6 h-0.5 bg-current transition-all duration-200 ${
-                isMobileMenuOpen ? "opacity-0 scale-x-0" : "opacity-100"
-              }`}
+              className={`block w-6 h-0.5 bg-current transition-all duration-200 ${isMobileMenuOpen ? "opacity-0 scale-x-0" : "opacity-100"
+                }`}
             />
             <span
-              className={`block w-6 h-0.5 bg-current transition-all duration-300 origin-center ${
-                isMobileMenuOpen
+              className={`block w-6 h-0.5 bg-current transition-all duration-300 origin-center ${isMobileMenuOpen
                   ? "-rotate-[45deg] -translate-y-[8px]"
                   : "group-hover:translate-y-0.5"
-              }`}
+                }`}
               style={{
                 transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)",
               }}
@@ -4088,11 +4223,10 @@ export default function App() {
                       setActiveTab(value);
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`w-full px-4 py-3 rounded-xl text-left flex items-center gap-3 font-medium transition ${
-                      activeTab === value
+                    className={`w-full px-4 py-3 rounded-xl text-left flex items-center gap-3 font-medium transition ${activeTab === value
                         ? "bg-[var(--ui-accent-light)] text-[var(--ui-accent)]"
                         : "text-[var(--ui-text)] hover:bg-black/5 dark:hover:bg-white/5"
-                    }`}
+                      }`}
                   >
                     <Icon
                       size={18}
@@ -4122,11 +4256,10 @@ export default function App() {
                     setSelectedTag(null);
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`w-full px-3 py-2 rounded-lg text-sm flex justify-between items-center transition ${
-                    selectedTag === null
+                  className={`w-full px-3 py-2 rounded-lg text-sm flex justify-between items-center transition ${selectedTag === null
                       ? "text-[var(--ui-accent)] font-bold bg-[var(--ui-accent-light)]"
                       : "text-[var(--ui-text-muted)] hover:bg-black/5"
-                  }`}
+                    }`}
                 >
                   <span>すべて</span>
                   <span className="text-[10px] opacity-60">
@@ -4142,11 +4275,10 @@ export default function App() {
                       );
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`w-full px-3 py-2 rounded-lg text-sm flex justify-between items-center transition ${
-                      selectedTag === tData.tag
+                    className={`w-full px-3 py-2 rounded-lg text-sm flex justify-between items-center transition ${selectedTag === tData.tag
                         ? "text-[var(--ui-accent)] font-bold bg-[var(--ui-accent-light)]"
                         : "text-[var(--ui-text-muted)] hover:bg-black/5"
-                    }`}
+                      }`}
                   >
                     <span className="truncate pr-2">{tData.tag}</span>
                     <span className="text-[10px] shrink-0 font-bold">
@@ -4276,11 +4408,10 @@ export default function App() {
                     type="button"
                     data-menu-val={value}
                     onClick={() => setActiveTab(value)}
-                    className={`px-3 py-2 rounded-lg text-sm transition relative z-10 flex items-center gap-2 ${
-                      isActive
+                    className={`px-3 py-2 rounded-lg text-sm transition relative z-10 flex items-center gap-2 ${isActive
                         ? "text-[var(--ui-accent)] font-bold"
                         : "text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5 hover:text-[var(--ui-text)]"
-                    }`}
+                      }`}
                   >
                     {uiConfig.iconStyle === "text" ? (
                       <span className="font-mono font-bold text-xs">
@@ -4323,36 +4454,34 @@ export default function App() {
             <div className="flex bg-black/5 dark:bg-white/5 rounded-lg p-1 mb-3 shrink-0">
               <button
                 onClick={() => setSidebarFilterTab("tags")}
-                className={`flex-1 text-xs font-bold py-1.5 rounded-md transition ${
-                  sidebarFilterTab === "tags"
+                className={`flex-1 text-xs font-bold py-1.5 rounded-md transition ${sidebarFilterTab === "tags"
                     ? "bg-[var(--ui-panel-bg)] text-[var(--ui-text)] shadow-sm"
                     : "text-[var(--ui-text-muted)] opacity-70"
-                }`}
+                  }`}
               >
                 Tags
               </button>
               <button
                 onClick={() => setSidebarFilterTab("routines")}
-                className={`flex-1 text-xs font-bold py-1.5 rounded-md transition ${
-                  sidebarFilterTab === "routines"
+                className={`flex-1 text-xs font-bold py-1.5 rounded-md transition ${sidebarFilterTab === "routines"
                     ? "bg-[var(--ui-panel-bg)] text-[var(--ui-text)] shadow-sm"
                     : "text-[var(--ui-text-muted)] opacity-70"
-                }`}
+                  }`}
               >
                 Routines
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto pr-1 hide-scrollbar flex flex-col gap-1.5">
+            {/* min-h-0 を追加してflex要素の潰れを防止 */}
+            <div className="flex-1 overflow-y-auto pr-1 hide-scrollbar flex flex-col gap-1.5 min-h-0">
               {sidebarFilterTab === "tags" ? (
                 <>
                   <button
                     onClick={() => setSelectedTag(null)}
-                    className={`px-3 py-2 rounded-lg text-sm transition flex justify-between items-center ${
-                      selectedTag === null
+                    className={`shrink-0 px-3 py-2 rounded-lg text-sm transition flex justify-between items-center ${selectedTag === null
                         ? "text-[var(--ui-accent)] font-bold bg-[var(--ui-accent-light)]"
                         : "text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5"
-                    }`}
+                      }`}
                   >
                     {t("all", uiConfig.language)} ({stats.total})
                   </button>
@@ -4364,38 +4493,38 @@ export default function App() {
                           prev === tData.tag ? null : tData.tag
                         )
                       }
-                      className={`px-3 py-2 rounded-lg text-sm transition relative overflow-hidden flex flex-col group ${
-                        selectedTag === tData.tag
+                      className={`shrink-0 px-3 py-2 rounded-lg text-sm transition relative overflow-hidden flex flex-col group ${selectedTag === tData.tag
                           ? "text-[var(--ui-accent)] font-bold bg-[var(--ui-accent-light)]"
                           : "text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5"
-                      }`}
+                        }`}
                     >
                       <div className="flex justify-between items-center w-full relative z-10">
                         <div className="flex items-center gap-1.5 truncate">
                           <span
-                            className={`w-2 h-2 rounded-full shrink-0 ${
-                              tData.tag === "未分類"
+                            className={`w-2 h-2 rounded-full shrink-0 ${tData.tag === "未分類"
                                 ? "bg-slate-300"
                                 : getTagColor(tData.tag)
-                                    .split(" ")[0]
-                                    .replace("/10", "")
-                            }`}
+                                  .split(" ")[0]
+                                  .replace("/10", "")
+                              }`}
                           />
                           <span className="text-sm font-medium truncate">
                             {tData.tag}
                           </span>
                         </div>
-                        <span className="text-[10px] bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-full shrink-0">
-                          {tData.active > 0 ? tData.active : "✓"}
+                        <span
+                          className="text-[10px] bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-full shrink-0 font-bold"
+                          title="7日以内のタスク数"
+                        >
+                          {tData.active7Days > 0 ? tData.active7Days : "0"}
                         </span>
                       </div>
                       <div className="w-full bg-black/10 dark:bg-white/10 rounded-full h-1 mt-1.5 relative z-10 overflow-hidden">
                         <div
-                          className={`h-1 rounded-full ${
-                            tData.rate === 100
+                          className={`h-1 rounded-full ${tData.rate === 100
                               ? "bg-[var(--ui-success)]"
                               : "bg-[var(--ui-accent)] opacity-70"
-                          }`}
+                            }`}
                           style={{ width: `${tData.rate}%` }}
                         />
                       </div>
@@ -4406,11 +4535,10 @@ export default function App() {
                 <>
                   <button
                     onClick={() => setSelectedRoutine(null)}
-                    className={`px-3 py-2 rounded-lg text-sm transition flex justify-between items-center ${
-                      selectedRoutine === null
+                    className={`shrink-0 px-3 py-2 rounded-lg text-sm transition flex justify-between items-center ${selectedRoutine === null
                         ? "text-[var(--ui-accent)] font-bold bg-[var(--ui-accent-light)]"
                         : "text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5"
-                    }`}
+                      }`}
                   >
                     {t("all", uiConfig.language)}
                   </button>
@@ -4422,11 +4550,10 @@ export default function App() {
                           prev === g.titleLabel ? null : g.titleLabel
                         )
                       }
-                      className={`px-3 py-2 rounded-lg text-sm transition flex justify-between items-center ${
-                        selectedRoutine === g.titleLabel
+                      className={`shrink-0 px-3 py-2 rounded-lg text-sm transition flex justify-between items-center ${selectedRoutine === g.titleLabel
                           ? "text-[var(--ui-accent)] font-bold bg-[var(--ui-accent-light)]"
                           : "text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5"
-                      }`}
+                        }`}
                     >
                       <span className="truncate relative z-10">
                         {g.titleLabel}
@@ -4481,9 +4608,8 @@ export default function App() {
 
         <main className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar pb-32 pt-4 sm:pt-6 px-4 sm:px-6 xl:pr-8 flex flex-col ui-layout-gap w-full h-full relative min-w-0">
           <div
-            key={`${activeTab}-${selectedTag || "all"}-${
-              selectedRoutine || "all"
-            }`}
+            key={`${activeTab}-${selectedTag || "all"}-${selectedRoutine || "all"
+              }`}
             className={`page-transition-${uiConfig.animation} w-full flex flex-col ui-layout-gap min-w-0`}
           >
             {(activeTab === "active" || activeTab === "history") && (
@@ -4509,129 +4635,127 @@ export default function App() {
             )}
 
             {["active", "history", "analytics"].includes(activeTab) && (
-              <div className="-mx-4 sm:mx-0 px-4 sm:px-0 w-[calc(100%+2rem)] sm:w-full overflow-x-auto hide-scrollbar pb-4 pt-1">
-                <div className="flex gap-3 w-max snap-x snap-mandatory after:content-[''] after:w-4 after:shrink-0 sm:after:hidden">
+              <div className="relative group w-full">
+                {/* 左スクロールボタン (xl以上の画面では全て収まるため非表示にする) */}
+                <button
+                  onClick={() => handleTopCardsScroll("left")}
+                  className="hidden sm:flex xl:hidden absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-10 w-8 h-8 items-center justify-center rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95"
+                  style={{
+                    background: "var(--ui-panel-bg)",
+                    color: "var(--ui-text)",
+                    border: "1px solid var(--ui-border)",
+                  }}
+                >
+                  <ChevronLeft size={18} />
+                </button>
 
-                <div className="snap-center shrink-0 w-[85vw] sm:w-[320px] lg:w-[400px] ui-gradient-card ui-panel rounded-xl relative overflow-hidden shadow-sm flex flex-col justify-between min-h-[120px]">
-                  <div className="relative z-10 text-white">
-                    <p className="text-sm font-bold mb-1 flex items-center gap-1.5">
-                      {uiConfig.iconStyle !== "text" && (
-                        <TrendingUp size={16} />
-                      )}{" "}
-                      {t("weeklyProgress", uiConfig.language)}
-                    </p>
-                    <div className="flex items-baseline gap-1 mt-2">
-                      <span className="text-4xl font-black">
-                        {weeklyStats.rate}
-                      </span>
-                      <span className="text-lg font-bold">%</span>
+                <div
+                  ref={topCardsScrollRef}
+                  /* 影が上下で切れないように pt-2 pb-6 で十分な余白を確保 */
+                  className="-mx-4 xl:mx-0 px-4 xl:px-0 w-[calc(100%+2rem)] xl:w-full overflow-x-auto hide-scrollbar pt-2 pb-6"
+                >
+                  {/* xl以上でスクロールを解除し、フレックス幅で画面幅いっぱいに広げる */}
+                  <div className="flex gap-3 w-max xl:w-full snap-x snap-mandatory after:content-[''] after:w-4 after:shrink-0 xl:after:hidden">
+                    {/* w-[85vw] をやめてスマホでの極端な肥大化を防止 */}
+                    <div className="snap-center shrink-0 w-[260px] sm:w-[320px] lg:w-[400px] xl:w-auto xl:flex-1 ui-gradient-card ui-panel rounded-xl relative overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[120px]">
+                      {/* (Internal content) */}
+                      <div className="relative z-10 text-white">
+                        <p className="text-sm font-bold mb-1 flex items-center gap-1.5">
+                          {uiConfig.iconStyle !== "text" && (
+                            <TrendingUp size={16} />
+                          )}{" "}
+                          {t("weeklyProgress", uiConfig.language)}
+                        </p>
+                        <div className="flex items-baseline gap-1 mt-2">
+                          <span className="text-4xl font-black">
+                            {weeklyStats.rate}
+                          </span>
+                          <span className="text-lg font-bold">%</span>
+                        </div>
+                        <p className="text-xs mt-2 font-medium opacity-80">
+                          {weeklyStats.totalTarget === 0
+                            ? "-"
+                            : `${t("completed", uiConfig.language)} ${weeklyStats.completed
+                            } / ${t("total", uiConfig.language)} ${weeklyStats.totalTarget
+                            }`}
+                        </p>
+                      </div>
+                      {uiConfig.widgetDecor === "target" && (
+                        <Target
+                          className="absolute -right-4 -bottom-4 opacity-10 text-white"
+                          size={100}
+                        />
+                      )}
+                      {uiConfig.widgetDecor === "sparkle" && (
+                        <Sparkles
+                          className="absolute right-2 bottom-2 text-white opacity-25"
+                          size={64}
+                          strokeWidth={1.5}
+                        />
+                      )}
+                      {uiConfig.widgetDecor === "neon" && (
+                        <div className="absolute right-0 bottom-0 w-32 h-32 bg-white rounded-full blur-3xl opacity-20 mix-blend-overlay" />
+                      )}
                     </div>
-                    <p className="text-xs mt-2 font-medium opacity-80">
-                      {weeklyStats.totalTarget === 0
-                        ? "-"
-                        : `${t("completed", uiConfig.language)} ${
-                            weeklyStats.completed
-                          } / ${t("total", uiConfig.language)} ${
-                            weeklyStats.totalTarget
-                          }`}
-                    </p>
+                    {/* その他のカードもスマホ時は w-[150px] に固定し、スクロールさせる */}
+                    <div className="snap-center shrink-0 w-[150px] sm:w-[220px] lg:w-[260px] xl:w-auto xl:flex-1">
+                      <PeriodCard
+                        label={t("thisWeek", uiConfig.language)}
+                        icon={
+                          uiConfig.iconStyle !== "text" && <Calendar size={14} />
+                        }
+                        stats={weeklyStats}
+                        accent="text-[var(--ui-accent)]"
+                        onClick={() => {
+                          setPeriodModalTiltDeg(0);
+                          setPeriodModalPeriod("week");
+                        }}
+                      />
+                    </div>
+                    <div className="snap-center shrink-0 w-[150px] sm:w-[220px] lg:w-[260px] xl:w-auto xl:flex-1">
+                      <PeriodCard
+                        label={t("nextWeek", uiConfig.language)}
+                        icon={
+                          uiConfig.iconStyle !== "text" && <Calendar size={14} />
+                        }
+                        stats={nextWeekStats}
+                        accent="text-[var(--ui-accent-dark)]"
+                        onClick={() => {
+                          setPeriodModalTiltDeg(0);
+                          setPeriodModalPeriod("nextWeek");
+                        }}
+                      />
+                    </div>
+                    <div className="snap-center shrink-0 w-[150px] sm:w-[220px] lg:w-[260px] xl:w-auto xl:flex-1">
+                      <PeriodCard
+                        label={t("thisMonth", uiConfig.language)}
+                        icon={
+                          uiConfig.iconStyle !== "text" && <Calendar size={14} />
+                        }
+                        stats={monthStats}
+                        accent="text-[var(--ui-accent-dark)] opacity-70"
+                        onClick={() => {
+                          setPeriodModalTiltDeg(0);
+                          setPeriodModalPeriod("month");
+                        }}
+                      />
+                    </div>
                   </div>
-                  {uiConfig.widgetDecor === "target" && (
-                    <Target
-                      className="absolute -right-4 -bottom-4 opacity-10 text-white"
-                      size={100}
-                    />
-                  )}
-                  {uiConfig.widgetDecor === "sparkle" && (
-                    <Sparkles
-                      className="absolute right-2 bottom-2 text-white opacity-25"
-                      size={64}
-                      strokeWidth={1.5}
-                    />
-                  )}
-                  {uiConfig.widgetDecor === "neon" && (
-                    <div className="absolute right-0 bottom-0 w-32 h-32 bg-white rounded-full blur-3xl opacity-20 mix-blend-overlay" />
-                  )}
-                </div>
-                <div className="snap-center shrink-0 w-[85vw] sm:w-[220px] lg:w-[260px]">
-                  <PeriodCard
-                    label={t("thisWeek", uiConfig.language)}
-                    icon={
-                      uiConfig.iconStyle !== "text" && <Calendar size={14} />
-                    }
-                    stats={weeklyStats}
-                    accent="text-[var(--ui-accent)]"
-                    onClick={() => {
-                      setPeriodModalTiltDeg(0);
-                      setPeriodModalPeriod("week");
-                    }}
-                  />
-                </div>
-                <div className="snap-center shrink-0 w-[85vw] sm:w-[220px] lg:w-[260px]">
-                  <PeriodCard
-                    label={t("nextWeek", uiConfig.language)}
-                    icon={
-                      uiConfig.iconStyle !== "text" && <Calendar size={14} />
-                    }
-                    stats={nextWeekStats}
-                    accent="text-[var(--ui-accent-dark)]"
-                    onClick={() => {
-                      setPeriodModalTiltDeg(0);
-                      setPeriodModalPeriod("nextWeek");
-                    }}
-                  />
-                </div>
-                <div className="snap-center shrink-0 w-[85vw] sm:w-[220px] lg:w-[260px]">
-                  <PeriodCard
-                    label={t("thisMonth", uiConfig.language)}
-                    icon={
-                      uiConfig.iconStyle !== "text" && <Calendar size={14} />
-                    }
-                    stats={monthStats}
-                    accent="text-[var(--ui-accent-dark)] opacity-70"
-                    onClick={() => {
-                      setPeriodModalTiltDeg(0);
-                      setPeriodModalPeriod("month");
-                    }}
-                  />
                 </div>
 
-                {/* 分析タブの時のみ「来月・再来月」を表示 */}
-                {activeTab === "analytics" && (
-                  <>
-                    <div className="snap-center shrink-0 w-[85vw] sm:w-[220px] lg:w-[260px]">
-                      <PeriodCard
-                        label={t("nextMonth", uiConfig.language)}
-                        icon={
-                          uiConfig.iconStyle !== "text" && <Calendar size={14} />
-                        }
-                        stats={nextMonthStats}
-                        accent="text-[var(--ui-accent-dark)] opacity-70"
-                        onClick={() => {
-                          setPeriodModalTiltDeg(0);
-                          setPeriodModalPeriod("nextMonth");
-                        }}
-                      />
-                    </div>
-                    <div className="snap-center shrink-0 w-[85vw] sm:w-[220px] lg:w-[260px]">
-                      <PeriodCard
-                        label={t("monthAfterNext", uiConfig.language)}
-                        icon={
-                          uiConfig.iconStyle !== "text" && <Calendar size={14} />
-                        }
-                        stats={monthAfterNextStats}
-                        accent="text-[var(--ui-accent-dark)] opacity-70"
-                        onClick={() => {
-                          setPeriodModalTiltDeg(0);
-                          setPeriodModalPeriod("monthAfterNext");
-                        }}
-                      />
-                    </div>
-                  </>
-                )}
-
+                {/* 右スクロールボタン */}
+                <button
+                  onClick={() => handleTopCardsScroll("right")}
+                  className="hidden sm:flex xl:hidden absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-10 w-8 h-8 items-center justify-center rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95"
+                  style={{
+                    background: "var(--ui-panel-bg)",
+                    color: "var(--ui-text)",
+                    border: "1px solid var(--ui-border)",
+                  }}
+                >
+                  <ChevronRight size={18} />
+                </button>
               </div>
-            </div>
             )}
 
             {activeTab === "active" && (
@@ -4848,8 +4972,11 @@ export default function App() {
                 selectedTag={selectedTag}
                 toggleTaskStatus={toggleTaskStatus}
                 uiConfig={uiConfig}
+                t={t}
                 setPeriodModalPeriod={setPeriodModalPeriod}
                 setPeriodModalTiltDeg={setPeriodModalTiltDeg}
+                weekBeforeLastStats={weekBeforeLastStats}
+                lastWeekStats={lastWeekStats}
                 weekAfterNextStats={weekAfterNextStats}
                 nextMonthStats={nextMonthStats}
                 monthAfterNextStats={monthAfterNextStats}
@@ -4868,73 +4995,22 @@ export default function App() {
               />
             )}
             {activeTab === "organize" && (
-              <div className="space-y-4">
-                <div
-                  className="flex flex-col sm:flex-row sm:items-center gap-3 border-b pb-4"
-                  style={{ borderColor: "var(--ui-border)" }}
-                >
-                  <div className="flex items-center gap-2">
-                    <Layers size={22} className="opacity-70" />
-                    <h2 className="text-xl font-bold">
-                      {t("organize", uiConfig.language)}
-                    </h2>
-                  </div>
-                  <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-xl sm:ml-auto w-fit">
-                    <button
-                      onClick={() => setOrganizeSubTab("tags")}
-                      className={`px-4 py-2 text-sm font-bold rounded-lg transition flex items-center gap-1.5 ${
-                        organizeSubTab === "tags"
-                          ? "bg-[var(--ui-panel-bg)] shadow-sm text-[var(--ui-text)]"
-                          : "text-[var(--ui-text-muted)] opacity-60 hover:opacity-100"
-                      }`}
-                    >
-                      <Tag size={14} /> タグ管理
-                    </button>
-                    <button
-                      onClick={() => setOrganizeSubTab("routines")}
-                      className={`px-4 py-2 text-sm font-bold rounded-lg transition flex items-center gap-1.5 ${
-                        organizeSubTab === "routines"
-                          ? "bg-[var(--ui-panel-bg)] shadow-sm text-[var(--ui-text)]"
-                          : "text-[var(--ui-text-muted)] opacity-60 hover:opacity-100"
-                      }`}
-                    >
-                      <RotateCcw size={14} /> ルーチン管理
-                    </button>
-                  </div>
-                </div>
-                {organizeSubTab === "tags" ? (
-                  <TagManagerView
-                    tagStats={tagStats}
-                    tasks={tasks}
-                    toggleTaskStatus={toggleTaskStatus}
-                    getTagColor={getTagColor}
-                    selectedTasks={selectedTasks}
-                    toggleSelection={toggleSelection}
-                    setSelectedTasks={setSelectedTasks}
-                    handleDeleteSelected={handleDeleteSelected}
-                    showCheckboxes={showCheckboxes}
-                    selectionMode={selectionMode}
-                    setSelectionMode={setSelectionMode}
-                    showCompleted={showCompleted}
-                    setShowCompleted={setShowCompleted}
-                  />
-                ) : (
-                  <RoutineDetectorView
-                    routineGroups={routineGroups}
-                    selectedRoutine={selectedRoutine}
-                    toggleTaskStatus={toggleTaskStatus}
-                    selectedTasks={selectedTasks}
-                    toggleSelection={toggleSelection}
-                    setSelectedTasks={setSelectedTasks}
-                    handleDeleteSelected={handleDeleteSelected}
-                    showCheckboxes={showCheckboxes}
-                    selectionMode={selectionMode}
-                    setSelectionMode={setSelectionMode}
-                    showCompleted={showCompleted}
-                    setShowCompleted={setShowCompleted}
-                  />
-                )}
-              </div>
+              <OrganizeView
+                tasks={tasks}
+                uiConfig={uiConfig}
+                t={t}
+                toggleTaskStatus={toggleTaskStatus}
+                getTagColor={getTagColor}
+                selectedTasks={selectedTasks}
+                toggleSelection={toggleSelection}
+                setSelectedTasks={setSelectedTasks}
+                handleDeleteSelected={handleDeleteSelected}
+                showCheckboxes={showCheckboxes}
+                selectionMode={selectionMode}
+                setSelectionMode={setSelectionMode}
+                showCompleted={showCompleted}
+                setShowCompleted={setShowCompleted}
+              />
             )}
             {activeTab === "settings" && (
               <UISettingsView
@@ -4969,11 +5045,10 @@ export default function App() {
                         return !prev;
                       });
                     }}
-                    className={`px-2 py-0.5 text-[11px] font-medium rounded-md transition border shrink-0 ${
-                      selectionMode
+                    className={`px-2 py-0.5 text-[11px] font-medium rounded-md transition border shrink-0 ${selectionMode
                         ? "bg-[var(--ui-text)] text-[var(--ui-bg)] shadow-sm"
                         : "bg-transparent text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5"
-                    }`}
+                      }`}
                     style={{ borderColor: "var(--ui-border)" }}
                   >
                     {selectionMode ? "選択終了" : "選択モード"}
@@ -4989,26 +5064,62 @@ export default function App() {
                     background: "var(--ui-bg)",
                   }}
                 >
-                  <h2 className="text-sm font-semibold flex items-center gap-1.5 min-w-0">
-                    {selectedTag || selectedRoutine ? (
-                      <>
-                        <span className="opacity-40 shrink-0">
-                          {selectedTag ? "#" : "Routine:"}
-                        </span>{" "}
-                        <span className="truncate">
-                          {selectedTag || selectedRoutine}
-                        </span>
-                      </>
-                    ) : activeTab === "active" ? (
-                      showOnlyNoDue ? (
-                        "期限なしのアクティブタスク"
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <h2 className="text-sm font-semibold flex items-center gap-1.5 min-w-0 shrink-0">
+                      {selectedTag || selectedRoutine ? (
+                        <>
+                          <span className="opacity-40 shrink-0">
+                            {selectedTag ? "#" : "Routine:"}
+                          </span>{" "}
+                          <span className="truncate">
+                            {selectedTag || selectedRoutine}
+                          </span>
+                        </>
+                      ) : activeTab === "active" ? (
+                        "アクティブ"
                       ) : (
-                        "アクティブタスク"
-                      )
-                    ) : (
-                      "すべての完了履歴"
-                    )}
-                  </h2>
+                        "完了履歴"
+                      )}
+                    </h2>
+
+                    {/* 切り替えトグル */}
+                    {(activeTab === "active" || activeTab === "history") &&
+                      !selectedTag &&
+                      !selectedRoutine && (
+                        <div className="flex bg-black/5 dark:bg-white/5 rounded-md p-0.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setDueFilter("all")}
+                            className={`px-2 py-0.5 text-[10px] font-bold rounded-sm transition ${dueFilter === "all"
+                                ? "bg-[var(--ui-panel-bg)] shadow-sm text-[var(--ui-text)]"
+                                : "text-[var(--ui-text-muted)] opacity-70 hover:opacity-100"
+                              }`}
+                          >
+                            すべて
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDueFilter("hasDue")}
+                            className={`px-2 py-0.5 text-[10px] font-bold rounded-sm transition ${dueFilter === "hasDue"
+                                ? "bg-[var(--ui-panel-bg)] shadow-sm text-[var(--ui-text)]"
+                                : "text-[var(--ui-text-muted)] opacity-70 hover:opacity-100"
+                              }`}
+                          >
+                            期限あり
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDueFilter("noDue")}
+                            className={`px-2 py-0.5 text-[10px] font-bold rounded-sm transition ${dueFilter === "noDue"
+                                ? "bg-[var(--ui-panel-bg)] shadow-sm text-[var(--ui-text)]"
+                                : "text-[var(--ui-text-muted)] opacity-70 hover:opacity-100"
+                              }`}
+                          >
+                            期限なし
+                          </button>
+                        </div>
+                      )}
+                  </div>
                   <span
                     className="text-[10px] font-medium opacity-60 px-1.5 py-0.5 rounded border shadow-sm shrink-0 tabular-nums"
                     style={{
@@ -5067,10 +5178,10 @@ export default function App() {
                     <p>読み込み中...</p>
                   </div>
                 ) : (
-                    activeTab === "active"
-                      ? activeTotalCount === 0
-                      : historyList.length === 0
-                  ) ? (
+                  activeTab === "active"
+                    ? activeTotalCount === 0
+                    : historyList.length === 0
+                ) ? (
                   <div className="p-12 text-center opacity-40">
                     <CheckCircle2
                       size={40}
@@ -5078,8 +5189,8 @@ export default function App() {
                     />
                     <p>
                       {activeTab === "active"
-                        ? showOnlyNoDue
-                          ? "タスクはありません"
+                        ? dueFilter === "noDue"
+                          ? "期限なしのタスクはありません"
                           : "タスクはすべて完了しました！🎉"
                         : "完了したタスクはありません"}
                     </p>
@@ -5127,17 +5238,15 @@ export default function App() {
                                 onClick={() => {
                                   if (showCheckboxes) toggleSelection(task.id);
                                 }}
-                                className={`p-4 flex items-start gap-3 transition-all duration-300 group border-l-2 ${
-                                  isKbFocus
+                                className={`p-4 flex items-start gap-3 transition-all duration-300 group border-l-2 ${isKbFocus
                                     ? "ring-2 ring-inset ring-[var(--ui-accent)] z-[1]"
                                     : ""
-                                } ${
-                                  isMultiSel
+                                  } ${isMultiSel
                                     ? "bg-[var(--ui-accent-light)] border-[var(--ui-accent)]"
                                     : overdue
-                                    ? "bg-[var(--ui-danger-bg)] border-[var(--ui-danger)] hover:brightness-95"
-                                    : "border-transparent hover:bg-black/5 dark:hover:bg-white/5"
-                                } ${showCheckboxes ? "cursor-pointer" : ""}`}
+                                      ? "bg-[var(--ui-danger-bg)] border-[var(--ui-danger)] hover:brightness-95"
+                                      : "border-transparent hover:bg-black/5 dark:hover:bg-white/5"
+                                  } ${showCheckboxes ? "cursor-pointer" : ""}`}
                               >
                                 <button
                                   type="button"
@@ -5154,22 +5263,20 @@ export default function App() {
                                     />
                                   ) : (
                                     <Circle
-                                      className={`${
-                                        overdue
+                                      className={`${overdue
                                           ? "text-[var(--ui-danger)] opacity-70"
                                           : "text-[var(--ui-text-muted)] opacity-40 group-hover:text-[var(--ui-accent)] group-hover:opacity-100"
-                                      } transition`}
+                                        } transition`}
                                       size={22}
                                     />
                                   )}
                                 </button>
                                 <div className="flex-grow min-w-0">
                                   <h3
-                                    className={`font-medium text-base mb-1.5 whitespace-normal break-words ${
-                                      overdue
+                                    className={`font-medium text-base mb-1.5 whitespace-normal break-words ${overdue
                                         ? "text-[var(--ui-danger)]"
                                         : "text-[var(--ui-text)]"
-                                    }`}
+                                      }`}
                                   >
                                     {task.cleanTitle}
                                   </h3>
@@ -5200,11 +5307,10 @@ export default function App() {
                                     ))}
                                     {task.due && (
                                       <div
-                                        className={`flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border ${
-                                          overdue
+                                        className={`flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border ${overdue
                                             ? "text-[var(--ui-danger)] bg-[var(--ui-danger-bg)] border-[var(--ui-danger)] border-opacity-30"
                                             : "text-[var(--ui-warning)] bg-[var(--ui-warning-bg)] border-[var(--ui-warning)] border-opacity-30"
-                                        }`}
+                                          }`}
                                       >
                                         {overdue ? (
                                           <AlertCircle size={11} />
@@ -5225,99 +5331,124 @@ export default function App() {
                     ))}
                   </div>
                 ) : (
-                  <div
-                    className="divide-y"
-                    style={{ borderColor: "var(--ui-border)" }}
-                  >
-                    {historyList.map((task) => {
-                      const overdue =
-                        task.status !== "completed" && isOverdue(task.due);
-                      const isKbFocus = keyboardFocusedTaskId === task.id;
-                      const isMultiSel =
-                        showCheckboxes && selectedTasks.has(task.id);
-                      return (
+                  <div>
+                    {historyGroups.map((group, idx) => (
+                      <section
+                        key={`hist-${idx}`}
+                        className="border-b last:border-b-0"
+                        style={{ borderColor: "var(--ui-border)" }}
+                      >
                         <div
-                          key={task.id}
-                          data-task-row-id={task.id}
-                          onClick={() => {
-                            if (showCheckboxes) toggleSelection(task.id);
+                          className="sticky top-0 z-[5] px-4 py-2.5 backdrop-blur-md border-b flex items-baseline justify-between gap-2"
+                          style={{
+                            background: panelBg.replace(
+                              /rgba\((.*), [0-9.]+\)/,
+                              "rgba($1, 0.9)"
+                            ),
+                            borderColor: "var(--ui-border)",
                           }}
-                          className={`p-4 flex items-start gap-3 transition-all duration-300 group border-l-2 ${
-                            isKbFocus
-                              ? "ring-2 ring-inset ring-[var(--ui-accent)] z-[1]"
-                              : ""
-                          } ${
-                            isMultiSel
-                              ? "bg-[var(--ui-accent-light)] border-[var(--ui-accent)] opacity-100 grayscale-0"
-                              : "border-transparent opacity-50 grayscale hover:opacity-100 hover:grayscale-0 hover:bg-black/5 dark:hover:bg-white/5"
-                          } ${showCheckboxes ? "cursor-pointer" : ""}`}
                         >
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleTaskStatus(task);
-                            }}
-                            className="mt-1 p-0.5 -ml-0.5 flex-shrink-0 focus:outline-none transition-transform active:scale-90"
-                          >
-                            {task.status === "completed" ? (
-                              <CheckCircle2
-                                className="text-[var(--ui-success)] transition"
-                                size={22}
-                              />
-                            ) : (
-                              <Circle
-                                className={`${
-                                  overdue
-                                    ? "text-red-400 group-hover:text-red-500"
-                                    : "text-slate-300 group-hover:text-blue-500"
-                                } transition`}
-                                size={22}
-                              />
-                            )}
-                          </button>
-                          <div className="flex-grow min-w-0">
-                            <h3
-                              className={`font-medium text-base mb-1.5 whitespace-normal break-words line-through text-[var(--ui-text-muted)]`}
-                            >
-                              {task.cleanTitle}
-                            </h3>
-                            <div className="flex flex-wrap items-center gap-2">
-                              {(task.platforms || []).map((p) => (
-                                <span
-                                  key={p}
-                                  className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${getLmsBadgeClass(
-                                    p
-                                  )}`}
-                                >
-                                  {p}
-                                </span>
-                              ))}
-                              {task.tags.map((tag) => (
-                                <span
-                                  key={tag}
+                          <h3 className="text-sm font-bold opacity-90">
+                            {group.title}
+                          </h3>
+                          <span className="text-[11px] font-medium opacity-60 tabular-nums">
+                            {group.tasks.length} 件
+                          </span>
+                        </div>
+                        <div
+                          className="divide-y"
+                          style={{ borderColor: "var(--ui-border)" }}
+                        >
+                          {group.tasks.map((task) => {
+                            const overdue =
+                              task.status !== "completed" &&
+                              isOverdue(task.due);
+                            const isKbFocus = keyboardFocusedTaskId === task.id;
+                            const isMultiSel =
+                              showCheckboxes && selectedTasks.has(task.id);
+                            return (
+                              <div
+                                key={task.id}
+                                data-task-row-id={task.id}
+                                onClick={() => {
+                                  if (showCheckboxes) toggleSelection(task.id);
+                                }}
+                                className={`p-4 flex items-start gap-3 transition-all duration-300 group border-l-2 ${isKbFocus
+                                    ? "ring-2 ring-inset ring-[var(--ui-accent)] z-[1]"
+                                    : ""
+                                  } ${isMultiSel
+                                    ? "bg-[var(--ui-accent-light)] border-[var(--ui-accent)] opacity-100 grayscale-0"
+                                    : "border-transparent opacity-50 grayscale hover:opacity-100 hover:grayscale-0 hover:bg-black/5 dark:hover:bg-white/5"
+                                  } ${showCheckboxes ? "cursor-pointer" : ""}`}
+                              >
+                                <button
+                                  type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setSelectedTag(tag);
+                                    toggleTaskStatus(task);
                                   }}
-                                  className={`text-[11px] font-medium px-2 py-0.5 rounded-full border cursor-pointer hover:opacity-80 transition ${getTagColor(
-                                    tag
-                                  )}`}
+                                  className="mt-1 p-0.5 -ml-0.5 flex-shrink-0 focus:outline-none transition-transform active:scale-90"
                                 >
-                                  {tag}
-                                </span>
-                              ))}
-                              {task.completed && (
-                                <div className="flex items-center gap-1 text-[11px] font-medium text-[var(--ui-text-muted)] bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-full border border-[var(--ui-border)]">
-                                  <History size={11} /> 完了:{" "}
-                                  {formatDate(task.completed)}
+                                  {task.status === "completed" ? (
+                                    <CheckCircle2
+                                      className="text-[var(--ui-success)] transition"
+                                      size={22}
+                                    />
+                                  ) : (
+                                    <Circle
+                                      className={`${overdue
+                                          ? "text-red-400 group-hover:text-red-500"
+                                          : "text-slate-300 group-hover:text-blue-500"
+                                        } transition`}
+                                      size={22}
+                                    />
+                                  )}
+                                </button>
+                                <div className="flex-grow min-w-0">
+                                  <h3
+                                    className={`font-medium text-base mb-1.5 whitespace-normal break-words line-through text-[var(--ui-text-muted)]`}
+                                  >
+                                    {task.cleanTitle}
+                                  </h3>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    {(task.platforms || []).map((p) => (
+                                      <span
+                                        key={p}
+                                        className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${getLmsBadgeClass(
+                                          p
+                                        )}`}
+                                      >
+                                        {p}
+                                      </span>
+                                    ))}
+                                    {task.tags.map((tag) => (
+                                      <span
+                                        key={tag}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedTag(tag);
+                                        }}
+                                        className={`text-[11px] font-medium px-2 py-0.5 rounded-full border cursor-pointer hover:opacity-80 transition ${getTagColor(
+                                          tag
+                                        )}`}
+                                      >
+                                        {tag}
+                                      </span>
+                                    ))}
+                                    {task.completed && (
+                                      <div className="flex items-center gap-1 text-[11px] font-medium text-[var(--ui-text-muted)] bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-full border border-[var(--ui-border)]">
+                                        <History size={11} /> 完了:{" "}
+                                        {formatDate(task.completed)}
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
-                              )}
-                            </div>
-                          </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
+                      </section>
+                    ))}
                   </div>
                 )}
               </div>
@@ -5341,6 +5472,8 @@ export default function App() {
       {periodModalPeriod &&
         (() => {
           const periodTitleMap = {
+            weekBeforeLast: "先々週のタスク",
+            lastWeek: "先週のタスク",
             week: "今週のタスク",
             nextWeek: "来週のタスク",
             weekAfterNext: "再来週のタスク",
@@ -5349,27 +5482,37 @@ export default function App() {
             monthAfterNext: "再来月のタスク",
           };
           const sourceTasks =
-            periodModalPeriod === "week"
-              ? weeklyStats.tasks
-              : periodModalPeriod === "nextWeek"
-              ? nextWeekStats.tasks
-              : periodModalPeriod === "weekAfterNext"
-              ? weekAfterNextStats.tasks
-              : periodModalPeriod === "month"
-              ? monthStats.tasks
-              : periodModalPeriod === "nextMonth"
-              ? nextMonthStats.tasks
-              : monthAfterNextStats.tasks;
+            periodModalPeriod === "weekBeforeLast"
+              ? weekBeforeLastStats.tasks
+              : periodModalPeriod === "lastWeek"
+                ? lastWeekStats.tasks
+                : periodModalPeriod === "week"
+                  ? weeklyStats.tasks
+                  : periodModalPeriod === "nextWeek"
+                    ? nextWeekStats.tasks
+                    : periodModalPeriod === "weekAfterNext"
+                      ? weekAfterNextStats.tasks
+                      : periodModalPeriod === "month"
+                        ? monthStats.tasks
+                        : periodModalPeriod === "nextMonth"
+                          ? nextMonthStats.tasks
+                          : monthAfterNextStats.tasks;
           const modalTasks = sourceTasks
             .map((snapshot) => {
               const original = tasks.find((x) => x.id === snapshot.id) || {};
               return { ...original, ...snapshot };
             })
-            .sort(
-              (a, b) =>
-                (a.due ? new Date(a.due).getTime() : Infinity) -
-                (b.due ? new Date(b.due).getTime() : Infinity)
-            );
+            .sort((a, b) => {
+              const ta =
+                a.due && !Number.isNaN(new Date(a.due).getTime())
+                  ? new Date(a.due).getTime()
+                  : Infinity;
+              const tb =
+                b.due && !Number.isNaN(new Date(b.due).getTime())
+                  ? new Date(b.due).getTime()
+                  : Infinity;
+              return ta - tb;
+            });
 
           const mTot = modalTasks.length;
           const mComp = modalTasks.filter(
@@ -5427,9 +5570,8 @@ export default function App() {
               role="presentation"
             >
               <div
-                className={`bg-white rounded-xl shadow-xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200/80 ${
-                  periodModalTiltDeg !== 0 ? "period-modal-3d-panel" : ""
-                }`}
+                className={`bg-white rounded-xl shadow-xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200/80 ${periodModalTiltDeg !== 0 ? "period-modal-3d-panel" : ""
+                  }`}
                 style={{ "--period-from-tilt": `${periodModalTiltDeg}deg` }}
                 onClick={(e) => e.stopPropagation()}
                 role="dialog"
@@ -5468,9 +5610,8 @@ export default function App() {
                     </div>
                     <div className="w-full bg-slate-100 rounded-full h-2">
                       <div
-                        className={`h-2 rounded-full ${
-                          mRate === 100 ? "bg-emerald-400" : "bg-blue-500"
-                        }`}
+                        className={`h-2 rounded-full ${mRate === 100 ? "bg-emerald-400" : "bg-blue-500"
+                          }`}
                         style={{ width: `${mRate}%` }}
                       />
                     </div>
@@ -5487,9 +5628,8 @@ export default function App() {
                             </div>
                             <div className="w-full bg-slate-100 rounded-full h-1">
                               <div
-                                className={`h-1 rounded-full ${
-                                  r === 100 ? "bg-emerald-400" : "bg-blue-400"
-                                }`}
+                                className={`h-1 rounded-full ${r === 100 ? "bg-emerald-400" : "bg-blue-400"
+                                  }`}
                                 style={{ width: `${r}%` }}
                               />
                             </div>
@@ -5526,11 +5666,10 @@ export default function App() {
                               return (
                                 <div
                                   key={task.id}
-                                  className={`flex items-start gap-3 p-3 rounded-lg shadow-sm transition-all border ${
-                                    done
+                                  className={`flex items-start gap-3 p-3 rounded-lg shadow-sm transition-all border ${done
                                       ? "opacity-50 grayscale border-transparent bg-transparent"
                                       : "bg-[var(--ui-panel-bg)] border-black/5 dark:border-white/5"
-                                  }`}
+                                    }`}
                                 >
                                   <button
                                     type="button"
@@ -5555,41 +5694,40 @@ export default function App() {
                                   </button>
                                   <div className="min-w-0 flex-1">
                                     <p
-                                      className={`text-sm font-medium whitespace-normal break-words leading-tight ${
-                                        done
+                                      className={`text-sm font-medium whitespace-normal break-words leading-tight ${done
                                           ? "line-through text-[var(--ui-text-muted)]"
                                           : overdue
-                                          ? "text-[var(--ui-danger)]"
-                                          : "text-[var(--ui-text)]"
-                                      }`}
+                                            ? "text-[var(--ui-danger)]"
+                                            : "text-[var(--ui-text)]"
+                                        }`}
                                     >
                                       {task.cleanTitle}
                                     </p>
                                     {(task.platforms?.length > 0 ||
                                       task.tags?.length > 0) && (
-                                      <div className="flex flex-wrap gap-1 mt-1.5">
-                                        {(task.platforms || []).map((p) => (
-                                          <span
-                                            key={p}
-                                            className={`text-[9px] px-1.5 py-px rounded border ${getLmsBadgeClass(
-                                              p
-                                            )}`}
-                                          >
-                                            {p}
-                                          </span>
-                                        ))}
-                                        {(task.tags || []).map((tag) => (
-                                          <span
-                                            key={tag}
-                                            className={`text-[9px] px-1.5 py-px rounded border ${getTagColor(
-                                              tag
-                                            )}`}
-                                          >
-                                            {tag}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    )}
+                                        <div className="flex flex-wrap gap-1 mt-1.5">
+                                          {(task.platforms || []).map((p) => (
+                                            <span
+                                              key={p}
+                                              className={`text-[9px] px-1.5 py-px rounded border ${getLmsBadgeClass(
+                                                p
+                                              )}`}
+                                            >
+                                              {p}
+                                            </span>
+                                          ))}
+                                          {(task.tags || []).map((tag) => (
+                                            <span
+                                              key={tag}
+                                              className={`text-[9px] px-1.5 py-px rounded border ${getTagColor(
+                                                tag
+                                              )}`}
+                                            >
+                                              {tag}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
                                   </div>
                                 </div>
                               );
@@ -5672,11 +5810,9 @@ function CalendarView({
     return (
       <div
         key={task.id}
-        className={`flex items-start ${
-          isMobile ? "gap-3 py-3" : "gap-1.5 py-1.5"
-        } text-left border-b border-black/5 dark:border-white/5 last:border-0 transition-opacity ${
-          done ? "opacity-50 grayscale" : ""
-        }`}
+        className={`flex items-start ${isMobile ? "gap-3 py-3" : "gap-1.5 py-1.5"
+          } text-left border-b border-black/5 dark:border-white/5 last:border-0 transition-opacity ${done ? "opacity-50 grayscale" : ""
+          }`}
       >
         <button
           type="button"
@@ -5701,15 +5837,13 @@ function CalendarView({
         </button>
         <div className="min-w-0 flex-1">
           <p
-            className={`${
-              isMobile ? "text-sm" : "text-[10px] sm:text-[11px]"
-            } leading-snug break-words whitespace-normal hyphens-auto ${
-              done
+            className={`${isMobile ? "text-sm" : "text-[10px] sm:text-[11px]"
+              } leading-snug break-words whitespace-normal hyphens-auto ${done
                 ? "line-through text-[var(--ui-text-muted)]"
                 : overdue
-                ? "text-[var(--ui-danger)] font-medium"
-                : "text-[var(--ui-text)]"
-            }`}
+                  ? "text-[var(--ui-danger)] font-medium"
+                  : "text-[var(--ui-text)]"
+              }`}
           >
             {task.cleanTitle}
           </p>
@@ -5759,22 +5893,20 @@ function CalendarView({
             <button
               type="button"
               onClick={() => setMode("month")}
-              className={`px-3 py-1.5 text-xs font-semibold transition ${
-                mode === "month"
+              className={`px-3 py-1.5 text-xs font-semibold transition ${mode === "month"
                   ? "bg-[var(--ui-accent)] text-[var(--ui-accent-contrast)]"
                   : "bg-transparent text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5"
-              }`}
+                }`}
             >
               月
             </button>
             <button
               type="button"
               onClick={() => setMode("week")}
-              className={`px-3 py-1.5 text-xs font-semibold transition ${
-                mode === "week"
+              className={`px-3 py-1.5 text-xs font-semibold transition ${mode === "week"
                   ? "bg-[var(--ui-accent)] text-[var(--ui-accent-contrast)]"
                   : "bg-transparent text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5"
-              }`}
+                }`}
             >
               週
             </button>
@@ -5786,22 +5918,20 @@ function CalendarView({
             <button
               type="button"
               onClick={() => setDateBase("due")}
-              className={`px-3 py-1.5 text-xs font-semibold transition ${
-                dateBase === "due"
+              className={`px-3 py-1.5 text-xs font-semibold transition ${dateBase === "due"
                   ? "bg-[var(--ui-text)] text-[var(--ui-panel-bg)]"
                   : "bg-transparent text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5"
-              }`}
+                }`}
             >
               設定日
             </button>
             <button
               type="button"
               onClick={() => setDateBase("completed")}
-              className={`px-3 py-1.5 text-xs font-semibold transition ${
-                dateBase === "completed"
+              className={`px-3 py-1.5 text-xs font-semibold transition ${dateBase === "completed"
                   ? "bg-[var(--ui-text)] text-[var(--ui-panel-bg)]"
                   : "bg-transparent text-[var(--ui-text-muted)] hover:bg-black/5 dark:hover:bg-white/5"
-              }`}
+                }`}
             >
               完了日
             </button>
@@ -5865,23 +5995,19 @@ function CalendarView({
                 <div
                   key={i}
                   onClick={() => setSelectedMobileDate(cellDate)}
-                  className={`min-h-[80px] sm:min-h-[120px] p-1 sm:p-1.5 cursor-pointer sm:cursor-default transition-colors relative ${
-                    !inMonth ? "opacity-45" : ""
-                  } ${
-                    isTodayCell
+                  className={`min-h-[80px] sm:min-h-[120px] p-1 sm:p-1.5 cursor-pointer sm:cursor-default transition-colors relative ${!inMonth ? "opacity-45" : ""
+                    } ${isTodayCell
                       ? "ring-2 ring-inset ring-[var(--ui-accent)]"
                       : ""
-                  } ${
-                    isSelectedCell
+                    } ${isSelectedCell
                       ? "bg-[var(--ui-accent-light)] sm:bg-[var(--ui-panel-bg)]"
                       : ""
-                  }`}
+                    }`}
                   style={{ background: "var(--ui-panel-bg)" }}
                 >
                   <div
-                    className={`text-[10px] sm:text-[11px] font-semibold mb-1 text-center sm:text-left ${
-                      isTodayCell ? "text-[var(--ui-accent)]" : ""
-                    }`}
+                    className={`text-[10px] sm:text-[11px] font-semibold mb-1 text-center sm:text-left ${isTodayCell ? "text-[var(--ui-accent)]" : ""
+                      }`}
                   >
                     {cellDate.getDate()}
                   </div>
@@ -5896,7 +6022,7 @@ function CalendarView({
                     {dayTasks.slice(0, 3).map((t) => {
                       const done = t.status === "completed";
                       const overdue = !done && t.due && isOverdue(t.due);
-                      
+
                       // タグや状態に応じた背景色の適用
                       let bgClass = "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300";
                       if (overdue) {
@@ -5904,7 +6030,7 @@ function CalendarView({
                       } else if (done) {
                         bgClass = "bg-transparent text-[var(--ui-text-muted)] line-through opacity-60";
                       } else if (t.tags && t.tags.length > 0) {
-                         bgClass = getTagColor(t.tags[0]);
+                        bgClass = getTagColor(t.tags[0]);
                       }
 
                       return (
@@ -5970,18 +6096,16 @@ function CalendarView({
             return (
               <div
                 key={i}
-                className={`border rounded-xl p-3 sm:p-2 min-h-[120px] sm:min-h-[260px] flex flex-col ${
-                  isTodayCell
+                className={`border rounded-xl p-3 sm:p-2 min-h-[120px] sm:min-h-[260px] flex flex-col ${isTodayCell
                     ? "border-[var(--ui-accent)] bg-[var(--ui-accent-light)]"
                     : "border-[var(--ui-border)] bg-black/5 dark:bg-white/5"
-                }`}
+                  }`}
               >
                 <div
-                  className={`text-xs sm:text-xs font-bold mb-2 pb-2 border-b shrink-0 flex justify-between sm:block ${
-                    isTodayCell
+                  className={`text-xs sm:text-xs font-bold mb-2 pb-2 border-b shrink-0 flex justify-between sm:block ${isTodayCell
                       ? "text-[var(--ui-accent)] border-[var(--ui-accent)]/30"
                       : "text-[var(--ui-text)] border-[var(--ui-border)]"
-                  }`}
+                    }`}
                 >
                   <span>
                     {d.getMonth() + 1}/{d.getDate()}
@@ -6006,8 +6130,8 @@ function CalendarView({
   );
 }
 
-function PeriodCard({ label, icon, stats, accent, onClick }) {
-  const { completed, totalTarget, rate } = stats;
+function PeriodCard({ label, icon, stats = {}, accent, onClick }) {
+  const { completed = 0, totalTarget = 0, rate = 0 } = stats;
   const isEmpty = totalTarget === 0;
   return (
     <div
@@ -6038,13 +6162,12 @@ function PeriodCard({ label, icon, stats, accent, onClick }) {
       <div className="mt-4 w-full">
         <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
           <div
-            className={`h-1.5 rounded-full transition-all duration-500 ${
-              isEmpty
+            className={`h-1.5 rounded-full transition-all duration-500 ${isEmpty
                 ? "bg-slate-200"
                 : rate === 100
-                ? "bg-emerald-400"
-                : "bg-[var(--ui-accent)]"
-            }`}
+                  ? "bg-emerald-400"
+                  : "bg-[var(--ui-accent)]"
+              }`}
             style={{ width: `${isEmpty ? 0 : rate}%` }}
           />
         </div>
@@ -6082,11 +6205,10 @@ function RoutineDetectorView({
                 return !prev;
               });
             }}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition border shrink-0 ${
-              selectionMode
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition border shrink-0 ${selectionMode
                 ? "bg-slate-800 text-white border-slate-800 shadow-sm"
                 : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-            }`}
+              }`}
           >
             {selectionMode ? "選択終了" : "選択モード"}
           </button>
@@ -6167,11 +6289,10 @@ function RoutineDetectorView({
             return (
               <div
                 key={group.titleLabel || group.title + String(idx)}
-                className={`bg-white rounded-xl shadow-sm border overflow-hidden flex flex-col transition-all duration-300 ${
-                  isHighlighted
+                className={`bg-white rounded-xl shadow-sm border overflow-hidden flex flex-col transition-all duration-300 ${isHighlighted
                     ? "ring-2 ring-amber-400 border-amber-200 scale-[1.01]"
                     : "border-slate-100"
-                }`}
+                  }`}
               >
                 <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex flex-col gap-2">
                   <div className="flex justify-between items-center">
@@ -6190,9 +6311,8 @@ function RoutineDetectorView({
                       <div
                         className="bg-emerald-400 h-1.5 rounded-full transition-all"
                         style={{
-                          width: `${
-                            (group.completedCount / (group.count || 1)) * 100
-                          }%`,
+                          width: `${(group.completedCount / (group.count || 1)) * 100
+                            }%`,
                         }}
                       />
                     </div>
@@ -6240,15 +6360,12 @@ function RoutineDetectorView({
                         onClick={() => {
                           if (showCheckboxes) toggleSelection(task.id);
                         }}
-                        className={`flex items-start gap-3 p-2 rounded-lg transition-all duration-300 group ${
-                          showCheckboxes ? "cursor-pointer" : ""
-                        } ${
-                          isSelected
+                        className={`flex items-start gap-3 p-2 rounded-lg transition-all duration-300 group ${showCheckboxes ? "cursor-pointer" : ""
+                          } ${isSelected
                             ? "bg-[var(--ui-accent-light)] ring-1 ring-[var(--ui-accent)]"
                             : "hover:bg-black/5 dark:hover:bg-white/5"
-                        } ${
-                          done ? "opacity-60 grayscale hover:grayscale-0" : ""
-                        }`}
+                          } ${done ? "opacity-60 grayscale hover:grayscale-0" : ""
+                          }`}
                       >
                         <button
                           type="button"
@@ -6272,11 +6389,10 @@ function RoutineDetectorView({
                         </button>
                         <div className="min-w-0 flex-1">
                           <p
-                            className={`text-sm ${
-                              done
+                            className={`text-sm ${done
                                 ? "line-through text-[var(--ui-text-muted)]"
                                 : "text-[var(--ui-text)]"
-                            }`}
+                              }`}
                           >
                             {task.cleanTitle}
                           </p>
@@ -6361,13 +6477,16 @@ function TagManagerView({
 }
 
 function CompositeChart({ series, labelFor }) {
-  const maxTotal = Math.max(1, ...series.map((w) => w.total));
+  // 配列が空の場合の Math.max(-Infinity) エラーを防止
+  const safeSeriesTotals =
+    series && series.length > 0 ? series.map((w) => w.total || 0) : [0];
+  const maxTotal = Math.max(1, ...safeSeriesTotals);
   const W = 700,
     H = 260,
     PAD = { t: 24, b: 32, l: 40, r: 40 };
   const barAreaH = H - PAD.t - PAD.b;
 
-  const segment = (W - PAD.l - PAD.r) / (series.length || 1);
+  const segment = (W - PAD.l - PAD.r) / (series && series.length > 0 ? series.length : 1);
   const barW = Math.min(32, segment - 8);
   const xOfBar = (i) => PAD.l + i * segment + segment / 2;
   const yOfRate = (rate) => PAD.t + barAreaH * (1 - rate / 100);
@@ -6608,7 +6727,7 @@ function UISettingsView({
               replaceText
             );
             return fetch(
-              `https://tasks.googleapis.com/tasks/v1/lists/${task.listId}/tasks/${task.id}`,
+              `https://tasks.googleapis.com/tasks/v1/lists/${task.listId || "@default"}/tasks/${task.id}`,
               {
                 method: "PATCH",
                 headers: {
@@ -6634,7 +6753,7 @@ function UISettingsView({
   const categories = [...new Set(THEME_PRESETS.map((p) => p.category))];
 
   return (
-    <div className="space-y-6 w-full xl:max-w-6xl">
+    <div className="space-y-6 w-full">
       <div
         className="flex items-center gap-2 mb-2 px-2 border-b pb-4"
         style={{ borderColor: "var(--ui-border)" }}
@@ -6644,21 +6763,19 @@ function UISettingsView({
         <div className="ml-auto flex bg-black/5 dark:bg-white/5 p-1 rounded-lg">
           <button
             onClick={() => setSettingTab("ui")}
-            className={`px-4 py-1.5 text-sm font-bold rounded-md transition ${
-              settingTab === "ui"
+            className={`px-4 py-1.5 text-sm font-bold rounded-md transition ${settingTab === "ui"
                 ? "bg-[var(--ui-panel-bg)] shadow-sm"
                 : "opacity-60"
-            }`}
+              }`}
           >
             デザイン
           </button>
           <button
             onClick={() => setSettingTab("replace")}
-            className={`px-4 py-1.5 text-sm font-bold rounded-md transition ${
-              settingTab === "replace"
+            className={`px-4 py-1.5 text-sm font-bold rounded-md transition ${settingTab === "replace"
                 ? "bg-[var(--ui-panel-bg)] shadow-sm"
                 : "opacity-60"
-            }`}
+              }`}
           >
             一括置換
           </button>
@@ -6749,11 +6866,10 @@ function UISettingsView({
                           <button
                             key={preset.id}
                             onClick={() => applyPreset(preset.config)}
-                            className={`group relative flex flex-col items-start text-left h-full overflow-hidden transition-all duration-500 hover:-translate-y-1 ${
-                              isActive
+                            className={`group relative flex flex-col items-start text-left h-full overflow-hidden transition-all duration-500 hover:-translate-y-1 ${isActive
                                 ? "scale-[1.04] z-10"
                                 : "hover:scale-[1.02]"
-                            }`}
+                              }`}
                             style={{
                               borderRadius: previewRadiusPx,
                               boxShadow: isActive
@@ -6787,11 +6903,10 @@ function UISettingsView({
                                         width: 9,
                                         height: 9,
                                         borderRadius: "50%",
-                                        border: `2px solid ${
-                                          i === 0
+                                        border: `2px solid ${i === 0
                                             ? previewAccent
                                             : previewText + "40"
-                                        }`,
+                                          }`,
                                         flexShrink: 0,
                                       }}
                                     />
@@ -6825,15 +6940,15 @@ function UISettingsView({
                               {/* Gradient overlay for neon/glass */}
                               {(preset.config.texture === "glass" ||
                                 preset.config.useGradient) && (
-                                <div
-                                  style={{
-                                    position: "absolute",
-                                    inset: 0,
-                                    background: `linear-gradient(135deg, ${previewAccent}18 0%, transparent 60%)`,
-                                    pointerEvents: "none",
-                                  }}
-                                />
-                              )}
+                                  <div
+                                    style={{
+                                      position: "absolute",
+                                      inset: 0,
+                                      background: `linear-gradient(135deg, ${previewAccent}18 0%, transparent 60%)`,
+                                      pointerEvents: "none",
+                                    }}
+                                  />
+                                )}
                             </div>
 
                             {/* ── Info ── */}
@@ -6892,6 +7007,54 @@ function UISettingsView({
                   </div>
                 </div>
               ))}
+            </div>
+          </Section>
+
+          <Section title="⌨️ キーボードショートカット設定">
+            <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 text-sm space-y-2 text-[var(--ui-text-muted)]">
+              <p>タスクの操作を素早く行うためのショートカット一覧です。</p>
+              <ul className="list-disc list-inside ml-4 space-y-1 font-medium">
+                <li>
+                  <kbd className="bg-white dark:bg-black px-1.5 py-0.5 rounded shadow-sm border text-[11px]">
+                    ↑
+                  </kbd>{" "}
+                  <kbd className="bg-white dark:bg-black px-1.5 py-0.5 rounded shadow-sm border text-[11px]">
+                    ↓
+                  </kbd>{" "}
+                  : タスクリストのフォーカス移動
+                </li>
+                <li>
+                  <kbd className="bg-white dark:bg-black px-1.5 py-0.5 rounded shadow-sm border text-[11px]">
+                    Enter
+                  </kbd>{" "}
+                  : フォーカス中のタスクの完了/未完了の切り替え
+                </li>
+                <li>
+                  <kbd className="bg-white dark:bg-black px-1.5 py-0.5 rounded shadow-sm border text-[11px]">
+                    1
+                  </kbd>{" "}
+                  〜{" "}
+                  <kbd className="bg-white dark:bg-black px-1.5 py-0.5 rounded shadow-sm border text-[11px]">
+                    9
+                  </kbd>{" "}
+                  : アクティブなタグによる即座のフィルタリング
+                </li>
+                <li>
+                  <kbd className="bg-white dark:bg-black px-1.5 py-0.5 rounded shadow-sm border text-[11px]">
+                    Esc
+                  </kbd>{" "}
+                  : タグフィルタの解除・フォーカス解除・モーダルの非表示
+                </li>
+                <li>
+                  <kbd className="bg-white dark:bg-black px-1.5 py-0.5 rounded shadow-sm border text-[11px]">
+                    Shift
+                  </kbd>{" "}
+                  (長押し) : タスクの複数選択モード一時切り替え
+                </li>
+              </ul>
+              <p className="text-xs opacity-70 mt-2">
+                ※ 文字入力フォームにフォーカスがある時はショートカットは無効になります。
+              </p>
             </div>
           </Section>
 
@@ -7196,20 +7359,36 @@ function AnalyticsView({
   onTimeTasks,
   lateTasks,
   uiConfig,
+  t,
   setPeriodModalPeriod,
   setPeriodModalTiltDeg,
+  weekBeforeLastStats,
+  lastWeekStats,
   weekAfterNextStats,
   nextMonthStats,
   monthAfterNextStats,
 }) {
   const [granularity, setGranularity] = useState("week");
   const [expandedRow, setExpandedRow] = useState(null);
+  const [tagPeriod, setTagPeriod] = useState("next14Days");
+
+  const analyticsCardsScrollRef = useRef(null);
+  const handleAnalyticsCardsScroll = (direction) => {
+    if (analyticsCardsScrollRef.current) {
+      const amount = 320;
+      analyticsCardsScrollRef.current.scrollBy({
+        left: direction === "left" ? -amount : amount,
+        behavior: "smooth",
+      });
+    }
+  };
+
   const series =
     granularity === "week"
       ? weeklyHistory
       : granularity === "month"
-      ? monthlyHistory
-      : yearlyHistory;
+        ? monthlyHistory
+        : yearlyHistory;
 
   useEffect(() => {
     const timer = setTimeout(() => setExpandedRow(null), 0);
@@ -7221,8 +7400,8 @@ function AnalyticsView({
     granularity === "week"
       ? `週次（過去7週＋今週＋来週）${scopeHint}`
       : granularity === "month"
-      ? `月次（過去12ヶ月）${scopeHint}`
-      : `年次（過去5年）${scopeHint}`;
+        ? `月次（過去12ヶ月）${scopeHint}`
+        : `年次（過去5年）${scopeHint}`;
 
   const labelFor = (w) => {
     if (granularity === "week") {
@@ -7237,69 +7416,180 @@ function AnalyticsView({
   };
 
   const overdueList = useMemo(() => {
-    // eslint-disable-next-line react-hooks/purity
     const nowValue = Date.now();
     return tasks
       .filter(
         (t) =>
           t.status !== "completed" &&
           t.due &&
+          !Number.isNaN(new Date(t.due).getTime()) &&
           new Date(t.due).getTime() < nowValue - 3 * 24 * 60 * 60 * 1000
       )
       .sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime());
   }, [tasks]);
 
+  const periodData = useMemo(() => {
+    const now = new Date();
+    const nowMs = now.getTime();
+    const { start: thisWeekStart, end: thisWeekEnd } = getWeekRange(now);
+    const nextWeekStart = addWeeks(thisWeekStart, 1);
+    const nextWeekEnd = addWeeks(nextWeekStart, 1);
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
+
+    const pTasks = tasks.filter((t) => {
+      // 全体フィルタ（選択されたタグがあればそれに絞る）
+      if (selectedTag && selectedTag !== "未分類" && !t.tags.includes(selectedTag)) return false;
+      if (selectedTag === "未分類" && t.tags.length > 0) return false;
+
+      if (tagPeriod === "all") return true;
+      if (!t.due) return false;
+      const dMs = new Date(t.due).getTime();
+      if (Number.isNaN(dMs)) return false;
+
+      switch (tagPeriod) {
+        case "thisWeek":
+          return dMs >= thisWeekStart.getTime() && dMs < thisWeekEnd.getTime();
+        case "next7Days":
+          return dMs >= nowMs && dMs <= nowMs + 7 * 86400000;
+        case "nextWeek":
+          return dMs >= nextWeekStart.getTime() && dMs < nextWeekEnd.getTime();
+        case "next14Days":
+          return dMs >= nowMs && dMs <= nowMs + 14 * 86400000;
+        case "thisMonth":
+          return dMs >= thisMonthStart && dMs < nextMonthStart;
+        default:
+          return true;
+      }
+    });
+
+    const td = {};
+    pTasks.forEach((t) => {
+      const tgs = t.tags.length === 0 ? ["未分類"] : t.tags;
+      const isCompleted = t.status === "completed";
+      let isOverdueTask = false;
+      let compStatus = "activeOk"; // activeOk, early, ontime, late, overdue
+
+      const dMs = t.due ? new Date(t.due).getTime() : NaN;
+
+      if (isCompleted) {
+        if (t.completed && t.due && !Number.isNaN(dMs)) {
+          const cMs = new Date(t.completed).getTime();
+          if (!Number.isNaN(cMs)) {
+            if (cMs <= dMs - 86400000) compStatus = "early";
+            else if (cMs <= dMs + 86400000) compStatus = "ontime";
+            else compStatus = "late";
+          } else {
+            compStatus = "ontime";
+          }
+        } else {
+          compStatus = "ontime";
+        }
+      } else {
+        if (t.due && !Number.isNaN(dMs) && dMs < nowMs) {
+          compStatus = "overdue";
+          isOverdueTask = true;
+        }
+      }
+
+      tgs.forEach((tag) => {
+        if (!td[tag]) td[tag] = { total: 0, completed: 0, early: 0, ontime: 0, late: 0, overdue: 0, activeOk: 0 };
+        td[tag].total++;
+        if (isCompleted) td[tag].completed++;
+        td[tag][compStatus]++;
+      });
+    });
+
+    const pTagStats = Object.entries(td)
+      .map(([tag, data]) => ({
+        tag,
+        ...data,
+        rate: data.total === 0 ? 0 : Math.round((data.completed / data.total) * 100),
+      }))
+      .sort((a, b) => b.total - a.total);
+
+    return { pTasks, pTagStats };
+  }, [tasks, tagPeriod, selectedTag]);
+
   return (
     <div className="space-y-6 min-w-0">
-      {/* Analytics専用 追加進捗カード (再来週・来月・再来月) */}
-      <div className="-mx-4 sm:mx-0 px-4 sm:px-0 w-[calc(100%+2rem)] sm:w-full overflow-x-auto hide-scrollbar pb-2 pt-1">
-        <div className="flex gap-3 w-max snap-x snap-mandatory after:content-[''] after:w-4 after:shrink-0 sm:after:hidden">
-          <div className="snap-center shrink-0 w-[85vw] sm:w-[220px] lg:w-[260px]">
-            <PeriodCard
-              label={t("weekAfterNext", uiConfig.language)}
-              icon={uiConfig.iconStyle !== "text" && <Calendar size={14} />}
-              stats={weekAfterNextStats}
-              accent="text-[var(--ui-accent-dark)] opacity-70"
-              onClick={() => {
-                setPeriodModalTiltDeg(0);
-                setPeriodModalPeriod("weekAfterNext");
-              }}
-            />
-          </div>
-          <div className="snap-center shrink-0 w-[85vw] sm:w-[220px] lg:w-[260px]">
-            <PeriodCard
-              label={t("nextMonth", uiConfig.language)}
-              icon={uiConfig.iconStyle !== "text" && <Calendar size={14} />}
-              stats={nextMonthStats}
-              accent="text-[var(--ui-accent-dark)] opacity-70"
-              onClick={() => {
-                setPeriodModalTiltDeg(0);
-                setPeriodModalPeriod("nextMonth");
-              }}
-            />
-          </div>
-          <div className="snap-center shrink-0 w-[85vw] sm:w-[220px] lg:w-[260px]">
-            <PeriodCard
-              label={t("monthAfterNext", uiConfig.language)}
-              icon={uiConfig.iconStyle !== "text" && <Calendar size={14} />}
-              stats={monthAfterNextStats}
-              accent="text-[var(--ui-accent-dark)] opacity-70"
-              onClick={() => {
-                setPeriodModalTiltDeg(0);
-                setPeriodModalPeriod("monthAfterNext");
-              }}
-            />
+      {/* 1. 横スクロール進捗カード */}
+      <div className="relative group w-full">
+        <button
+          onClick={() => handleAnalyticsCardsScroll("left")}
+          className="hidden sm:flex lg:hidden absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-10 w-8 h-8 items-center justify-center rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95"
+          style={{ background: "var(--ui-panel-bg)", color: "var(--ui-text)", border: "1px solid var(--ui-border)" }}
+        >
+          <ChevronLeft size={18} />
+        </button>
+
+        <div
+          ref={analyticsCardsScrollRef}
+          className="-mx-4 lg:mx-0 px-4 lg:px-0 w-[calc(100%+2rem)] lg:w-full overflow-x-auto hide-scrollbar pt-2 pb-6"
+        >
+          <div className="flex lg:grid lg:grid-cols-5 gap-3 w-max lg:w-full snap-x snap-mandatory after:content-[''] after:w-4 after:shrink-0 lg:after:hidden">
+            <div className="snap-center shrink-0 w-[150px] sm:w-[220px] lg:w-auto">
+              <PeriodCard
+                label={t("weekBeforeLast", uiConfig.language)}
+                icon={uiConfig.iconStyle !== "text" && <Calendar size={14} />}
+                stats={weekBeforeLastStats}
+                accent="text-[var(--ui-accent-dark)] opacity-70"
+                onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod("weekBeforeLast"); }}
+              />
+            </div>
+            <div className="snap-center shrink-0 w-[150px] sm:w-[220px] lg:w-auto">
+              <PeriodCard
+                label={t("lastWeek", uiConfig.language)}
+                icon={uiConfig.iconStyle !== "text" && <Calendar size={14} />}
+                stats={lastWeekStats}
+                accent="text-[var(--ui-accent)] opacity-80"
+                onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod("lastWeek"); }}
+              />
+            </div>
+            <div className="snap-center shrink-0 w-[150px] sm:w-[220px] lg:w-auto">
+              <PeriodCard
+                label={t("weekAfterNext", uiConfig.language)}
+                icon={uiConfig.iconStyle !== "text" && <Calendar size={14} />}
+                stats={weekAfterNextStats}
+                accent="text-[var(--ui-accent-dark)] opacity-70"
+                onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod("weekAfterNext"); }}
+              />
+            </div>
+            <div className="snap-center shrink-0 w-[150px] sm:w-[220px] lg:w-auto">
+              <PeriodCard
+                label={t("nextMonth", uiConfig.language)}
+                icon={uiConfig.iconStyle !== "text" && <Calendar size={14} />}
+                stats={nextMonthStats}
+                accent="text-[var(--ui-accent-dark)] opacity-70"
+                onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod("nextMonth"); }}
+              />
+            </div>
+            <div className="snap-center shrink-0 w-[150px] sm:w-[220px] lg:w-auto">
+              <PeriodCard
+                label={t("monthAfterNext", uiConfig.language)}
+                icon={uiConfig.iconStyle !== "text" && <Calendar size={14} />}
+                stats={monthAfterNextStats}
+                accent="text-[var(--ui-accent-dark)] opacity-70"
+                onClick={() => { setPeriodModalTiltDeg(0); setPeriodModalPeriod("monthAfterNext"); }}
+              />
+            </div>
           </div>
         </div>
+
+        <button
+          onClick={() => handleAnalyticsCardsScroll("right")}
+          className="hidden sm:flex lg:hidden absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-10 w-8 h-8 items-center justify-center rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95"
+          style={{ background: "var(--ui-panel-bg)", color: "var(--ui-text)", border: "1px solid var(--ui-border)" }}
+        >
+          <ChevronRight size={18} />
+        </button>
       </div>
 
-      <div className="space-y-6 min-w-0">
-      {/* 複合グラフ（タスク数 ＆ 達成率） */}
+      {/* 2. 複合グラフ */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <h3 className="font-bold text-slate-800 flex items-center gap-2">
-            <BarChart3 size={18} className="text-indigo-600" />{" "}
-            タスク量と達成率の推移
+            <BarChart3 size={18} className="text-indigo-600" /> タスク量と達成率の推移
           </h3>
           <div className="flex flex-wrap gap-1.5 p-1 bg-slate-100 rounded-lg">
             {[
@@ -7310,11 +7600,8 @@ function AnalyticsView({
               <button
                 key={id}
                 onClick={() => setGranularity(id)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition ${
-                  granularity === id
-                    ? "bg-white text-indigo-600 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition ${granularity === id ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                  }`}
               >
                 {label}
               </button>
@@ -7322,11 +7609,10 @@ function AnalyticsView({
           </div>
         </div>
         <p className="text-xs text-slate-500 mb-3">{chartTitle}</p>
-
-        {/* CompositeChart を利用した複合グラフ */}
         <CompositeChart series={series} labelFor={labelFor} />
       </div>
 
+      {/* 3. 完了ペース分析 & 長期滞留アラート */}
       <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6 items-start">
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
           <p className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
@@ -7336,24 +7622,19 @@ function AnalyticsView({
           <div className="space-y-4">
             <div className="flex justify-between items-end">
               <div className="space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase">
-                  平均完了日
-                </span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase">平均完了日</span>
                 <p className="text-2xl font-bold text-slate-800">
                   {averageLeadTime === 0
                     ? "当日"
                     : averageLeadTime > 0
-                    ? `${averageLeadTime.toFixed(1)} 日前`
-                    : `${Math.abs(averageLeadTime).toFixed(1)} 日遅延`}
+                      ? `${averageLeadTime.toFixed(1)} 日前`
+                      : `${Math.abs(averageLeadTime).toFixed(1)} 日遅延`}
                 </p>
               </div>
               <div className="text-right">
                 <span
-                  className={`text-xs font-bold px-2 py-1 rounded-full ${
-                    averageLeadTime >= 0
-                      ? "bg-emerald-50 text-emerald-600"
-                      : "bg-red-50 text-red-600"
-                  }`}
+                  className={`text-xs font-bold px-2 py-1 rounded-full ${averageLeadTime >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
+                    }`}
                 >
                   {averageLeadTime >= 0 ? "良好" : "改善の余地あり"}
                 </span>
@@ -7362,76 +7643,48 @@ function AnalyticsView({
 
             <div className="flex gap-2">
               <div className="flex-1 bg-emerald-50 rounded-lg p-3 text-center">
-                <p className="text-[10px] text-emerald-600 font-bold mb-1">
-                  期限前/当日
-                </p>
-                <p className="text-lg font-bold text-emerald-700">
-                  {onTimeTasks}
-                </p>
+                <p className="text-[10px] text-emerald-600 font-bold mb-1">期限前/当日</p>
+                <p className="text-lg font-bold text-emerald-700">{onTimeTasks}</p>
               </div>
               <div className="flex-1 bg-amber-50 rounded-lg p-3 text-center">
-                <p className="text-[10px] text-amber-600 font-bold mb-1">
-                  期限後完了
-                </p>
+                <p className="text-[10px] text-amber-600 font-bold mb-1">期限後完了</p>
                 <p className="text-lg font-bold text-amber-700">{lateTasks}</p>
               </div>
             </div>
 
             {/* 週ごとの遅延率推移 */}
             <div className="mt-4 pt-3 border-t border-slate-100">
-              <p className="text-xs font-bold text-slate-500 mb-2">
-                週ごとの完了ペース推移
-              </p>
+              <p className="text-xs font-bold text-slate-500 mb-2">週ごとの完了ペース推移</p>
               <div className="space-y-2.5 max-h-[180px] overflow-y-auto pr-1 hide-scrollbar">
-                {weeklyHistory
-                  .slice(-8)
-                  .reverse()
-                  .map((w) => {
-                    const wTasks = w.tasks || [];
-                    let wEarly = 0,
-                      wOnTime = 0,
-                      wLate = 0;
-                    wTasks.forEach((t) => {
-                      if (t.status === "completed" && t.completed && t.due) {
-                        const c = new Date(t.completed).getTime(),
-                          d = new Date(t.due).getTime();
-                        if (c <= d - 86400000) wEarly++;
-                        else if (c <= d + 86400000) wOnTime++;
-                        else wLate++;
-                      }
-                    });
-                    const tot = Math.max(wEarly + wOnTime + wLate, 1);
-                    return (
-                      <div key={w.key}>
-                        <div className="flex justify-between text-[10px] text-slate-500 mb-1">
-                          <span
-                            className={
-                              w.isCurrent ? "font-bold text-indigo-600" : ""
-                            }
-                          >
-                            {w.isCurrent ? "今週" : w.label}
-                          </span>
-                          <span>
-                            前{wEarly} / 当{wOnTime} / 遅{wLate}
-                          </span>
-                        </div>
-                        <div className="flex w-full h-2 rounded-full overflow-hidden bg-slate-100">
-                          <div
-                            className="bg-emerald-400 transition-all"
-                            style={{ width: `${(wEarly / tot) * 100}%` }}
-                          />
-                          <div
-                            className="bg-blue-400 transition-all"
-                            style={{ width: `${(wOnTime / tot) * 100}%` }}
-                          />
-                          <div
-                            className="bg-rose-400 transition-all"
-                            style={{ width: `${(wLate / tot) * 100}%` }}
-                          />
-                        </div>
+                {weeklyHistory.slice(-8).reverse().map((w) => {
+                  const wTasks = w.tasks || [];
+                  let wEarly = 0, wOnTime = 0, wLate = 0;
+                  wTasks.forEach((t) => {
+                    if (t.status === "completed" && t.completed && t.due) {
+                      const c = new Date(t.completed).getTime();
+                      const d = new Date(t.due).getTime();
+                      if (c <= d - 86400000) wEarly++;
+                      else if (c <= d + 86400000) wOnTime++;
+                      else wLate++;
+                    }
+                  });
+                  const tot = Math.max(wEarly + wOnTime + wLate, 1);
+                  return (
+                    <div key={w.key}>
+                      <div className="flex justify-between text-[10px] text-slate-500 mb-1">
+                        <span className={w.isCurrent ? "font-bold text-indigo-600" : ""}>
+                          {w.isCurrent ? "今週" : w.label}
+                        </span>
+                        <span>前{wEarly} / 当{wOnTime} / 遅{wLate}</span>
                       </div>
-                    );
-                  })}
+                      <div className="flex w-full h-2 rounded-full overflow-hidden bg-slate-100">
+                        <div className="bg-emerald-400 transition-all" style={{ width: `${(wEarly / tot) * 100}%` }} />
+                        <div className="bg-blue-400 transition-all" style={{ width: `${(wOnTime / tot) * 100}%` }} />
+                        <div className="bg-rose-400 transition-all" style={{ width: `${(wLate / tot) * 100}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -7441,30 +7694,16 @@ function AnalyticsView({
           <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
             <AlertCircle size={18} className="text-red-500" /> 長期滞留アラート
           </h3>
-          <p className="text-xs text-slate-500 mb-4">
-            期限が過ぎてから3日以上放置されている未完了タスクです。
-          </p>
+          <p className="text-xs text-slate-500 mb-4">期限が過ぎてから3日以上放置されている未完了タスクです。</p>
           <div className="divide-y divide-slate-100 max-h-[300px] overflow-y-auto pr-1 hide-scrollbar">
             {overdueList.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-4">
-                長期滞留しているタスクはありません🎉
-              </p>
+              <p className="text-sm text-slate-400 text-center py-4">長期滞留しているタスクはありません🎉</p>
             ) : (
               overdueList.map((t) => (
-                <div
-                  key={t.id}
-                  className="py-3 flex justify-between items-center gap-4"
-                >
-                  <span className="text-sm font-medium text-slate-700 truncate">
-                    {t.cleanTitle}
-                  </span>
+                <div key={t.id} className="py-3 flex justify-between items-center gap-4">
+                  <span className="text-sm font-medium text-slate-700 truncate">{t.cleanTitle}</span>
                   <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded whitespace-nowrap">
-                    {Math.floor(
-                      // eslint-disable-next-line react-hooks/purity
-                      (Date.now() - new Date(t.due).getTime()) /
-                        (1000 * 60 * 60 * 24)
-                    )}{" "}
-                    日経過
+                    {Math.floor((Date.now() - new Date(t.due).getTime()) / (1000 * 60 * 60 * 24))} 日経過
                   </span>
                 </div>
               ))
@@ -7473,26 +7712,18 @@ function AnalyticsView({
         </div>
       </div>
 
+      {/* 4. 完了ペース推移 */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 mt-6">
         <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
           <Clock size={18} className="text-blue-500" /> 完了ペース推移 (
-          {granularity === "week"
-            ? "週次"
-            : granularity === "month"
-            ? "月次"
-            : "年次"}
-          )
+          {granularity === "week" ? "週次" : granularity === "month" ? "月次" : "年次"})
         </h3>
-        <p className="text-xs text-slate-500 mb-3">
-          設定された期限に対する完了タイミング（期限設定ありのタスクのみ）
-        </p>
+        <p className="text-xs text-slate-500 mb-3">設定された期限に対する完了タイミング（期限設定ありのタスクのみ）</p>
 
         <div className="flex items-end gap-1 sm:gap-2 h-40 px-1 sm:px-2 border-b border-slate-100 overflow-x-auto">
           {series.map((w) => {
             const wTasks = w.tasks || [];
-            let e = 0,
-              o = 0,
-              l = 0;
+            let e = 0, o = 0, l = 0;
             wTasks.forEach((t) => {
               if (t.status === "completed" && t.completed && t.due) {
                 const c = new Date(t.completed).getTime();
@@ -7506,48 +7737,31 @@ function AnalyticsView({
             const hE = tot === 0 ? 0 : (e / tot) * 100;
             const hO = tot === 0 ? 0 : (o / tot) * 100;
             const hL = tot === 0 ? 0 : (l / tot) * 100;
-            const maxPaceTot = Math.max(
-              1,
-              ...series.map((x) => {
+
+            const paceTotals = series && series.length > 0
+              ? series.map((x) => {
                 let count = 0;
                 (x.tasks || []).forEach((t) => {
                   if (t.status === "completed" && t.completed && t.due) count++;
                 });
                 return count;
               })
-            );
-            const heightPct = tot === 0 ? 0 : (tot / maxPaceTot) * 100;
+              : [0];
+            const maxPaceTot = Math.max(1, ...paceTotals);
+            const heightPct = tot === 0 ? 0 : Math.min((tot / maxPaceTot) * 100, 100);
 
             return (
-              <div
-                key={w.key}
-                className="flex-1 min-w-[28px] flex flex-col items-center justify-end h-full group relative"
-              >
+              <div key={w.key} className="flex-1 min-w-[28px] flex flex-col items-center justify-end h-full group relative">
                 <span className="text-[10px] text-slate-600 font-bold mb-1 opacity-0 group-hover:opacity-100 transition absolute -top-6 whitespace-nowrap z-20 bg-white px-2 py-1 border border-slate-200 rounded shadow-lg pointer-events-none">
                   前:{e} 当:{o} 遅:{l}
                 </span>
                 <div
                   className="w-full max-w-[20px] flex flex-col justify-end overflow-hidden rounded-t-sm"
-                  style={{
-                    height: `${heightPct}%`,
-                    minHeight: tot === 0 ? "0" : "4px",
-                  }}
+                  style={{ height: `${heightPct}%`, minHeight: tot === 0 ? "0" : "4px" }}
                 >
-                  <div
-                    className="w-full bg-amber-400 transition-all hover:opacity-80"
-                    style={{ height: `${hL}%` }}
-                    title={`遅延: ${l}`}
-                  />
-                  <div
-                    className="w-full bg-blue-400 transition-all hover:opacity-80"
-                    style={{ height: `${hO}%` }}
-                    title={`当日: ${o}`}
-                  />
-                  <div
-                    className="w-full bg-emerald-400 transition-all hover:opacity-80"
-                    style={{ height: `${hE}%` }}
-                    title={`期限前: ${e}`}
-                  />
+                  <div className="w-full bg-amber-400 transition-all hover:opacity-80" style={{ height: `${hL}%` }} title={`遅延: ${l}`} />
+                  <div className="w-full bg-blue-400 transition-all hover:opacity-80" style={{ height: `${hO}%` }} title={`当日: ${o}`} />
+                  <div className="w-full bg-emerald-400 transition-all hover:opacity-80" style={{ height: `${hE}%` }} title={`期限前: ${e}`} />
                 </div>
               </div>
             );
@@ -7555,38 +7769,23 @@ function AnalyticsView({
         </div>
         <div className="flex gap-1 sm:gap-2 mt-2 px-1 sm:px-2 overflow-x-auto">
           {series.map((w) => (
-            <div
-              key={`lp-${w.key}`}
-              className="flex-1 min-w-[28px] text-[9px] sm:text-[10px] text-center truncate text-slate-500"
-            >
+            <div key={`lp-${w.key}`} className="flex-1 min-w-[28px] text-[9px] sm:text-[10px] text-center truncate text-slate-500">
               {labelFor(w)}
             </div>
           ))}
         </div>
         <div className="flex justify-center gap-4 mt-4 text-xs font-medium text-slate-600">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-sm bg-emerald-400"></span>
-            期限前
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-sm bg-blue-400"></span>当日
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-sm bg-amber-400"></span>遅延
-          </div>
+          <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-400"></span>期限前</div>
+          <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-blue-400"></span>当日</div>
+          <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-amber-400"></span>遅延</div>
         </div>
       </div>
+
+      {/* 5. 詳細テーブル */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 mt-6">
         <p className="text-sm font-semibold text-slate-700 mb-3">
-          {granularity === "week"
-            ? "週次"
-            : granularity === "month"
-            ? "月次"
-            : "年次"}
-          の詳細{" "}
-          <span className="text-xs font-normal text-slate-400 ml-2">
-            行をクリックしてタスクを展開
-          </span>
+          {granularity === "week" ? "週次" : granularity === "month" ? "月次" : "年次"}の詳細{" "}
+          <span className="text-xs font-normal text-slate-400 ml-2">行をクリックしてタスクを展開</span>
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -7599,229 +7798,490 @@ function AnalyticsView({
               </tr>
             </thead>
             <tbody>
-              {series
-                .slice()
-                .reverse()
-                .map((w) => {
-                  const isExpanded = expandedRow === w.key;
-                  const rowTasks = w.tasks || [];
-                  const tasksDone = rowTasks.filter(
-                    (t) => t.status === "completed"
-                  );
-                  const tasksUndone = rowTasks.filter(
-                    (t) => t.status !== "completed"
-                  );
+              {series.slice().reverse().map((w) => {
+                const isExpanded = expandedRow === w.key;
+                const rowTasks = w.tasks || [];
+                const tasksDone = rowTasks.filter((t) => t.status === "completed");
+                const tasksUndone = rowTasks.filter((t) => t.status !== "completed");
 
-                  return (
-                    <React.Fragment key={`t-${w.key}`}>
-                      <tr
-                        onClick={() =>
-                          setExpandedRow(isExpanded ? null : w.key)
-                        }
-                        className={`border-b border-slate-50 last:border-0 cursor-pointer transition hover:bg-slate-50 ${
-                          isExpanded ? "bg-slate-50" : ""
+                return (
+                  <React.Fragment key={`t-${w.key}`}>
+                    <tr
+                      onClick={() => setExpandedRow(isExpanded ? null : w.key)}
+                      className={`border-b border-slate-50 last:border-0 cursor-pointer transition hover:bg-slate-50 ${isExpanded ? "bg-slate-50" : ""
                         }`}
-                      >
-                        <td className="py-2.5 pr-4 text-slate-700">
-                          <div className="flex items-center gap-1.5">
-                            {isExpanded ? (
-                              <ChevronDown
-                                size={14}
-                                className="text-slate-400 shrink-0"
-                              />
-                            ) : (
-                              <ChevronRight
-                                size={14}
-                                className="text-slate-300 shrink-0"
-                              />
-                            )}
-                            {granularity === "week" && w.isCurrent ? (
-                              <span className="font-semibold text-indigo-600">
-                                今週{" "}
-                                <span className="text-slate-400 font-normal">
-                                  ({w.label})
-                                </span>
-                              </span>
-                            ) : granularity === "week" && w.isFuture ? (
-                              <span className="text-slate-500">
-                                来週{" "}
-                                <span className="text-slate-400">
-                                  ({w.label})
-                                </span>
-                              </span>
-                            ) : (
-                              w.label
-                            )}
+                    >
+                      <td className="py-2.5 pr-4 text-slate-700">
+                        <div className="flex items-center gap-1.5">
+                          {isExpanded ? (
+                            <ChevronDown size={14} className="text-slate-400 shrink-0" />
+                          ) : (
+                            <ChevronRight size={14} className="text-slate-300 shrink-0" />
+                          )}
+                          {granularity === "week" && w.isCurrent ? (
+                            <span className="font-semibold text-indigo-600">今週 <span className="text-slate-400 font-normal">({w.label})</span></span>
+                          ) : granularity === "week" && w.isFuture ? (
+                            <span className="text-slate-500">来週 <span className="text-slate-400">({w.label})</span></span>
+                          ) : (
+                            w.label
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-2.5 pr-4 text-slate-600">{w.total}</td>
+                      <td className="py-2.5 pr-4 text-slate-600">{w.completed}</td>
+                      <td className="py-2.5 pr-4 font-semibold">
+                        <span
+                          className={
+                            w.total === 0 ? "text-slate-300" : w.rate >= 80 ? "text-emerald-600" : w.rate >= 50 ? "text-blue-600" : "text-amber-600"
+                          }
+                        >
+                          {w.total === 0 ? "-" : `${w.rate}%`}
+                        </span>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr>
+                        <td colSpan={4} className="bg-slate-50 border-b border-slate-100 p-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                              <h5 className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200 inline-block sticky top-0 z-10">
+                                未達成 ({tasksUndone.length})
+                              </h5>
+                              {tasksUndone.length === 0 ? (
+                                <p className="text-xs text-slate-400 px-1">なし</p>
+                              ) : (
+                                tasksUndone.map((t) => (
+                                  <div key={t.id} className="flex items-start gap-2 text-xs bg-white p-2 rounded border border-slate-200 shadow-sm">
+                                    <button type="button" onClick={(e) => { e.stopPropagation(); toggleTaskStatus(t); }} className="mt-0.5 shrink-0">
+                                      <Circle size={12} className="text-slate-300 hover:text-blue-500" />
+                                    </button>
+                                    <span className="text-slate-700 leading-tight">{t.cleanTitle}</span>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                            <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                              <h5 className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200 inline-block sticky top-0 z-10">
+                                達成済 ({tasksDone.length})
+                              </h5>
+                              {tasksDone.length === 0 ? (
+                                <p className="text-xs text-slate-400 px-1">なし</p>
+                              ) : (
+                                tasksDone.map((t) => (
+                                  <div key={t.id} className="flex items-start gap-2 text-xs bg-white p-2 rounded border border-slate-200 shadow-sm opacity-70">
+                                    <button type="button" onClick={(e) => { e.stopPropagation(); toggleTaskStatus(t); }} className="mt-0.5 shrink-0">
+                                      <CheckCircle2 size={12} className="text-emerald-500" />
+                                    </button>
+                                    <span className="text-slate-500 line-through leading-tight">{t.cleanTitle}</span>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                            <div className="space-y-2">
+                              <h5 className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-1 rounded border border-indigo-200 inline-block">
+                                期間内のタグ構成
+                              </h5>
+                              {(() => {
+                                const periodTagCounts = {};
+                                let periodTaggedTotal = 0;
+                                rowTasks.forEach((t) => {
+                                  const tgs = t.tags.length > 0 ? t.tags : ["未分類"];
+                                  tgs.forEach((tag) => {
+                                    periodTagCounts[tag] = (periodTagCounts[tag] || 0) + 1;
+                                    periodTaggedTotal++;
+                                  });
+                                });
+                                const periodTagStats = Object.entries(periodTagCounts)
+                                  .map(([tag, count]) => ({
+                                    tag, count, rate: Math.round((count / (periodTaggedTotal || 1)) * 100),
+                                  }))
+                                  .sort((a, b) => b.count - a.count);
+
+                                return periodTagStats.length === 0 ? (
+                                  <p className="text-xs text-slate-400 px-1">データなし</p>
+                                ) : (
+                                  <div className="space-y-2.5 mt-2 bg-white p-3 rounded border border-slate-200 shadow-sm">
+                                    {periodTagStats.map((t) => (
+                                      <div key={t.tag}>
+                                        <div className="flex justify-between items-center text-[10px] text-slate-600 mb-1">
+                                          <span className="truncate pr-2 font-medium">{t.tag}</span>
+                                          <span className="shrink-0">{t.rate}% <span className="text-slate-400">({t.count})</span></span>
+                                        </div>
+                                        <div className="w-full bg-slate-100 rounded-full h-1.5">
+                                          <div className="bg-indigo-400 h-1.5 rounded-full" style={{ width: `${t.rate}%` }} />
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              })()}
+                            </div>
                           </div>
                         </td>
-                        <td className="py-2.5 pr-4 text-slate-600">
-                          {w.total}
-                        </td>
-                        <td className="py-2.5 pr-4 text-slate-600">
-                          {w.completed}
-                        </td>
-                        <td className="py-2.5 pr-4 font-semibold">
-                          <span
-                            className={
-                              w.total === 0
-                                ? "text-slate-300"
-                                : w.rate >= 80
-                                ? "text-emerald-600"
-                                : w.rate >= 50
-                                ? "text-blue-600"
-                                : "text-amber-600"
-                            }
-                          >
-                            {w.total === 0 ? "-" : `${w.rate}%`}
-                          </span>
-                        </td>
                       </tr>
-                      {isExpanded && (
-                        <tr>
-                          <td
-                            colSpan={4}
-                            className="bg-slate-50 border-b border-slate-100 p-4"
-                          >
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                              <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                                <h5 className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200 inline-block sticky top-0 z-10">
-                                  未達成 ({tasksUndone.length})
-                                </h5>
-                                {tasksUndone.length === 0 ? (
-                                  <p className="text-xs text-slate-400 px-1">
-                                    なし
-                                  </p>
-                                ) : (
-                                  tasksUndone.map((t) => (
-                                    <div
-                                      key={t.id}
-                                      className="flex items-start gap-2 text-xs bg-white p-2 rounded border border-slate-200 shadow-sm"
-                                    >
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          toggleTaskStatus(t);
-                                        }}
-                                        className="mt-0.5 shrink-0"
-                                      >
-                                        <Circle
-                                          size={12}
-                                          className="text-slate-300 hover:text-blue-500"
-                                        />
-                                      </button>
-                                      <span className="text-slate-700 leading-tight">
-                                        {t.cleanTitle}
-                                      </span>
-                                    </div>
-                                  ))
-                                )}
-                              </div>
-                              <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                                <h5 className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200 inline-block sticky top-0 z-10">
-                                  達成済 ({tasksDone.length})
-                                </h5>
-                                {tasksDone.length === 0 ? (
-                                  <p className="text-xs text-slate-400 px-1">
-                                    なし
-                                  </p>
-                                ) : (
-                                  tasksDone.map((t) => (
-                                    <div
-                                      key={t.id}
-                                      className="flex items-start gap-2 text-xs bg-white p-2 rounded border border-slate-200 shadow-sm opacity-70"
-                                    >
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          toggleTaskStatus(t);
-                                        }}
-                                        className="mt-0.5 shrink-0"
-                                      >
-                                        <CheckCircle2
-                                          size={12}
-                                          className="text-emerald-500"
-                                        />
-                                      </button>
-                                      <span className="text-slate-500 line-through leading-tight">
-                                        {t.cleanTitle}
-                                      </span>
-                                    </div>
-                                  ))
-                                )}
-                              </div>
-                              <div className="space-y-2">
-                                <h5 className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-1 rounded border border-indigo-200 inline-block">
-                                  期間内のタグ構成
-                                </h5>
-                                {(() => {
-                                  const periodTagCounts = {};
-                                  let periodTaggedTotal = 0;
-                                  rowTasks.forEach((t) => {
-                                    const tgs =
-                                      t.tags.length > 0 ? t.tags : ["未分類"];
-                                    tgs.forEach((tag) => {
-                                      periodTagCounts[tag] =
-                                        (periodTagCounts[tag] || 0) + 1;
-                                      periodTaggedTotal++;
-                                    });
-                                  });
-                                  const periodTagStats = Object.entries(
-                                    periodTagCounts
-                                  )
-                                    .map(([tag, count]) => ({
-                                      tag,
-                                      count,
-                                      rate: Math.round(
-                                        (count / (periodTaggedTotal || 1)) * 100
-                                      ),
-                                    }))
-                                    .sort((a, b) => b.count - a.count);
-
-                                  return periodTagStats.length === 0 ? (
-                                    <p className="text-xs text-slate-400 px-1">
-                                      データなし
-                                    </p>
-                                  ) : (
-                                    <div className="space-y-2.5 mt-2 bg-white p-3 rounded border border-slate-200 shadow-sm">
-                                      {periodTagStats.map((t) => (
-                                        <div key={t.tag}>
-                                          <div className="flex justify-between items-center text-[10px] text-slate-600 mb-1">
-                                            <span className="truncate pr-2 font-medium">
-                                              {t.tag}
-                                            </span>
-                                            <span className="shrink-0">
-                                              {t.rate}%{" "}
-                                              <span className="text-slate-400">
-                                                ({t.count})
-                                              </span>
-                                            </span>
-                                          </div>
-                                          <div className="w-full bg-slate-100 rounded-full h-1.5">
-                                            <div
-                                              className="bg-indigo-400 h-1.5 rounded-full"
-                                              style={{ width: `${t.rate}%` }}
-                                            />
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  );
-                                })()}
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* 6. 新規追加: 期間別のタグ進捗・ルーチン詳細分析セクション */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 mt-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 border-b pb-4 border-slate-100">
+          <div>
+            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+              <Layers size={18} className="text-purple-600" /> 期間別の詳細タグ・ルーチン分析
+            </h3>
+            <p className="text-xs text-slate-500 mt-1">
+              選択した期間に含まれるタスクのタグ比率やルーチンを確認できます。
+            </p>
+          </div>
+          <div className="bg-slate-100 p-1 rounded-lg w-fit shrink-0">
+            <AnimatedToggle
+              options={[
+                { value: "all", label: "すべて" },
+                { value: "thisWeek", label: "今週" },
+                { value: "next7Days", label: "7日以内" },
+                { value: "nextWeek", label: "来週" },
+                { value: "next14Days", label: "14日以内" },
+                { value: "thisMonth", label: "今月" },
+              ]}
+              current={tagPeriod}
+              onChange={setTagPeriod}
+              optionClassName="!px-2"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div>
+            <h4 className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">
+              タグ別 進捗詳細内訳
+            </h4>
+            {periodData.pTagStats.length === 0 ? (
+              <p className="text-sm text-slate-400 py-4 text-center">
+                この期間に該当するタスクはありません
+              </p>
+            ) : (
+              <div className="space-y-5 max-h-[400px] overflow-y-auto pr-2 hide-scrollbar">
+                {periodData.pTagStats.map((t) => (
+                  <div key={t.tag}>
+                    <div className="flex justify-between items-center text-sm font-medium mb-1.5">
+                      <span className="text-slate-700">{t.tag}</span>
+                      <span className="text-slate-500 text-xs">
+                        達成率 {t.rate}% ({t.completed}/{t.total})
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-2 flex overflow-hidden border border-slate-200">
+                      <div
+                        className="bg-emerald-400 hover:brightness-110 transition-all"
+                        style={{ width: `${(t.early / t.total) * 100}%` }}
+                        title={`期限前: ${t.early}`}
+                      />
+                      <div
+                        className="bg-blue-400 hover:brightness-110 transition-all"
+                        style={{ width: `${(t.ontime / t.total) * 100}%` }}
+                        title={`当日/期限なし完了: ${t.ontime}`}
+                      />
+                      <div
+                        className="bg-amber-400 hover:brightness-110 transition-all"
+                        style={{ width: `${(t.late / t.total) * 100}%` }}
+                        title={`遅延完了: ${t.late}`}
+                      />
+                      <div
+                        className="bg-red-400 hover:brightness-110 transition-all"
+                        style={{ width: `${(t.overdue / t.total) * 100}%` }}
+                        title={`未完了(超過): ${t.overdue}`}
+                      />
+                      <div
+                        className="bg-slate-300 hover:brightness-110 transition-all"
+                        style={{ width: `${(t.activeOk / t.total) * 100}%` }}
+                        title={`未完了(余裕あり): ${t.activeOk}`}
+                      />
+                    </div>
+                    {/* 詳細ラベル */}
+                    <div className="flex flex-wrap gap-2 mt-1.5 text-[10px] font-medium text-slate-400">
+                      {t.early > 0 && <span className="text-emerald-600">前:{t.early}</span>}
+                      {t.ontime > 0 && <span className="text-blue-600">当:{t.ontime}</span>}
+                      {t.late > 0 && <span className="text-amber-600">遅:{t.late}</span>}
+                      {t.overdue > 0 && <span className="text-red-500 bg-red-50 px-1 rounded">超過:{t.overdue}</span>}
+                      {t.activeOk > 0 && <span>未:{t.activeOk}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">
+              該当期間内の未完了タスク・ルーチン候補
+            </h4>
+            <div className="bg-slate-50 rounded-lg p-3 max-h-[400px] overflow-y-auto hide-scrollbar">
+              {periodData.pTasks.filter((t) => t.status !== "completed")
+                .length === 0 ? (
+                <p className="text-sm text-slate-400 py-4 text-center">
+                  未完了タスクなし🎉
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {periodData.pTasks
+                    .filter((t) => t.status !== "completed")
+                    .map((t) => {
+                      const isOverdueTask = t.due && new Date(t.due).getTime() < new Date().getTime();
+                      return (
+                        <li
+                          key={t.id}
+                          className={`text-sm flex items-start gap-2 bg-white p-2.5 rounded-lg border shadow-sm ${isOverdueTask ? "border-red-200 bg-red-50/50" : "border-slate-100 text-slate-600"
+                            }`}
+                        >
+                          <AlertCircle
+                            size={14}
+                            className={`mt-0.5 shrink-0 ${isOverdueTask ? "text-red-500" : "text-amber-500"}`}
+                          />
+                          <div>
+                            <span className={`font-medium block leading-tight mb-1 ${isOverdueTask ? "text-red-700" : ""}`}>
+                              {t.cleanTitle}
+                            </span>
+                            <span className={`text-[10px] font-bold ${isOverdueTask ? "text-red-500" : "text-slate-400"}`}>
+                              期限: {formatDue(t.due) || "なし"}
+                            </span>
+                          </div>
+                        </li>
+                      );
+                    })}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
+}
+
+function OrganizeView({
+  tasks,
+  uiConfig,
+  t,
+  toggleTaskStatus,
+  getTagColor,
+  selectedTasks,
+  toggleSelection,
+  setSelectedTasks,
+  handleDeleteSelected,
+  showCheckboxes,
+  selectionMode,
+  setSelectionMode,
+  showCompleted,
+  setShowCompleted,
+}) {
+  const [organizeSubTab, setOrganizeSubTab] = useState("tags");
+  const [organizePeriod, setOrganizePeriod] = useState("all");
+
+  const orgTasks = useMemo(() => {
+    if (organizePeriod === "all") return tasks;
+    const now = new Date();
+    const nowMs = now.getTime();
+    const { start: thisWeekStart, end: thisWeekEnd } = getWeekRange(now);
+    const nextWeekStart = addWeeks(thisWeekStart, 1);
+    const nextWeekEnd = addWeeks(nextWeekStart, 1);
+    const thisMonthStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1
+    ).getTime();
+    const nextMonthStart = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      1
+    ).getTime();
+
+    return tasks.filter((t) => {
+      if (!t.due) return false;
+      const dMs = new Date(t.due).getTime();
+      if (Number.isNaN(dMs)) return false;
+
+      switch (organizePeriod) {
+        case "thisWeek":
+          return dMs >= thisWeekStart.getTime() && dMs < thisWeekEnd.getTime();
+        case "next7Days":
+          return dMs >= nowMs && dMs <= nowMs + 7 * 86400000;
+        case "nextWeek":
+          return dMs >= nextWeekStart.getTime() && dMs < nextWeekEnd.getTime();
+        case "next14Days":
+          return dMs >= nowMs && dMs <= nowMs + 14 * 86400000;
+        case "thisMonth":
+          return dMs >= thisMonthStart && dMs < nextMonthStart;
+        default:
+          return true;
+      }
+    });
+  }, [tasks, organizePeriod]);
+
+  const orgTagStats = useMemo(() => {
+    const td = {};
+    orgTasks.forEach((t) => {
+      const tgs = t.tags.length === 0 ? ["未分類"] : t.tags;
+      tgs.forEach((tag) => {
+        if (!td[tag]) td[tag] = { total: 0, completed: 0 };
+        td[tag].total++;
+        if (t.status === "completed") td[tag].completed++;
+      });
+    });
+    return Object.entries(td)
+      .map(([tag, data]) => ({
+        tag,
+        ...data,
+        rate:
+          data.total === 0
+            ? 0
+            : Math.round((data.completed / data.total) * 100),
+        active: data.total - data.completed,
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [orgTasks]);
+
+  const orgRoutineGroups = useMemo(() => {
+    const wc = {};
+    orgTasks.forEach((t) => {
+      (t.cleanTitle || "")
+        .split(/[\s,，、・\-()（）[\]［］{}｛｝]+/)
+        .forEach((w) => {
+          if (w.length < 2 || /^[0-9０-９]+$/.test(w)) return;
+          if (/課題[0-9０-９]+/.test(w) || /[0-9０-９]+回/.test(w)) return;
+          wc[w] = (wc[w] || 0) + 1;
+        });
+    });
+    const th = 3;
+    const rKws = Object.keys(wc).filter((w) => wc[w] >= th);
+    const tGroups = {};
+    orgTasks.forEach((t) => {
+      [
+        ...new Set(
+          (t.cleanTitle || "")
+            .split(/[\s,，、・\-()（）[\]［］{}｛｝]+/)
+            .filter((w) => rKws.includes(w))
+        ),
+      ].forEach((kw) => {
+        if (!tGroups[kw])
+          tGroups[kw] = {
+            title: [kw],
+            count: 0,
+            completedCount: 0,
+            tasks: [],
+            taskIds: new Set(),
+          };
+        tGroups[kw].count += 1;
+        tGroups[kw].tasks.push(t);
+        tGroups[kw].taskIds.add(t.id);
+        if (t.status === "completed") tGroups[kw].completedCount += 1;
+      });
+    });
+    const merged = [];
+    Object.values(tGroups).forEach((g) => {
+      if (g.count < th) return;
+      const ex = merged.find(
+        (mg) =>
+          mg.taskIds.size === g.taskIds.size &&
+          [...mg.taskIds].every((id) => g.taskIds.has(id))
+      );
+      if (ex) ex.title.push(...g.title);
+      else merged.push(g);
+    });
+    return merged
+      .map((g) => ({
+        ...g,
+        titleLabel: g.title.join(" / "),
+        activeCount: g.count - g.completedCount,
+      }))
+      .sort((a, b) => b.activeCount - a.activeCount || b.count - a.count);
+  }, [orgTasks]);
+
+  return (
+    <div className="space-y-4 min-w-0">
+      <div
+        className="flex flex-col lg:flex-row lg:items-center gap-3 border-b pb-4"
+        style={{ borderColor: "var(--ui-border)" }}
+      >
+        <div className="flex items-center gap-2 shrink-0">
+          <Layers size={22} className="opacity-70" />
+          <h2 className="text-xl font-bold">
+            {t("organize", uiConfig.language)}
+          </h2>
+        </div>
+
+        <div className="flex flex-wrap gap-2 lg:ml-auto shrink-0">
+          <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-xl w-fit">
+            <AnimatedToggle
+              options={[
+                { value: "all", label: "すべて" },
+                { value: "thisWeek", label: "今週" },
+                { value: "next7Days", label: "7日以内" },
+                { value: "nextWeek", label: "来週" },
+                { value: "next14Days", label: "14日以内" },
+                { value: "thisMonth", label: "今月" },
+              ]}
+              current={organizePeriod}
+              onChange={setOrganizePeriod}
+            />
+          </div>
+          <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-xl w-fit">
+            <button
+              onClick={() => setOrganizeSubTab("tags")}
+              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition flex items-center gap-1.5 ${organizeSubTab === "tags"
+                  ? "bg-[var(--ui-panel-bg)] shadow-sm text-[var(--ui-text)]"
+                  : "text-[var(--ui-text-muted)] opacity-60 hover:opacity-100"
+                }`}
+            >
+              <Tag size={14} /> タグ管理
+            </button>
+            <button
+              onClick={() => setOrganizeSubTab("routines")}
+              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition flex items-center gap-1.5 ${organizeSubTab === "routines"
+                  ? "bg-[var(--ui-panel-bg)] shadow-sm text-[var(--ui-text)]"
+                  : "text-[var(--ui-text-muted)] opacity-60 hover:opacity-100"
+                }`}
+            >
+              <RotateCcw size={14} /> ルーチン管理
+            </button>
+          </div>
+        </div>
+      </div>
+      {organizeSubTab === "tags" ? (
+        <TagManagerView
+          tagStats={orgTagStats}
+          tasks={orgTasks}
+          toggleTaskStatus={toggleTaskStatus}
+          getTagColor={getTagColor}
+          selectedTasks={selectedTasks}
+          toggleSelection={toggleSelection}
+          setSelectedTasks={setSelectedTasks}
+          handleDeleteSelected={handleDeleteSelected}
+          showCheckboxes={showCheckboxes}
+          selectionMode={selectionMode}
+          setSelectionMode={setSelectionMode}
+          showCompleted={showCompleted}
+          setShowCompleted={setShowCompleted}
+        />
+      ) : (
+        <RoutineDetectorView
+          routineGroups={orgRoutineGroups}
+          selectedRoutine={null}
+          toggleTaskStatus={toggleTaskStatus}
+          selectedTasks={selectedTasks}
+          toggleSelection={toggleSelection}
+          setSelectedTasks={setSelectedTasks}
+          handleDeleteSelected={handleDeleteSelected}
+          showCheckboxes={showCheckboxes}
+          selectionMode={selectionMode}
+          setSelectionMode={setSelectionMode}
+          showCompleted={showCompleted}
+          setShowCompleted={setShowCompleted}
+        />
+      )}
+    </div>
+  );
 }
