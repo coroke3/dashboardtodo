@@ -3061,7 +3061,8 @@ export default function App() {
           isRollover = true;
         }
       }
-      return { ...t, effectiveDate, isRollover, isDelayedCompletion };
+      // ▼ 追加: 本来の期限が属する週（originalWeekStart）を保持させる
+      return { ...t, effectiveDate, isRollover, isDelayedCompletion, originalDue: dueD };
     });
 
     let weekTotal = 0,
@@ -7371,6 +7372,7 @@ function AnalyticsView({
   const [granularity, setGranularity] = useState("week");
   const [expandedRow, setExpandedRow] = useState(null);
   const [tagPeriod, setTagPeriod] = useState("next14Days");
+  const [pacePeriod, setPacePeriod] = useState("all");
 
   const analyticsCardsScrollRef = useRef(null);
   const handleAnalyticsCardsScroll = (direction) => {
@@ -7396,6 +7398,39 @@ function AnalyticsView({
   }, [granularity]);
 
   const scopeHint = selectedTag ? `（タグ「${selectedTag}」のタスクのみ）` : "";
+  
+  // 選択された期間に基づくペース集計 (Completion Pace Analysis)
+  const filteredPaceStats = useMemo(() => {
+    let e = 0, o = 0, l = 0, diffTotal = 0, cnt = 0;
+    const nowValue = Date.now();
+    const limitMs = pacePeriod === "1m" ? nowValue - 30 * 86400000 
+                  : pacePeriod === "3m" ? nowValue - 90 * 86400000
+                  : 0;
+
+    tasks.forEach((t) => {
+      if (selectedTag && selectedTag !== "未分類" && !t.tags.includes(selectedTag)) return;
+      if (selectedTag === "未分類" && t.tags.length > 0) return;
+      if (t.status === "completed" && t.completed && t.due) {
+        const cMs = new Date(t.completed).getTime();
+        const dMs = new Date(t.due).getTime();
+        if (Number.isNaN(cMs) || Number.isNaN(dMs) || cMs < limitMs) return;
+
+        const diffDays = (dMs - cMs) / 86400000;
+        diffTotal += diffDays;
+        cnt++;
+        if (diffDays >= 1) e++;
+        else if (diffDays >= -1) o++;
+        else l++;
+      }
+    });
+    return { 
+      avgLead: cnt === 0 ? 0 : diffTotal / cnt, 
+      onTimeCount: e + o, 
+      lateCount: l,
+      totalCount: cnt
+    };
+  }, [tasks, pacePeriod, selectedTag]);
+
   const chartTitle =
     granularity === "week"
       ? `週次（過去7週＋今週＋来週）${scopeHint}`
@@ -7615,40 +7650,62 @@ function AnalyticsView({
       {/* 3. 完了ペース分析 & 長期滞留アラート */}
       <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6 items-start">
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
-          <p className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-            <Clock size={18} className="text-blue-500" />
-            完了ペース分析
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <p className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+              <Clock size={18} className="text-blue-500" />
+              完了ペース分析
+            </p>
+            <div className="bg-slate-100 p-1 rounded-lg w-fit">
+              <AnimatedToggle
+                options={[
+                  { value: "1m", label: "直近1ヶ月" },
+                  { value: "3m", label: "直近3ヶ月" },
+                  { value: "all", label: "全期間" },
+                ]}
+                current={pacePeriod}
+                onChange={setPacePeriod}
+                optionClassName="!px-2"
+              />
+            </div>
+          </div>
           <div className="space-y-4">
             <div className="flex justify-between items-end">
               <div className="space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase">平均完了日</span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase">
+                  平均完了日 {filteredPaceStats.totalCount === 0 ? "(データなし)" : ""}
+                </span>
                 <p className="text-2xl font-bold text-slate-800">
-                  {averageLeadTime === 0
-                    ? "当日"
-                    : averageLeadTime > 0
-                      ? `${averageLeadTime.toFixed(1)} 日前`
-                      : `${Math.abs(averageLeadTime).toFixed(1)} 日遅延`}
+                  {filteredPaceStats.totalCount === 0 
+                    ? "-" 
+                    : filteredPaceStats.avgLead === 0
+                      ? "当日"
+                      : filteredPaceStats.avgLead > 0
+                        ? `${filteredPaceStats.avgLead.toFixed(1)} 日前`
+                        : `${Math.abs(filteredPaceStats.avgLead).toFixed(1)} 日遅延`
+                  }
                 </p>
               </div>
-              <div className="text-right">
-                <span
-                  className={`text-xs font-bold px-2 py-1 rounded-full ${averageLeadTime >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
+              {filteredPaceStats.totalCount > 0 && (
+                <div className="text-right">
+                  <span
+                    className={`text-xs font-bold px-2 py-1 rounded-full ${
+                      filteredPaceStats.avgLead >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
                     }`}
-                >
-                  {averageLeadTime >= 0 ? "良好" : "改善の余地あり"}
-                </span>
-              </div>
+                  >
+                    {filteredPaceStats.avgLead >= 0 ? "良好" : "改善の余地あり"}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-2">
               <div className="flex-1 bg-emerald-50 rounded-lg p-3 text-center">
                 <p className="text-[10px] text-emerald-600 font-bold mb-1">期限前/当日</p>
-                <p className="text-lg font-bold text-emerald-700">{onTimeTasks}</p>
+                <p className="text-lg font-bold text-emerald-700">{filteredPaceStats.onTimeCount}</p>
               </div>
               <div className="flex-1 bg-amber-50 rounded-lg p-3 text-center">
                 <p className="text-[10px] text-amber-600 font-bold mb-1">期限後完了</p>
-                <p className="text-lg font-bold text-amber-700">{lateTasks}</p>
+                <p className="text-lg font-bold text-amber-700">{filteredPaceStats.lateCount}</p>
               </div>
             </div>
 
@@ -7661,14 +7718,18 @@ function AnalyticsView({
                   let wEarly = 0, wOnTime = 0, wLate = 0;
                   wTasks.forEach((t) => {
                     if (t.status === "completed" && t.completed && t.due) {
-                      const c = new Date(t.completed).getTime();
-                      const d = new Date(t.due).getTime();
-                      if (c <= d - 86400000) wEarly++;
-                      else if (c <= d + 86400000) wOnTime++;
-                      else wLate++;
+                      const cMs = new Date(t.completed).getTime();
+                      const dMs = new Date(t.due).getTime();
+                      if (!Number.isNaN(cMs) && !Number.isNaN(dMs)) {
+                        if (cMs <= dMs - 86400000) wEarly++;
+                        else if (cMs <= dMs + 86400000) wOnTime++;
+                        else wLate++;
+                      }
                     }
                   });
                   const tot = Math.max(wEarly + wOnTime + wLate, 1);
+                  if (wEarly + wOnTime + wLate === 0) return null; // データがない週は非表示
+                  
                   return (
                     <div key={w.key}>
                       <div className="flex justify-between text-[10px] text-slate-500 mb-1">
@@ -7791,25 +7852,80 @@ function AnalyticsView({
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-slate-400 border-b border-slate-100">
-                <th className="py-2 pr-4 font-medium">期間</th>
-                <th className="py-2 pr-4 font-medium">対象</th>
-                <th className="py-2 pr-4 font-medium">完了</th>
-                <th className="py-2 pr-4 font-medium">達成率</th>
+                <th className="py-2 pr-4 font-medium min-w-[140px]">期間</th>
+                <th className="py-2 pr-3 font-medium text-right">対象</th>
+                <th className="py-2 pr-3 font-medium text-right">完了</th>
+                <th className="py-2 pr-3 font-medium text-right" title="本来その期間が期限だったタスクの達成率">達成率</th>
+                <th className="py-2 pr-3 font-medium text-right whitespace-nowrap" title="遅延完了や繰越タスクを含めたすべての達成率">全体達成率</th>
+                <th className="py-2 pr-3 font-medium text-right whitespace-nowrap" title="遅延・繰越されたタスクだけの達成率">繰越達成率</th>
               </tr>
             </thead>
             <tbody>
               {series.slice().reverse().map((w) => {
                 const isExpanded = expandedRow === w.key;
                 const rowTasks = w.tasks || [];
+                
                 const tasksDone = rowTasks.filter((t) => t.status === "completed");
                 const tasksUndone = rowTasks.filter((t) => t.status !== "completed");
+
+                // --- 修正: 全体達成率（本来の期限ベースでの固定達成率）の算出 ---
+                // その期間（週・月など）の開始・終了時刻
+                const periodStartMs = new Date(w.key).getTime();
+                // 期間の終了を推定（週なら+7日、月なら+1ヶ月等）
+                const periodEndMs = granularity === "week" 
+                  ? periodStartMs + 7 * 24 * 60 * 60 * 1000
+                  : granularity === "month" 
+                    ? new Date(new Date(w.key).getFullYear(), new Date(w.key).getMonth() + 1, 1).getTime()
+                    : new Date(new Date(w.key).getFullYear() + 1, 0, 1).getTime();
+
+                // tasksForTopDashboard 全体から、「本来の期限」がこの期間に属するタスクをすべて抽出（繰越・遅延完了も含む）
+                const allOriginalTasksInPeriod = tasks.filter(t => {
+                  if (!t.due) return false;
+                  const dMs = new Date(t.due).getTime();
+                  return dMs >= periodStartMs && dMs < periodEndMs;
+                });
+
+                // 「この期間内に完了した」タスクのみを「完了」としてカウント
+                // （後から遅延して完了したものは、この期間の実績には含めない = 達成率は後から上がらない）
+                const originalCompletedInPeriod = allOriginalTasksInPeriod.filter(t => {
+                  if (t.status !== "completed" || !t.completed) return false;
+                  const cMs = new Date(t.completed).getTime();
+                  return cMs < periodEndMs; 
+                });
+
+                const originalTotalCount = allOriginalTasksInPeriod.length;
+                const originalOverallRate = originalTotalCount === 0 ? null : Math.round((originalCompletedInPeriod.length / originalTotalCount) * 100);
+
+
+                // --- 修正: 繰越達成率の算出 ---
+                // 「過去からこの期間へ繰り越されてきたタスク（本来の期限がこの期間より前）」を抽出
+                const rolloverTasks = rowTasks.filter(t => {
+                  // この期間内に新たに作成・期日設定されたものではなく、過去から引き継がれたもの
+                  if (!t.due) return false;
+                  const dMs = new Date(t.due).getTime();
+                  if (Number.isNaN(dMs)) return false;
+                  return dMs < periodStartMs;
+                });
+                
+                // そのうち、この期間に完了したタスクの数
+                // rolloverTasksが0件なら、評価不可(null)とする
+                const rolloverComp = rolloverTasks.filter(t => t.status === "completed").length;
+                const rolloverRate = rolloverTasks.length === 0 ? null : Math.round((rolloverComp / rolloverTasks.length) * 100);
+
+                const getColor = (tot, rate) => {
+                  if (tot === 0 || rate === null) return "text-slate-300";
+                  if (rate >= 80) return "text-emerald-600";
+                  if (rate >= 50) return "text-blue-600";
+                  return "text-amber-600";
+                };
 
                 return (
                   <React.Fragment key={`t-${w.key}`}>
                     <tr
                       onClick={() => setExpandedRow(isExpanded ? null : w.key)}
-                      className={`border-b border-slate-50 last:border-0 cursor-pointer transition hover:bg-slate-50 ${isExpanded ? "bg-slate-50" : ""
-                        }`}
+                      className={`border-b border-slate-50 last:border-0 cursor-pointer transition hover:bg-slate-50 ${
+                        isExpanded ? "bg-slate-50" : ""
+                      }`}
                     >
                       <td className="py-2.5 pr-4 text-slate-700">
                         <div className="flex items-center gap-1.5">
@@ -7827,21 +7943,28 @@ function AnalyticsView({
                           )}
                         </div>
                       </td>
-                      <td className="py-2.5 pr-4 text-slate-600">{w.total}</td>
-                      <td className="py-2.5 pr-4 text-slate-600">{w.completed}</td>
-                      <td className="py-2.5 pr-4 font-semibold">
-                        <span
-                          className={
-                            w.total === 0 ? "text-slate-300" : w.rate >= 80 ? "text-emerald-600" : w.rate >= 50 ? "text-blue-600" : "text-amber-600"
-                          }
-                        >
+                      <td className="py-2.5 pr-3 text-slate-600 text-right">{w.total}</td>
+                      <td className="py-2.5 pr-3 text-slate-600 text-right">{w.completed}</td>
+                      <td className="py-2.5 pr-3 font-semibold text-right">
+                        <span className={getColor(w.total, w.rate)}>
                           {w.total === 0 ? "-" : `${w.rate}%`}
+                        </span>
+                      </td>
+                      <td className="py-2.5 pr-3 font-semibold text-right">
+                        <span className={getColor(originalTotalCount, originalOverallRate)}>
+                          {originalOverallRate === null ? "-" : `${originalOverallRate}%`}
+                        </span>
+                      </td>
+                      <td className="py-2.5 pr-3 font-semibold text-right">
+                        <span className={getColor(rolloverTasks.length, rolloverRate)}>
+                          {rolloverRate === null ? "-" : `${rolloverRate}%`}
                         </span>
                       </td>
                     </tr>
                     {isExpanded && (
                       <tr>
-                        <td colSpan={4} className="bg-slate-50 border-b border-slate-100 p-4">
+                        {/* ▼ 列数が増えたため colSpan を 4 から 6 に変更 */}
+                        <td colSpan={6} className="bg-slate-50 border-b border-slate-100 p-4">
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
                               <h5 className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200 inline-block sticky top-0 z-10">
